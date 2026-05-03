@@ -39,14 +39,14 @@ export default function AccountRequests() {
   async function approve(req) {
     setProcessing(p => ({ ...p, [req.id]: 'loading' }))
 
-    // 1. Create auth user with the password the professional already chose
+    // 1. Create auth user — email confirmation must be OFF in Supabase Auth settings
+    //    Authentication > Providers > Email > "Confirm email" = OFF
+    //    This creates the account instantly with no email sent at all
     const { data: authData, error: authErr } = await supabase.auth.signUp({
       email:    req.email,
       password: req.password,
       options: {
         data: { full_name: req.full_name, role: 'worker' },
-        // Skip email confirmation — account is active immediately
-        emailRedirectTo: null,
       }
     })
 
