@@ -13,7 +13,8 @@ import Requests    from '../../pages/admin/Requests'
 import Boletas     from '../../pages/admin/Boletas'
 import Settings    from '../../pages/admin/Settings'
 import InviteUser  from '../../pages/admin/InviteUser'
-import GeoMonitor  from '../../pages/admin/GeoMonitor'
+import GeoMonitor       from '../../pages/admin/GeoMonitor'
+import AccountRequests  from '../../pages/admin/AccountRequests'
 
 // Worker pages
 import WorkerHome     from '../../pages/worker/WorkerHome'
@@ -28,7 +29,7 @@ export default function AppShell() {
   const location  = useLocation()
 
   // Badge counts — real from DB
-  const [badges, setBadges] = useState({ requests: 0, late: 0 })
+  const [badges, setBadges] = useState({ requests: 0, late: 0, accounts: 0 })
 
   const isAdmin  = profile?.role === 'admin'
   const initials = (profile?.full_name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -42,11 +43,22 @@ export default function AppShell() {
 
   async function loadBadges() {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()
-    const [{ count: req }, { count: late }] = await Promise.all([
+    const [{ count: req }, { count: late }, { count: accounts }] = await Promise.all([
       supabase.from('requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       supabase.from('attendances').select('*', { count: 'exact', head: true }).eq('status', 'late').gte('checked_in_at', monthStart),
+      supabase.from('account_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     ])
-    setBadges({ requests: req || 0, late: late || 0 })
+    setBadges({ requests: req || 0, late: late || 0, accounts: accounts || 0 })
+
+    // Real-time: subscribe to new account requests
+    supabase.channel('account_req_badge')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'account_requests' }, () => {
+        setBadges(prev => ({ ...prev, accounts: prev.accounts + 1 }))
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'account_requests' }, () => {
+        loadBadges()
+      })
+      .subscribe()
   }
 
   async function handleSignOut() {
@@ -66,8 +78,9 @@ export default function AppShell() {
     { id: '/documents',  label: 'Documentos',      icon: '🗂',  path: '/documents' },
     { id: '/boletas',    label: 'Boletas',          icon: '💰', path: '/boletas' },
     { section: 'Sistema' },
-    { id: '/users',      label: 'Usuarios',        icon: '🔑', path: '/users' },
-    { id: '/settings',   label: 'Configuración',   icon: '⚙',  path: '/settings' },
+    { id: '/accounts',   label: 'Solicitudes acceso', icon: '📬', path: '/accounts', badge: badges.accounts },
+    { id: '/users',      label: 'Usuarios',            icon: '🔑', path: '/users' },
+    { id: '/settings',   label: 'Configuración',       icon: '⚙',  path: '/settings' },
   ]
 
   const WORKER_NAV = [
@@ -203,6 +216,7 @@ export default function AppShell() {
               <Route path="/requests"   element={<Requests />} />
               <Route path="/documents"  element={<Documents />} />
               <Route path="/boletas"    element={<Boletas />} />
+              <Route path="/accounts"    element={<AccountRequests />} />
               <Route path="/users"      element={<InviteUser />} />
               <Route path="/settings"   element={<Settings />} />
               <Route path="*"           element={<Navigate to="/" replace />} />

@@ -1,7 +1,8 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './hooks/useAuth'
-import LoginPage from './pages/LoginPage'
-import AppShell from './components/layout/AppShell'
+import LoginPage    from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
+import AppShell     from './components/layout/AppShell'
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -16,7 +17,8 @@ function ProtectedRoute({ children }) {
 function AppRoutes() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login"    element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/*" element={
         <ProtectedRoute>
           <AppShell />

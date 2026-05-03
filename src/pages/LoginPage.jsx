@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 export default function LoginPage() {
@@ -78,7 +78,14 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', lineHeight: 1.6 }}>
+        <p style={{ marginTop: 20, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
+          ¿No tienes cuenta?{' '}
+          <Link to="/register" style={{ color: 'rgba(99,130,246,0.9)', fontWeight: 600, textDecoration: 'none' }}>
+            Solicitar acceso →
+          </Link>
+        </p>
+
+        <p style={{ marginTop: 12, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.15)', lineHeight: 1.6 }}>
           Speech Psychology & CardioHome<br />
           Alianza Estratégica en Salud © {new Date().getFullYear()}
         </p>

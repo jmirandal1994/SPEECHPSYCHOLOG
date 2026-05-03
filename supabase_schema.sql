@@ -241,3 +241,34 @@ CREATE POLICY "projects_read" ON public.projects FOR SELECT
   USING (auth.role() = 'authenticated');
 CREATE POLICY "projects_write" ON public.projects FOR ALL
   USING (public.is_admin());
+
+-- ═══════════════════════════════════════════════════
+--  ACCOUNT REQUESTS — Solicitudes de acceso
+-- ═══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.account_requests (
+  id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  full_name     TEXT NOT NULL,
+  email         TEXT NOT NULL UNIQUE,
+  phone         TEXT,
+  rut           TEXT,
+  role_label    TEXT,
+  project       TEXT,
+  message       TEXT,
+  status        TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  reviewed_by   UUID REFERENCES public.profiles(id),
+  reviewed_at   TIMESTAMPTZ,
+  reject_reason TEXT,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Public can insert (no auth needed to request access)
+ALTER TABLE public.account_requests ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "account_req_insert" ON public.account_requests
+  FOR INSERT WITH CHECK (true);
+
+CREATE POLICY "account_req_select" ON public.account_requests
+  FOR SELECT USING (public.is_admin());
+
+CREATE POLICY "account_req_update" ON public.account_requests
+  FOR UPDATE USING (public.is_admin());
