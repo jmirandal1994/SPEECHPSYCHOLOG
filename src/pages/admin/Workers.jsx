@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
-const COLORS = [
+const ROLES    = ['Enfermera/o', 'TENS', 'Auxiliar de servicio', 'Administrativo']
+const COLORS   = [
   { bg: '#dbeafe', col: '#1e3a8a' }, { bg: '#d1fae5', col: '#065f46' },
   { bg: '#fef9c3', col: '#92400e' }, { bg: '#fce7f3', col: '#9d174d' },
   { bg: '#ede9fe', col: '#4c1d95' }, { bg: '#cffafe', col: '#0e7490' },
@@ -9,48 +10,59 @@ const COLORS = [
 
 export default function Workers() {
   const [workers, setWorkers]   = useState([])
+  const [projects, setProjects] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm]         = useState({ full_name: '', email: '', role_label: '', project: '', phone: '' })
-  const [saving, setSaving]     = useState(false)
   const [search, setSearch]     = useState('')
+  const [saving, setSaving]     = useState(false)
+  const [form, setForm]         = useState({ full_name: '', email: '', rut: '', role_label: '', project: '', phone: '' })
 
-  useEffect(() => { loadWorkers() }, [])
+  useEffect(() => { loadData() }, [])
 
-  async function loadWorkers() {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('role', 'worker')
-      .order('full_name')
-    setWorkers(data || [])
+  async function loadData() {
+    const [{ data: w }, { data: p }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('role', 'worker').order('full_name'),
+      supabase.from('projects').select('*').eq('active', true).order('name'),
+    ])
+    setWorkers(w || [])
+    setProjects(p || [])
     setLoading(false)
   }
 
   async function handleCreate(e) {
     e.preventDefault()
     setSaving(true)
-    // Create auth user first via admin API is not possible with anon key.
-    // Instead we insert directly into profiles (user must self-register first).
-    // For demo, we insert a placeholder profile.
     const { error } = await supabase.from('profiles').insert([{
-      ...form,
-      role: 'worker',
-      status: 'active',
+      ...form, role: 'worker', status: 'active',
     }])
-    if (!error) { setShowForm(false); setForm({ full_name:'', email:'', role_label:'', project:'', phone:'' }); loadWorkers() }
+    if (!error) {
+      setShowForm(false)
+      setForm({ full_name: '', email: '', rut: '', role_label: '', project: '', phone: '' })
+      loadData()
+    }
     setSaving(false)
   }
 
+  async function toggleStatus(id, current) {
+    const next = current === 'active' ? 'inactive' : 'active'
+    await supabase.from('profiles').update({ status: next }).eq('id', id)
+    setWorkers(w => w.map(x => x.id === id ? { ...x, status: next } : x))
+  }
+
   const filtered = workers.filter(w =>
-    w.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    w.project?.toLowerCase().includes(search.toLowerCase())
+    (w.full_name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (w.project   || '').toLowerCase().includes(search.toLowerCase()) ||
+    (w.role_label|| '').toLowerCase().includes(search.toLowerCase())
   )
 
-  function avatar(name, idx) {
+  function Avatar({ name, idx }) {
     const c = COLORS[idx % COLORS.length]
-    const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0,2).toUpperCase()
-    return <div className="worker-avatar" style={{ background: c.bg, color: c.col }}>{initials}</div>
+    const ini = (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+    return (
+      <div style={{ width: 36, height: 36, borderRadius: '50%', background: c.bg, color: c.col, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)', flexShrink: 0 }}>
+        {ini}
+      </div>
+    )
   }
 
   return (
@@ -58,63 +70,56 @@ export default function Workers() {
       <div className="topbar">
         <div className="topbar-left">
           <div className="topbar-title">Personal</div>
-          <div className="topbar-sub">{workers.length} profesionales registrados</div>
+          <div className="topbar-sub">{workers.length} profesionale{workers.length !== 1 ? 's' : ''} registrado{workers.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="topbar-right">
-          <button className="btn btn-sm">📥 Exportar</button>
-          <button className="btn btn-primary btn-sm" onClick={() => setShowForm(true)}>+ Agregar profesional</button>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowForm(v => !v)}>
+            {showForm ? '✕ Cancelar' : '+ Agregar profesional'}
+          </button>
         </div>
       </div>
 
       <div className="content">
-        {/* Search */}
-        <div className="card" style={{ marginBottom: 16, padding: '14px 20px' }}>
-          <input
-            className="form-input"
-            placeholder="🔍  Buscar por nombre o proyecto..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-
         {/* Add form */}
         {showForm && (
-          <div className="card" style={{ borderColor: 'var(--navy-300)', boxShadow: 'var(--sh-accent)' }}>
-            <div className="card-header">
-              <div>
-                <div className="card-title">Nuevo profesional</div>
-                <div className="card-sub">Completa los datos del trabajador</div>
-              </div>
-              <button className="btn btn-ghost btn-xs" onClick={() => setShowForm(false)}>✕ Cancelar</button>
-            </div>
+          <div className="card" style={{ borderColor: 'var(--navy-300)', boxShadow: 'var(--sh-accent)', marginBottom: 16 }}>
+            <div className="card-title" style={{ marginBottom: 18 }}>Nuevo profesional</div>
             <form onSubmit={handleCreate}>
               <div className="g2" style={{ marginBottom: 0 }}>
                 <div className="form-group">
                   <label className="form-label">Nombre completo *</label>
-                  <input className="form-input" required value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
+                  <input className="form-input" required placeholder="Ej: María González" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Correo electrónico *</label>
-                  <input className="form-input" type="email" required value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  <label className="form-label">RUT</label>
+                  <input className="form-input" placeholder="12.345.678-9" value={form.rut} onChange={e => setForm(f => ({ ...f, rut: e.target.value }))} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Cargo / Especialidad</label>
-                  <input className="form-input" placeholder="Ej: Enfermera, TENS, Auxiliar" value={form.role_label} onChange={e => setForm(f => ({ ...f, role_label: e.target.value }))} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Proyecto asignado</label>
-                  <select className="form-input" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))}>
+                  <label className="form-label">Cargo *</label>
+                  <select className="form-input" required value={form.role_label} onChange={e => setForm(f => ({ ...f, role_label: e.target.value }))}>
                     <option value="">Seleccionar...</option>
-                    <option>CardioHome Sur</option>
-                    <option>CardioHome Norte</option>
-                    <option>Speech Centro</option>
-                    <option>Speech Norte</option>
+                    {ROLES.map(r => <option key={r}>{r}</option>)}
                   </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Proyecto</label>
+                  <select className="form-input" value={form.project} onChange={e => setForm(f => ({ ...f, project: e.target.value }))}>
+                    <option value="">Sin asignar</option>
+                    {projects.map(p => <option key={p.id}>{p.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Correo</label>
+                  <input className="form-input" type="email" placeholder="correo@ejemplo.cl" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Teléfono</label>
                   <input className="form-input" placeholder="+56 9 XXXX XXXX" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
                 </div>
+              </div>
+              <div className="alert alert-info" style={{ marginBottom: 14 }}>
+                <span className="alert-icon">💡</span>
+                <div className="alert-body"><div className="alert-msg">Para crear la cuenta de acceso al sistema ve a <strong>🔑 Usuarios</strong>.</div></div>
               </div>
               <button className="btn btn-primary" type="submit" disabled={saving}>
                 {saving ? 'Guardando...' : '💾 Guardar profesional'}
@@ -123,7 +128,14 @@ export default function Workers() {
           </div>
         )}
 
-        {/* Workers table */}
+        {/* Search */}
+        <div className="card" style={{ padding: '12px 18px', marginBottom: 14 }}>
+          <input className="form-input" style={{ marginBottom: 0 }}
+            placeholder="🔍  Buscar por nombre, cargo o proyecto..."
+            value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+
+        {/* Table */}
         <div className="card">
           <div className="table-wrap">
             <table>
@@ -139,58 +151,49 @@ export default function Workers() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign:'center', padding: 32 }}><div className="spinner" /></td></tr>
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: 40 }}><div className="spinner" /></td></tr>
                 ) : filtered.length === 0 ? (
-                  /* Mock data while DB empty */
-                  [
-                    { id:1, full_name:'María González', role_label:'Enfermera', project:'CardioHome Sur', phone:'+56 9 8765 4321', status:'active' },
-                    { id:2, full_name:'Carlos Ramírez', role_label:'TENS', project:'Speech Norte', phone:'+56 9 7654 3210', status:'active' },
-                    { id:3, full_name:'Lucía Pérez', role_label:'Auxiliar', project:'CardioHome Norte', phone:'+56 9 6543 2109', status:'active' },
-                    { id:4, full_name:'Ana Pinto', role_label:'Enfermera', project:'CardioHome Sur', phone:'+56 9 5432 1098', status:'alert' },
-                    { id:5, full_name:'José Vargas', role_label:'TENS', project:'CardioHome Sur', phone:'+56 9 4321 0987', status:'active' },
-                    { id:6, full_name:'Roberto Salinas', role_label:'TENS', project:'CardioHome Sur', phone:'+56 9 3210 9876', status:'active' },
-                  ].map((w, i) => (
-                    <tr key={w.id}>
-                      <td>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          {avatar(w.full_name, i)}
-                          <span style={{ fontWeight: 600, color: 'var(--text-1)' }}>{w.full_name}</span>
+                  <tr><td colSpan={6}>
+                    <div className="empty-state">
+                      <div className="empty-state-icon">👥</div>
+                      <div className="empty-state-title">{search ? 'Sin resultados' : 'Aún no hay profesionales'}</div>
+                      <div className="empty-state-sub">
+                        {search ? 'Prueba con otro término' : 'Agrega el primer profesional con el botón de arriba'}
+                      </div>
+                    </div>
+                  </td></tr>
+                ) : filtered.map((w, i) => (
+                  <tr key={w.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar name={w.full_name} idx={i} />
+                        <div>
+                          <div style={{ fontWeight: 600, color: 'var(--text-1)' }}>{w.full_name}</div>
+                          {w.rut && <div style={{ fontSize: 11, color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>{w.rut}</div>}
                         </div>
-                      </td>
-                      <td>{w.role_label}</td>
-                      <td><span className="badge badge-blue">{w.project}</span></td>
-                      <td style={{ fontFamily:'var(--font-mono)', fontSize:12 }}>{w.phone}</td>
-                      <td><span className={`badge ${w.status === 'active' ? 'badge-green' : 'badge-red'}`}>{w.status === 'active' ? 'Activo' : '⚠ Alerta'}</span></td>
-                      <td>
-                        <div style={{ display:'flex', gap:4 }}>
-                          <button className="btn btn-xs">Ver</button>
-                          <button className="btn btn-xs">✏</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  filtered.map((w, i) => (
-                    <tr key={w.id}>
-                      <td>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                          {avatar(w.full_name, i)}
-                          <span style={{ fontWeight:600, color:'var(--text-1)' }}>{w.full_name}</span>
-                        </div>
-                      </td>
-                      <td>{w.role_label}</td>
-                      <td><span className="badge badge-blue">{w.project}</span></td>
-                      <td style={{ fontFamily:'var(--font-mono)', fontSize:12 }}>{w.phone}</td>
-                      <td><span className={`badge ${w.status === 'active' ? 'badge-green' : 'badge-red'}`}>{w.status === 'active' ? 'Activo' : 'Inactivo'}</span></td>
-                      <td>
-                        <div style={{ display:'flex', gap:4 }}>
-                          <button className="btn btn-xs">Ver</button>
-                          <button className="btn btn-xs">✏</button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
+                      </div>
+                    </td>
+                    <td style={{ fontSize: 13 }}>{w.role_label || '—'}</td>
+                    <td>
+                      {w.project
+                        ? <span className="badge badge-blue">{w.project}</span>
+                        : <span style={{ color: 'var(--text-4)', fontSize: 12 }}>Sin proyecto</span>}
+                    </td>
+                    <td style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-3)' }}>
+                      {w.phone || w.email || '—'}
+                    </td>
+                    <td>
+                      <span className={`badge ${w.status === 'active' ? 'badge-green' : w.status === 'alert' ? 'badge-amber' : 'badge-red'}`}>
+                        {w.status === 'active' ? '● Activo' : w.status === 'alert' ? '⚠ Alerta' : '○ Inactivo'}
+                      </span>
+                    </td>
+                    <td>
+                      <button className="btn btn-xs" onClick={() => toggleStatus(w.id, w.status)}>
+                        {w.status === 'active' ? '⏸ Desactivar' : '▶ Activar'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

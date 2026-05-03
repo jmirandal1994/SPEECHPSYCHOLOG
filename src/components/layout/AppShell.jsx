@@ -11,6 +11,7 @@ import Documents    from '../../pages/admin/Documents'
 import Requests     from '../../pages/admin/Requests'
 import Boletas      from '../../pages/admin/Boletas'
 import Settings     from '../../pages/admin/Settings'
+import InviteUser   from '../../pages/admin/InviteUser'
 
 // Worker pages
 import WorkerHome    from '../../pages/worker/WorkerHome'
@@ -30,7 +31,8 @@ const ADMIN_NAV = [
   { id: '/documents',  label: 'Documentos',     icon: '🗂',  path: '/documents' },
   { id: '/boletas',    label: 'Boletas',         icon: '💰', path: '/boletas' },
   { section: 'Sistema' },
-  { id: '/settings',   label: 'Configuración',  icon: '⚙',  path: '/settings' },
+  { id: '/users',     label: 'Usuarios',        icon: '🔑', path: '/users' },
+  { id: '/settings',  label: 'Configuración',   icon: '⚙',  path: '/settings' },
 ]
 
 const WORKER_NAV = [
@@ -65,8 +67,8 @@ export default function AppShell() {
           <div className="brand-logo-row">
             <div className="brand-icon">🏥</div>
             <div>
-              <div className="brand-title">HealthOps</div>
-              <div className="brand-sub">Servicios de Salud</div>
+              <div className="brand-title">SP & CardioHome</div>
+              <div className="brand-sub">Gestión de Servicios de Salud</div>
             </div>
           </div>
           <div className="role-switcher">
@@ -118,6 +120,7 @@ export default function AppShell() {
           <Route path="/requests"   element={<Requests />} />
           <Route path="/documents"  element={<Documents />} />
           <Route path="/boletas"    element={<Boletas />} />
+          <Route path="/users"      element={<InviteUser />} />
           <Route path="/settings"   element={<Settings />} />
           {/* Worker routes */}
           <Route path="/w"          element={<WorkerHome />} />

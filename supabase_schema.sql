@@ -224,3 +224,20 @@ CREATE INDEX IF NOT EXISTS idx_req_worker        ON public.requests(worker_id);
 CREATE INDEX IF NOT EXISTS idx_req_status        ON public.requests(status);
 CREATE INDEX IF NOT EXISTS idx_bol_worker        ON public.boletas(worker_id);
 CREATE INDEX IF NOT EXISTS idx_doc_category      ON public.documents(category);
+
+-- ═══════════════════════════════════════════════════
+--  PROJECTS TABLE (add this if not exists)
+-- ═══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.projects (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name       TEXT NOT NULL UNIQUE,
+  active     BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "projects_read" ON public.projects FOR SELECT
+  USING (auth.role() = 'authenticated');
+CREATE POLICY "projects_write" ON public.projects FOR ALL
+  USING (public.is_admin());
