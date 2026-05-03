@@ -16,22 +16,38 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     const { error } = await signIn(email, password)
-    if (error) setError(error.message)
+    if (error) setError(error.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos' : error.message)
     setLoading(false)
   }
 
   return (
     <div className="auth-screen">
       <div className="auth-card">
-        <div className="auth-logo">
-          <div className="auth-logo-icon">🏥</div>
-          <div>
-            <div className="auth-logo-title">HealthOps</div>
-            <div className="auth-logo-sub">Gestión de Servicios de Salud</div>
+        {/* Logo */}
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <img
+            src="/logo.png"
+            alt="Speech Psychology"
+            style={{
+              width: 110,
+              height: 110,
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto 14px',
+              filter: 'drop-shadow(0 4px 24px rgba(59,130,246,0.35))',
+            }}
+          />
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.03em', lineHeight: 1.1 }}>
+            Speech Psychology
+          </div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+            & CardioHome · Gestión de Salud
           </div>
         </div>
 
-        <div className="auth-title">Bienvenido</div>
+        <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.07)', marginBottom: 24 }} />
+
+        <div className="auth-title" style={{ fontSize: 20 }}>Bienvenido</div>
         <div className="auth-sub">Ingresa con tu cuenta institucional</div>
 
         {error && <div className="auth-error">⚠ {error}</div>}
@@ -41,10 +57,11 @@ export default function LoginPage() {
           <input
             className="auth-input"
             type="email"
-            placeholder="nombre@healthops.cl"
+            placeholder="nombre@speechpsychology.cl"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
           <label className="auth-label">Contraseña</label>
           <input
@@ -54,14 +71,16 @@ export default function LoginPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
           <button className="auth-btn" type="submit" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar al sistema →'}
+            {loading ? 'Verificando...' : 'Ingresar al sistema →'}
           </button>
         </form>
 
-        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 12, color: 'rgba(255,255,255,0.25)' }}>
-          Speech Psychology · CardioHome · HealthOps © 2025
+        <p style={{ marginTop: 24, textAlign: 'center', fontSize: 11, color: 'rgba(255,255,255,0.2)', lineHeight: 1.6 }}>
+          Speech Psychology & CardioHome<br />
+          Alianza Estratégica en Salud © {new Date().getFullYear()}
         </p>
       </div>
     </div>
