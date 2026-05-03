@@ -6,16 +6,18 @@ export default function AccountRequests() {
   const [loading, setLoading]   = useState(true)
   const [filter, setFilter]     = useState('pending')
   const [processing, setProcessing] = useState({})
-  const [rejectModal, setRejectModal] = useState(null) // { id, name }
+  const [rejectModal, setRejectModal] = useState(null)
   const [rejectReason, setRejectReason] = useState('')
 
   useEffect(() => {
     loadData()
 
-    // Real-time subscription
+    // Real-time: new request arrives → badge updates instantly
     const channel = supabase
-      .channel('account_requests_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'account_requests' }, payload => {
+      .channel('account_req_live')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'account_requests'
+      }, payload => {
         setRequests(prev => [payload.new, ...prev])
       })
       .subscribe()
@@ -35,23 +37,26 @@ export default function AccountRequests() {
   }
 
   async function approve(req) {
-    setProcessing(p => ({ ...p, [req.id]: 'approving' }))
+    setProcessing(p => ({ ...p, [req.id]: 'loading' }))
 
-    // 1. Create auth user via signUp
-    const tempPassword = `SP${Math.random().toString(36).slice(2, 10).toUpperCase()}!`
+    // 1. Create auth user with the password the professional already chose
     const { data: authData, error: authErr } = await supabase.auth.signUp({
       email:    req.email,
-      password: tempPassword,
-      options: { data: { full_name: req.full_name, role: 'worker' } }
+      password: req.password,
+      options: {
+        data: { full_name: req.full_name, role: 'worker' },
+        // Skip email confirmation — account is active immediately
+        emailRedirectTo: null,
+      }
     })
 
     if (authErr) {
-      alert(`Error al crear cuenta: ${authErr.message}`)
+      alert(`Error: ${authErr.message}`)
       setProcessing(p => ({ ...p, [req.id]: null }))
       return
     }
 
-    // 2. Enrich profile
+    // 2. Fill profile with all details
     if (authData?.user?.id) {
       await supabase.from('profiles').upsert({
         id:         authData.user.id,
@@ -61,63 +66,58 @@ export default function AccountRequests() {
         rut:        req.rut,
         role:       'worker',
         role_label: req.role_label,
-        project:    req.project,
         status:     'active',
       })
     }
 
-    // 3. Mark request as approved
-    await supabase.from('account_requests').update({
-      status:      'approved',
-      reviewed_at: new Date().toISOString(),
-    }).eq('id', req.id)
+    // 3. Mark request approved
+    await supabase.from('account_requests')
+      .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+      .eq('id', req.id)
 
-    // 4. Update local state & show credentials
-    setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status: 'approved', _tempPassword: tempPassword } : r))
-    setProcessing(p => ({ ...p, [req.id]: 'done', [`${req.id}_pwd`]: tempPassword }))
+    setRequests(prev => prev.map(r =>
+      r.id === req.id ? { ...r, status: 'approved' } : r
+    ))
+    setProcessing(p => ({ ...p, [req.id]: 'done' }))
   }
 
   async function reject(id, reason) {
-    setProcessing(p => ({ ...p, [id]: 'rejecting' }))
-    await supabase.from('account_requests').update({
-      status:        'rejected',
-      reject_reason: reason,
-      reviewed_at:   new Date().toISOString(),
-    }).eq('id', id)
+    await supabase.from('account_requests')
+      .update({ status: 'rejected', reject_reason: reason, reviewed_at: new Date().toISOString() })
+      .eq('id', id)
     setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'rejected', reject_reason: reason } : r))
     setRejectModal(null)
     setRejectReason('')
-    setProcessing(p => ({ ...p, [id]: null }))
   }
 
   const pending = requests.filter(r => r.status === 'pending').length
 
-  const STATUS = {
-    pending:  { cls: 'badge-amber', label: '⏳ Pendiente' },
-    approved: { cls: 'badge-green', label: '✓ Aprobada' },
-    rejected: { cls: 'badge-red',   label: '✗ Rechazada' },
+  const ROLE_COLORS = {
+    'Enfermera/o':          { bg: '#dbeafe', col: '#1e3a8a' },
+    'TENS':                 { bg: '#d1fae5', col: '#065f46' },
+    'Auxiliar de servicio': { bg: '#fef9c3', col: '#92400e' },
+    'Administrativo':       { bg: '#ede9fe', col: '#4c1d95' },
   }
 
-  const ROLE_COLORS = {
-    'Enfermera/o':        { bg: '#dbeafe', col: '#1e3a8a' },
-    'TENS':               { bg: '#d1fae5', col: '#065f46' },
-    'Auxiliar de servicio': { bg: '#fef9c3', col: '#92400e' },
-    'Administrativo':     { bg: '#ede9fe', col: '#4c1d95' },
+  const STATUS_BADGE = {
+    pending:  { cls: 'badge-amber', label: '⏳ Pendiente' },
+    approved: { cls: 'badge-green', label: '✓ Aprobada'  },
+    rejected: { cls: 'badge-red',   label: '✗ Rechazada' },
   }
 
   return (
     <div className="page-enter">
+
       {/* Reject modal */}
       {rejectModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-lg)', padding: 28, width: 400, boxShadow: 'var(--sh-lg)' }}>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, marginBottom: 6 }}>Rechazar solicitud</div>
-            <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 16 }}>
-              ¿Rechazar la solicitud de <strong>{rejectModal.name}</strong>? Puedes agregar un motivo.
+            <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 14 }}>
+              Rechazar la solicitud de <strong>{rejectModal.name}</strong>. Puedes indicar el motivo.
             </div>
             <textarea
-              className="form-input"
-              rows={3}
+              className="form-input" rows={3}
               placeholder="Motivo del rechazo (opcional)..."
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
@@ -138,49 +138,77 @@ export default function AccountRequests() {
           <div className="topbar-title">Solicitudes de acceso</div>
           <div className="topbar-sub">
             {pending > 0
-              ? `${pending} solicitud${pending > 1 ? 'es' : ''} pendiente${pending > 1 ? 's' : ''} de revisión`
+              ? `${pending} solicitud${pending > 1 ? 'es' : ''} pendiente${pending > 1 ? 's' : ''} de aprobación`
               : 'Gestión de accesos al sistema'}
           </div>
         </div>
       </div>
 
       <div className="content">
-        {/* Info banner */}
+
+        {/* Share link banner */}
         <div className="alert alert-info" style={{ marginBottom: 18 }}>
-          <span className="alert-icon">ℹ️</span>
+          <span className="alert-icon">🔗</span>
           <div className="alert-body">
-            <div className="alert-title">Comparte el link de registro con tus profesionales</div>
-            <div className="alert-msg">
-              URL de registro público:{' '}
-              <span
-                style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--navy-100)', padding: '2px 8px', borderRadius: 5, cursor: 'pointer', color: 'var(--navy-700)' }}
+            <div className="alert-title">Comparte este link con tus profesionales para que se registren</div>
+            <div className="alert-msg" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginTop: 6 }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, background: 'var(--navy-100)', color: 'var(--navy-700)', padding: '4px 10px', borderRadius: 6 }}>
+                {window.location.origin}/register
+              </span>
+              <button
+                className="btn btn-sm"
                 onClick={() => {
                   navigator.clipboard?.writeText(`${window.location.origin}/register`)
                   alert('Link copiado ✓')
                 }}
               >
-                {window.location.origin}/register
-              </span>
-              {' '}— Haz clic para copiar
+                📋 Copiar link
+              </button>
             </div>
+          </div>
+        </div>
+
+        {/* How it works */}
+        <div className="card" style={{ marginBottom: 18, padding: '16px 20px' }}>
+          <div style={{ display: 'flex', gap: 0, alignItems: 'center' }}>
+            {[
+              { icon: '📋', text: 'Profesional se registra con sus datos y contraseña' },
+              { icon: '→',  text: '', arrow: true },
+              { icon: '⏳', text: 'Aparece aquí como pendiente' },
+              { icon: '→',  text: '', arrow: true },
+              { icon: '✅', text: 'Tú apruebas con un click → cuenta activa' },
+              { icon: '→',  text: '', arrow: true },
+              { icon: '🔑', text: 'El profesional entra con su correo y contraseña' },
+            ].map((s, i) => s.arrow ? (
+              <span key={i} style={{ fontSize: 18, color: 'var(--text-4)', margin: '0 10px' }}>→</span>
+            ) : (
+              <div key={i} style={{ flex: 1, textAlign: 'center' }}>
+                <div style={{ fontSize: 22, marginBottom: 4 }}>{s.icon}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.4 }}>{s.text}</div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Tabs */}
         <div className="tabs">
-          {[['pending','Pendientes'],['approved','Aprobadas'],['rejected','Rechazadas'],['all','Todas']].map(([v,l]) => (
+          {[['pending','Pendientes'],['approved','Aprobadas'],['rejected','Rechazadas'],['all','Todas']].map(([v, l]) => (
             <div key={v} className={`tab ${filter === v ? 'active' : ''}`} onClick={() => setFilter(v)}>
               {l}
               {v === 'pending' && pending > 0 && (
-                <span className="nav-badge" style={{ marginLeft: 8, position: 'static', display: 'inline-block' }}>{pending}</span>
+                <span style={{ marginLeft: 7, background: 'var(--red)', color: '#fff', borderRadius: 20, fontSize: 10, padding: '1px 7px', fontWeight: 700 }}>
+                  {pending}
+                </span>
               )}
             </div>
           ))}
         </div>
 
-        {/* Requests list */}
+        {/* List */}
         {loading ? (
-          <div className="empty-state" style={{ marginTop: 60 }}><div className="spinner" style={{ width: 28, height: 28 }} /></div>
+          <div className="empty-state" style={{ marginTop: 60 }}>
+            <div className="spinner" style={{ width: 28, height: 28 }} />
+          </div>
         ) : requests.length === 0 ? (
           <div className="empty-state" style={{ marginTop: 60 }}>
             <div className="empty-state-icon">📬</div>
@@ -188,94 +216,73 @@ export default function AccountRequests() {
               {filter === 'pending' ? 'Sin solicitudes pendientes' : 'Sin solicitudes aquí'}
             </div>
             <div className="empty-state-sub">
-              Las solicitudes de tus profesionales aparecerán aquí en tiempo real
+              Cuando un profesional se registre aparecerá aquí en tiempo real
             </div>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {requests.map(r => {
-              const roleColor = ROLE_COLORS[r.role_label] || { bg: '#f1f5f9', col: '#64748b' }
-              const isPending  = r.status === 'pending'
-              const isApproved = r.status === 'approved'
-              const approvedPwd = processing[`${r.id}_pwd`]
-              const s = STATUS[r.status] || STATUS.pending
+            {requests.map(req => {
+              const isPending  = req.status === 'pending'
+              const isApproved = req.status === 'approved'
+              const isDone     = processing[req.id] === 'done'
+              const rc = ROLE_COLORS[req.role_label] || { bg: '#f1f5f9', col: '#64748b' }
+              const sb = STATUS_BADGE[req.status]
+              const ini = (req.full_name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
               return (
                 <div
-                  key={r.id}
+                  key={req.id}
                   className="card"
                   style={{
                     marginBottom: 0,
                     borderColor: isPending ? 'var(--navy-300)' : undefined,
-                    boxShadow: isPending ? 'var(--sh-accent)' : undefined,
-                    animation: isPending ? undefined : undefined,
+                    boxShadow:   isPending ? 'var(--sh-accent)' : undefined,
                   }}
                 >
                   <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                     {/* Avatar */}
                     <div style={{
-                      width: 44, height: 44, borderRadius: '50%', flexShrink: 0,
-                      background: roleColor.bg, color: roleColor.col,
+                      width: 46, height: 46, borderRadius: '50%', flexShrink: 0,
+                      background: rc.bg, color: rc.col,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 14, fontWeight: 800, fontFamily: 'var(--font-display)',
+                      fontSize: 15, fontWeight: 800, fontFamily: 'var(--font-display)',
                     }}>
-                      {(r.full_name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
+                      {ini}
                     </div>
 
-                    {/* Info */}
+                    {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)' }}>{r.full_name}</span>
-                        <span className={`badge ${s.cls}`}>{s.label}</span>
-                        {r.role_label && (
-                          <span style={{ background: roleColor.bg, color: roleColor.col, borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>
-                            {r.role_label}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 5 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)' }}>{req.full_name}</span>
+                        <span className={`badge ${sb?.cls}`}>{sb?.label}</span>
+                        {req.role_label && (
+                          <span style={{ background: rc.bg, color: rc.col, borderRadius: 20, padding: '2px 9px', fontSize: 11, fontWeight: 700 }}>
+                            {req.role_label}
                           </span>
                         )}
                       </div>
 
-                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: r.message ? 10 : 0 }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>📧 {r.email}</span>
-                        {r.phone && <span style={{ fontSize: 12, color: 'var(--text-3)' }}>📱 {r.phone}</span>}
-                        {r.rut   && <span style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>🪪 {r.rut}</span>}
-                        <span style={{ fontSize: 11, color: 'var(--text-4)', fontFamily: 'var(--font-mono)' }}>
-                          🕐 {new Date(r.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', fontSize: 12, color: 'var(--text-3)' }}>
+                        <span style={{ fontFamily: 'var(--font-mono)' }}>📧 {req.email}</span>
+                        {req.phone && <span>📱 {req.phone}</span>}
+                        {req.rut   && <span style={{ fontFamily: 'var(--font-mono)' }}>🪪 {req.rut}</span>}
+                        <span style={{ color: 'var(--text-4)', fontSize: 11, fontFamily: 'var(--font-mono)' }}>
+                          🕐 {new Date(req.created_at).toLocaleString('es-CL', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })}
                         </span>
                       </div>
 
-                      {r.message && (
-                        <div style={{ fontSize: 12, color: 'var(--text-3)', background: 'var(--slate-50)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '8px 12px', marginTop: 8, fontStyle: 'italic' }}>
-                          "{r.message}"
+                      {req.reject_reason && (
+                        <div style={{ marginTop: 8, fontSize: 12, color: '#991b1b', background: 'var(--red-l)', border: '1px solid #fca5a5', borderRadius: 'var(--r)', padding: '8px 12px' }}>
+                          Motivo de rechazo: {req.reject_reason}
                         </div>
                       )}
 
-                      {r.reject_reason && (
-                        <div style={{ fontSize: 12, color: '#991b1b', background: 'var(--red-l)', border: '1px solid #fca5a5', borderRadius: 'var(--r)', padding: '8px 12px', marginTop: 8 }}>
-                          Motivo: {r.reject_reason}
-                        </div>
-                      )}
-
-                      {/* Credentials after approval */}
-                      {isApproved && approvedPwd && (
-                        <div style={{ marginTop: 12, background: 'var(--emerald-l)', border: '1px solid #6ee7b7', borderRadius: 'var(--r)', padding: '12px 14px' }}>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--emerald-d)', marginBottom: 8 }}>
-                            ✅ Cuenta creada — Comparte estas credenciales con {r.full_name.split(' ')[0]}:
+                      {/* Approved confirmation */}
+                      {(isApproved || isDone) && (
+                        <div style={{ marginTop: 10, background: 'var(--emerald-l)', border: '1px solid #6ee7b7', borderRadius: 'var(--r)', padding: '10px 14px' }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--emerald-d)' }}>
+                            ✅ Cuenta activada — {req.full_name.split(' ')[0]} ya puede ingresar con su correo y contraseña
                           </div>
-                          <div style={{ display: 'flex', gap: 16, fontSize: 12, flexWrap: 'wrap' }}>
-                            <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-1)' }}>📧 {r.email}</span>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--text-1)', background: '#fff', padding: '2px 8px', borderRadius: 5 }}>🔒 {approvedPwd}</span>
-                          </div>
-                          <button
-                            className="btn btn-sm"
-                            style={{ marginTop: 10, fontSize: 11 }}
-                            onClick={() => {
-                              const text = `Hola ${r.full_name.split(' ')[0]}, tu cuenta en Speech Psychology & CardioHome fue aprobada.\n\n📧 Correo: ${r.email}\n🔒 Contraseña temporal: ${approvedPwd}\n🔗 Acceso: ${window.location.origin}\n\nPor favor cambia tu contraseña al ingresar.`
-                              navigator.clipboard?.writeText(text)
-                              alert('Credenciales copiadas al portapapeles ✓')
-                            }}
-                          >
-                            📋 Copiar credenciales para enviar
-                          </button>
                         </div>
                       )}
                     </div>
@@ -285,17 +292,17 @@ export default function AccountRequests() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
                         <button
                           className="btn btn-success"
-                          style={{ fontSize: 12, padding: '9px 16px' }}
-                          disabled={!!processing[r.id]}
-                          onClick={() => approve(r)}
+                          style={{ padding: '10px 20px', fontSize: 13 }}
+                          disabled={!!processing[req.id]}
+                          onClick={() => approve(req)}
                         >
-                          {processing[r.id] === 'approving' ? '⏳ Creando...' : '✓ Aprobar'}
+                          {processing[req.id] === 'loading' ? '⏳ Activando...' : '✓ Aprobar'}
                         </button>
                         <button
                           className="btn btn-danger"
-                          style={{ fontSize: 12, padding: '9px 16px' }}
-                          disabled={!!processing[r.id]}
-                          onClick={() => setRejectModal({ id: r.id, name: r.full_name })}
+                          style={{ padding: '10px 20px', fontSize: 13 }}
+                          disabled={!!processing[req.id]}
+                          onClick={() => setRejectModal({ id: req.id, name: req.full_name })}
                         >
                           ✗ Rechazar
                         </button>
