@@ -148,10 +148,23 @@ export default function WorkerHome() {
             )}
           </div>
         ) : (
-          <div className="card" style={{ marginBottom: 16, textAlign: 'center', padding: '24px' }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>📅</div>
-            <div style={{ fontWeight: 600, color: 'var(--text-2)', fontSize: 14 }}>Sin turno asignado hoy</div>
-            <div style={{ fontSize: 12, color: 'var(--text-4)', marginTop: 4 }}>Contacta a la administración si crees que es un error</div>
+          <div className="card" style={{ marginBottom: 16, borderColor: 'var(--navy-300)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 14 }}>
+              <div style={{ fontSize: 32, flexShrink: 0 }}>📍</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-1)', marginBottom: 3 }}>¿Listo para comenzar?</div>
+                <div style={{ fontSize: 12, color: 'var(--text-4)', lineHeight: 1.6 }}>
+                  Puedes marcar tu asistencia directamente. El sistema registrará tu turno automáticamente.
+                </div>
+              </div>
+            </div>
+            <button
+              className="checkin-btn-primary"
+              style={{ background: 'linear-gradient(135deg,#059669,#065f46)', color: '#fff', boxShadow: '0 6px 24px rgba(5,150,105,0.4)' }}
+              onClick={() => navigate('/w/checkin')}
+            >
+              <span style={{ fontSize: 20 }}>📍</span> Marcar entrada ahora
+            </button>
           </div>
         )}
 

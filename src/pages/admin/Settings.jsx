@@ -12,6 +12,22 @@ const EMPTY_P = {
   name: '', description: '', location: '', hospital: '',
   fee_enfermera: 35000, fee_tens: 28000, fee_auxiliar: 22000, fee_admin: 30000,
   required_enfermera: 0, required_tens: 0, required_auxiliar: 0, required_admin: 0,
+  schedule: DEFAULT_SCHEDULE,
+}
+
+const DEFAULT_SCHEDULE = {
+  mon: { active: true,  start: '08:00', end: '17:00' },
+  tue: { active: true,  start: '08:00', end: '17:00' },
+  wed: { active: true,  start: '08:00', end: '17:00' },
+  thu: { active: true,  start: '08:00', end: '17:00' },
+  fri: { active: true,  start: '08:00', end: '16:00' },
+  sat: { active: false, start: '08:00', end: '14:00' },
+  sun: { active: false, start: '08:00', end: '14:00' },
+}
+
+const DAY_LABELS = {
+  mon: 'Lunes', tue: 'Martes', wed: 'Miércoles',
+  thu: 'Jueves', fri: 'Viernes', sat: 'Sábado', sun: 'Domingo'
 }
 
 function fmtCLP(n) { return `$${Number(n||0).toLocaleString('es-CL')} CLP` }
@@ -71,7 +87,7 @@ export default function Settings() {
   }
 
   function openEditProj(p) {
-    setProjForm({ name: p.name||'', description: p.description||'', location: p.location||'', hospital: p.hospital||'', fee_enfermera: p.fee_enfermera||35000, fee_tens: p.fee_tens||28000, fee_auxiliar: p.fee_auxiliar||22000, fee_admin: p.fee_admin||30000, required_enfermera: p.required_enfermera||0, required_tens: p.required_tens||0, required_auxiliar: p.required_auxiliar||0, required_admin: p.required_admin||0 })
+    setProjForm({ name: p.name||'', description: p.description||'', location: p.location||'', hospital: p.hospital||'', fee_enfermera: p.fee_enfermera||35000, fee_tens: p.fee_tens||28000, fee_auxiliar: p.fee_auxiliar||22000, fee_admin: p.fee_admin||30000, required_enfermera: p.required_enfermera||0, required_tens: p.required_tens||0, required_auxiliar: p.required_auxiliar||0, required_admin: p.required_admin||0, schedule: p.schedule||DEFAULT_SCHEDULE })
     setProjModal(p); setError('')
   }
 
@@ -79,7 +95,7 @@ export default function Settings() {
     e.preventDefault()
     if (!projForm.name.trim()) { setError('El nombre es requerido'); return }
     setSaving(true); setError('')
-    const data = { name: projForm.name.trim(), description: projForm.description||null, location: projForm.location||null, hospital: projForm.hospital||null, fee_enfermera: Number(projForm.fee_enfermera)||0, fee_tens: Number(projForm.fee_tens)||0, fee_auxiliar: Number(projForm.fee_auxiliar)||0, fee_admin: Number(projForm.fee_admin)||0, required_enfermera: Number(projForm.required_enfermera)||0, required_tens: Number(projForm.required_tens)||0, required_auxiliar: Number(projForm.required_auxiliar)||0, required_admin: Number(projForm.required_admin)||0, active: true }
+    const data = { name: projForm.name.trim(), description: projForm.description||null, location: projForm.location||null, hospital: projForm.hospital||null, fee_enfermera: Number(projForm.fee_enfermera)||0, fee_tens: Number(projForm.fee_tens)||0, fee_auxiliar: Number(projForm.fee_auxiliar)||0, fee_admin: Number(projForm.fee_admin)||0, required_enfermera: Number(projForm.required_enfermera)||0, required_tens: Number(projForm.required_tens)||0, required_auxiliar: Number(projForm.required_auxiliar)||0, required_admin: Number(projForm.required_admin)||0, active: true, schedule: projForm.schedule || DEFAULT_SCHEDULE }
     const { error: err } = projModal==='new'
       ? await supabase.from('projects').insert([data])
       : await supabase.from('projects').update(data).eq('id', projModal.id)
@@ -209,6 +225,38 @@ export default function Settings() {
                 )}
               </div>
 
+
+              {/* Schedule editor */}
+              <div style={{background:'var(--slate-50)',borderRadius:'var(--r-md)',padding:'16px',marginBottom:16,border:'1px solid var(--border)'}}>
+                <div style={{fontWeight:700,fontSize:13,marginBottom:4}}>📅 Horario por día de semana</div>
+                <div style={{fontSize:12,color:'var(--text-4)',marginBottom:14}}>Define los días y horarios de operación de este proyecto</div>
+                {Object.entries(DAY_LABELS).map(([day, label]) => {
+                  const dayData = (projForm.schedule||DEFAULT_SCHEDULE)[day] || { active: false, start: '08:00', end: '17:00' }
+                  return (
+                    <div key={day} style={{display:'grid',gridTemplateColumns:'110px 44px 1fr',gap:10,alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border)'}}>
+                      <div style={{fontWeight:600,fontSize:13,color:dayData.active?'var(--text-1)':'var(--text-4)'}}>{label}</div>
+                      <div
+                        onClick={()=>pf('schedule',{...(projForm.schedule||DEFAULT_SCHEDULE),[day]:{...dayData,active:!dayData.active}})}
+                        style={{width:40,height:22,borderRadius:11,background:dayData.active?'var(--accent)':'var(--slate-300)',cursor:'pointer',position:'relative',transition:'all 0.2s',flexShrink:0}}
+                      >
+                        <div style={{position:'absolute',top:2,left:dayData.active?20:2,width:18,height:18,borderRadius:'50%',background:'#fff',transition:'all 0.2s',boxShadow:'0 1px 4px rgba(0,0,0,0.2)'}}/>
+                      </div>
+                      {dayData.active ? (
+                        <div style={{display:'flex',alignItems:'center',gap:8}}>
+                          <input type="time" className="form-input" style={{marginBottom:0,fontSize:12,padding:'5px 8px',width:90}} value={dayData.start} onChange={e=>pf('schedule',{...(projForm.schedule||DEFAULT_SCHEDULE),[day]:{...dayData,start:e.target.value}})}/>
+                          <span style={{fontSize:12,color:'var(--text-4)'}}>a</span>
+                          <input type="time" className="form-input" style={{marginBottom:0,fontSize:12,padding:'5px 8px',width:90}} value={dayData.end} onChange={e=>pf('schedule',{...(projForm.schedule||DEFAULT_SCHEDULE),[day]:{...dayData,end:e.target.value}})}/>
+                          <span style={{fontSize:11,color:'var(--text-4)'}}>
+                            ({Math.round((new Date('2000-01-01T'+dayData.end)-new Date('2000-01-01T'+dayData.start))/3600000*10)/10}h)
+                          </span>
+                        </div>
+                      ) : (
+                        <span style={{fontSize:12,color:'var(--text-4)',fontStyle:'italic'}}>No operativo</span>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
               <div style={{display:'flex',gap:10}}>
                 <button className="btn btn-primary" type="submit" disabled={saving} style={{flex:1,justifyContent:'center',padding:'13px'}}>
                   {saving?'Guardando...':projModal==='new'?'➕ Crear proyecto':'💾 Guardar cambios'}
@@ -380,6 +428,16 @@ export default function Settings() {
                       </div>
                     )}
                     {p.description&&<div style={{fontSize:12,color:'var(--text-3)'}}>{p.description}</div>}
+                    {/* Schedule summary */}
+                    {p.schedule && (
+                      <div style={{marginTop:6,display:'flex',gap:5,flexWrap:'wrap'}}>
+                        {Object.entries(p.schedule).map(([day,d])=> d.active ? (
+                          <span key={day} style={{fontSize:10,fontWeight:700,background:'var(--navy-100)',color:'var(--navy-700)',borderRadius:4,padding:'2px 7px'}}>
+                            {DAY_LABELS[day]?.slice(0,3)} {d.start}–{d.end}
+                          </span>
+                        ) : null)}
+                      </div>
+                    )}
                   </div>
                   <div style={{display:'flex',gap:6,flexShrink:0,marginLeft:12}}>
                     <button className="btn btn-xs btn-primary" onClick={()=>openEditProj(p)}>✏ Editar</button>

@@ -321,3 +321,29 @@ ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_auxiliar        INTEGER
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_admin           INTEGER DEFAULT 30000;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS location            TEXT;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS hospital            TEXT;
+
+-- ═══════════════════════════════════════════════════
+--  PROJECT SCHEDULES — horarios por día de semana
+-- ═══════════════════════════════════════════════════
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS schedule JSONB DEFAULT '{
+  "mon": {"active": true,  "start": "08:00", "end": "17:00"},
+  "tue": {"active": true,  "start": "08:00", "end": "17:00"},
+  "wed": {"active": true,  "start": "08:00", "end": "17:00"},
+  "thu": {"active": true,  "start": "08:00", "end": "17:00"},
+  "fri": {"active": true,  "start": "08:00", "end": "16:00"},
+  "sat": {"active": false, "start": "08:00", "end": "14:00"},
+  "sun": {"active": false, "start": "08:00", "end": "14:00"}
+}';
+
+-- Update VACUNACION 2026 LO BARNECHEA with correct schedule
+UPDATE public.projects
+SET schedule = '{
+  "mon": {"active": true,  "start": "08:00", "end": "17:00"},
+  "tue": {"active": true,  "start": "08:00", "end": "17:00"},
+  "wed": {"active": true,  "start": "08:00", "end": "17:00"},
+  "thu": {"active": true,  "start": "08:00", "end": "17:00"},
+  "fri": {"active": true,  "start": "08:00", "end": "16:00"},
+  "sat": {"active": false, "start": "08:00", "end": "14:00"},
+  "sun": {"active": false, "start": "08:00", "end": "14:00"}
+}'
+WHERE name ILIKE '%barnechea%' OR name ILIKE '%vacunacion%' OR name ILIKE '%vacunación%';

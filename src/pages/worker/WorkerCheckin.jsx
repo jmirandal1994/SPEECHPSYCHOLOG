@@ -56,9 +56,8 @@ export default function WorkerCheckin() {
       setStep(att.checked_out_at ? 'done' : 'active')
       if (att.checkin_lat && !att.checked_out_at) initMap(att.checkin_lat, att.checkin_lng, '#22c55e', 'Mi entrada')
       if (att.checkout_lat && att.checked_out_at) initMap(att.checkout_lat, att.checkout_lng, '#6366f1', 'Mi salida')
-    } else if (!shift) {
-      setStep('no-shift') // no shift assigned for today
     } else {
+      // Always allow check-in — auto-create shift if none assigned
       setStep('idle')
     }
     setLoading(false)
@@ -119,20 +118,72 @@ export default function WorkerCheckin() {
     try { const p = await getGPS(); lat = p.lat; lng = p.lng }
     catch (err) { setGeoError(err.message) }
 
+    // Auto-create shift if none exists for today
+    let activeShift = todayShift
+    if (!activeShift) {
+      // Get project config: schedule + fee
+      let fee = 0
+      let startTime = '08:00'
+      let endTime   = '17:00'
+
+      try {
+        // Day of week key: mon/tue/wed/thu/fri/sat/sun
+        const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat']
+        const dayKey = DAY_KEYS[now.getDay()]
+
+        if (profile?.project) {
+          const { data: proj } = await supabase.from('projects').select('*').eq('name', profile.project).maybeSingle()
+          if (proj) {
+            // Fee from project for this role
+            const feeMap = { 'Enfermera/o': proj.fee_enfermera, 'TENS': proj.fee_tens, 'Auxiliar de servicio': proj.fee_auxiliar, 'Administrativo': proj.fee_admin }
+            if (feeMap[profile.role_label]) fee = feeMap[profile.role_label]
+
+            // Schedule from project for today's day
+            if (proj.schedule?.[dayKey]?.active) {
+              startTime = proj.schedule[dayKey].start || '08:00'
+              endTime   = proj.schedule[dayKey].end   || '17:00'
+            }
+          }
+        }
+
+        // Fallback: global rates
+        if (!fee) {
+          const { data: cfg } = await supabase.from('system_config').select('value').eq('key', 'role_fees').maybeSingle()
+          if (cfg?.value && profile?.role_label) fee = cfg.value[profile.role_label] || 0
+        }
+      } catch (_) {}
+
+      const { data: newShift } = await supabase.from('shifts').insert([{
+        worker_id:  user.id,
+        project:    profile?.project || null,
+        shift_date: todayStr,
+        start_time: startTime,
+        end_time:   endTime,
+        fee:        fee || 0,
+        status:     'in_progress',
+      }]).select().single()
+
+      activeShift = newShift
+      setTodayShift(newShift)
+    }
+
+    // Determine if late (compare with shift start, 5 min tolerance)
     let status = 'present', lateMinutes = 0
-    if (todayShift?.start_time) {
-      const [h, m] = todayShift.start_time.split(':').map(Number)
+    if (activeShift?.start_time) {
+      const [h, m] = activeShift.start_time.split(':').map(Number)
       const shiftStart = new Date(now)
       shiftStart.setHours(h, m + 5, 0, 0)
       if (now > shiftStart) { status = 'late'; lateMinutes = Math.floor((now - shiftStart) / 60000) }
     }
 
     const { data: newAtt } = await supabase.from('attendances').insert([{
-      worker_id: user.id,
-      shift_id:  todayShift?.id || null,
-      status, late_minutes: lateMinutes,
+      worker_id:     user.id,
+      shift_id:      activeShift?.id || null,
+      status,
+      late_minutes:  lateMinutes,
       checked_in_at: now.toISOString(),
-      checkin_lat: lat, checkin_lng: lng,
+      checkin_lat:   lat,
+      checkin_lng:   lng,
     }]).select().single()
 
     setAttendance(newAtt)
@@ -226,20 +277,6 @@ export default function WorkerCheckin() {
             </div>
           )}
 
-          {/* ── NO SHIFT TODAY ── */}
-          {step === 'no-shift' && (
-            <div className="card" style={{ textAlign: 'center', padding: '40px 24px' }}>
-              <div style={{ fontSize: 52, marginBottom: 14 }}>📅</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-1)', marginBottom: 8 }}>
-                Sin turno asignado hoy
-              </div>
-              <div style={{ fontSize: 13, color: 'var(--text-4)', lineHeight: 1.6 }}>
-                No tienes turno programado para hoy.<br />
-                Si crees que es un error, contacta a la administración.
-              </div>
-            </div>
-          )}
-
           {/* ── IDLE ── */}
           {step === 'idle' && (
             <div className="card" style={{ textAlign: 'center', padding: '36px 24px' }}>
@@ -248,7 +285,7 @@ export default function WorkerCheckin() {
                 ¡Hola, {firstName}!
               </div>
               <div style={{ fontSize: 13, color: 'var(--text-4)', marginBottom: 8, lineHeight: 1.6 }}>
-                Turno de hoy: <strong style={{ color: 'var(--text-1)' }}>{todayShift?.start_time} – {todayShift?.end_time}</strong>
+                {todayShift ? <span>Turno de hoy: <strong style={{ color: 'var(--text-1)' }}>{todayShift.start_time} – {todayShift.end_time}</strong></span> : <span style={{ color: 'var(--text-3)' }}>El turno se creará automáticamente al marcar entrada</span>}
               </div>
               {todayShift?.fee && (
                 <div style={{ fontSize: 13, color: 'var(--emerald)', fontWeight: 700, marginBottom: 24 }}>
