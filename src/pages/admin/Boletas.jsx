@@ -1,6 +1,12 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
+// Full amount formatter
+function fmtCLP(amount) {
+  if (!amount && amount !== 0) return '—'
+  return `$${Number(amount).toLocaleString('es-CL')} CLP`
+}
+
 const MONTHS = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 const STATUS_MAP = {
   paid:       { cls: 'badge-green', label: '✅ Pagado' },
@@ -118,8 +124,8 @@ export default function Boletas() {
         {/* Summary */}
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3,1fr)', marginBottom: 16 }}>
           {[
-            { label: 'Total pendiente', value: totalPending > 0 ? `$${(totalPending/1000000).toFixed(1)}M` : '$0', accent: totalPending > 0 ? 'accent-amber' : 'accent-green', icon: '⏳', ibg: totalPending > 0 ? 'var(--amber-l)' : 'var(--emerald-l)', icl: totalPending > 0 ? 'var(--amber)' : 'var(--emerald-d)', delta: 'CLP por pagar' },
-            { label: 'Total pagado', value: `$${(totalPaid/1000000).toFixed(1)}M`, accent: 'accent-green', icon: '✅', ibg: 'var(--emerald-l)', icl: 'var(--emerald-d)', delta: 'CLP histórico' },
+            { label: 'Total pendiente', value: totalPending > 0 ? fmtCLP(totalPending) : '$0 CLP', accent: totalPending > 0 ? 'accent-amber' : 'accent-green', icon: '⏳', ibg: totalPending > 0 ? 'var(--amber-l)' : 'var(--emerald-l)', icl: totalPending > 0 ? 'var(--amber)' : 'var(--emerald-d)', delta: 'CLP por pagar' },
+            { label: 'Total pagado', value: fmtCLP(totalPaid), accent: 'accent-green', icon: '✅', ibg: 'var(--emerald-l)', icl: 'var(--emerald-d)', delta: 'CLP histórico' },
             { label: 'Profesionales activos', value: workers.length, accent: 'accent-blue', icon: '👥', ibg: 'var(--navy-200)', icl: 'var(--navy-700)', delta: 'Con pagos asignados' },
           ].map(s => (
             <div className="stat-card" key={s.label}>
@@ -167,7 +173,7 @@ export default function Boletas() {
                         </td>
                         <td style={{ fontWeight: 600 }}>{MONTHS[p.period_month]} {p.period_year}</td>
                         <td style={{ fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-1)', fontSize: 14 }}>
-                          ${p.amount.toLocaleString('es-CL')}
+                          ${p.amount.toLocaleString('es-CL')} CLP
                         </td>
                         <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
                         <td style={{ fontSize: 12, color: 'var(--text-3)', maxWidth: 160 }}>{p.description || '—'}</td>
@@ -316,7 +322,7 @@ export default function Boletas() {
                       <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--border)' }}>
                         <span style={{ fontSize: 13, fontWeight: 600 }}>{MONTHS[p.period_month]} {p.period_year}</span>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>${p.amount.toLocaleString('es-CL')}</span>
+                          <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}>${p.amount.toLocaleString('es-CL')} CLP</span>
                           <span className={`badge ${s.cls}`} style={{ fontSize: 10 }}>{s.label}</span>
                           {p.status === 'pending' && <button className="btn btn-xs btn-primary" onClick={() => updateStatus(p.id, 'in_process')}>🔄</button>}
                           {p.status === 'in_process' && <button className="btn btn-xs btn-success" onClick={() => updateStatus(p.id, 'paid')}>✅</button>}

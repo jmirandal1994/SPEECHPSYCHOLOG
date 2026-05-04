@@ -9,13 +9,12 @@ const STATUS_MAP = {
   absent:      { cls: 'badge-red',   label: 'Inasistencia' },
 }
 
-// Default fees per role
-const ROLE_FEES = {
-  'Enfermera/o':          35000,
-  'TENS':                 28000,
-  'Auxiliar de servicio': 22000,
-  'Administrativo':       30000,
+// Fees per role — reads from Settings (localStorage) or defaults
+function getRoleFees() {
+  try { return JSON.parse(localStorage.getItem('sp_rates') || 'null') || { 'Enfermera/o': 35000, 'TENS': 28000, 'Auxiliar de servicio': 22000, 'Administrativo': 30000 } }
+  catch { return { 'Enfermera/o': 35000, 'TENS': 28000, 'Auxiliar de servicio': 22000, 'Administrativo': 30000 } }
 }
+const ROLE_FEES = getRoleFees()
 
 const EMPTY = { worker_id: '', project: '', shift_date: '', start_time: '08:00', end_time: '20:00', fee: '', notes: '' }
 
