@@ -807,3 +807,291 @@ textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.55; }
 .auth-btn:hover { background: linear-gradient(135deg, var(--navy-600), var(--navy-800)); box-shadow: 0 6px 28px rgba(29,78,216,0.5); transform: translateY(-1px); }
 .auth-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 .auth-error { background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.3); border-radius: var(--r); padding: 10px 14px; font-size: 12.5px; color: #fca5a5; margin-bottom: 14px; }
+
+/* ══════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — iOS & Android
+   ══════════════════════════════════════════════════════ */
+
+/* ── Mobile topbar ── */
+.mobile-topbar {
+  display: none;
+}
+
+/* ── Mobile bottom nav ── */
+.mobile-nav {
+  display: none;
+}
+
+/* ── Overlay for mobile sidebar ── */
+.sidebar-overlay {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* ── App shell ── */
+  .app {
+    flex-direction: column;
+    height: 100dvh; /* dynamic viewport height — safe on iOS */
+    overflow: hidden;
+  }
+
+  /* ── Hide desktop sidebar ── */
+  .sidebar {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    z-index: 200;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.4);
+  }
+
+  /* ── Overlay ── */
+  .sidebar-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 199;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    backdrop-filter: blur(2px);
+  }
+
+  .sidebar-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* ── Mobile top bar ── */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--navy-900);
+    padding: 0 16px;
+    height: 56px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .mobile-topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .mobile-topbar-logo img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+
+  .mobile-topbar-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+
+  .hamburger {
+    width: 38px;
+    height: 38px;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: rgba(255,255,255,0.8);
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  /* ── Main content ── */
+  .main {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* ── Hide desktop topbar ── */
+  .topbar {
+    display: none;
+  }
+
+  /* ── Content ── */
+  .content {
+    padding: 16px;
+    padding-bottom: 90px; /* space for bottom nav */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  /* ── Mobile bottom navigation ── */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--navy-900);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom); /* iOS home indicator */
+  }
+
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 4px;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .mobile-nav-item.active {
+    background: rgba(29,78,216,0.2);
+  }
+
+  .mobile-nav-item:active {
+    background: rgba(255,255,255,0.06);
+  }
+
+  .mobile-nav-icon {
+    font-size: 20px;
+    margin-bottom: 3px;
+    line-height: 1;
+  }
+
+  .mobile-nav-label {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.01em;
+    text-align: center;
+  }
+
+  .mobile-nav-item.active .mobile-nav-label {
+    color: var(--navy-300);
+  }
+
+  .mobile-nav-badge {
+    position: absolute;
+    top: 6px;
+    right: calc(50% - 14px);
+    background: var(--red);
+    color: #fff;
+    border-radius: 20px;
+    font-size: 9px;
+    padding: 1px 5px;
+    font-weight: 700;
+    min-width: 16px;
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* ── Cards ── */
+  .card { padding: 16px; border-radius: var(--r-md); }
+
+  /* ── Grids collapse on mobile ── */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  .g2, .g3, .g13, .g31 { grid-template-columns: 1fr !important; }
+
+  /* ── Tables ── */
+  .table-wrap { border-radius: var(--r-sm); font-size: 12px; }
+  th, td { padding: 9px 10px; }
+
+  /* ── Stat cards ── */
+  .stat-value { font-size: 22px !important; }
+  .stat-card  { padding: 14px; }
+
+  /* ── Auth screens ── */
+  .auth-card {
+    width: calc(100vw - 32px) !important;
+    padding: 28px 22px !important;
+    border-radius: var(--r-lg) !important;
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+
+  /* ── Tabs ── */
+  .tabs { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tab  { white-space: nowrap; flex-shrink: 0; font-size: 12px; padding: 8px 12px; }
+
+  /* ── Buttons ── */
+  .btn { font-size: 12px; padding: 7px 13px; }
+
+  /* ── Worker rows ── */
+  .worker-row:hover {
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
+  }
+
+  /* ── Prevent text size adjust on iOS ── */
+  * { -webkit-text-size-adjust: 100%; }
+
+  /* ── Focus rings larger for touch ── */
+  .form-input:focus { box-shadow: 0 0 0 4px rgba(29,78,216,0.15); }
+
+  /* ── Make inputs larger for touch ── */
+  .form-input, .auth-input { font-size: 16px !important; /* prevents iOS zoom */ min-height: 44px; }
+  select.form-input, select.auth-input { font-size: 16px !important; }
+}
+
+/* ── Very small phones ── */
+@media (max-width: 380px) {
+  .stats-grid { grid-template-columns: 1fr !important; }
+  .content { padding: 12px; padding-bottom: 90px; }
+}
+
+/* ── Checkin mobile — big touch targets ── */
+.checkin-btn-primary {
+  width: 100%;
+  min-height: 58px;
+  border-radius: var(--r-md);
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.18s var(--ease);
+  font-family: var(--font-body);
+  letter-spacing: -0.01em;
+}
+
+.checkin-btn-primary:active {
+  transform: scale(0.98);
+}
+
