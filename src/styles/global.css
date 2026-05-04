@@ -1095,3 +1095,81 @@ textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.55; }
   transform: scale(0.98);
 }
 
+
+/* ── Mobile scroll fixes ── */
+@media (max-width: 768px) {
+  /* Full height scroll on content */
+  .content {
+    height: calc(100dvh - 56px - 60px); /* topbar + bottom nav */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Settings grid single column on mobile */
+  .content .g2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Card padding smaller on mobile */
+  .content .card {
+    padding: 14px !important;
+  }
+
+  /* Form inputs full width on mobile */
+  .content form .g2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Checkin button touch target */
+  .checkin-btn-primary {
+    min-height: 62px !important;
+    font-size: 17px !important;
+  }
+
+  /* Tabs scrollable */
+  .content .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .content .tabs::-webkit-scrollbar { display: none; }
+
+  /* Table horizontal scroll */
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stats 2 cols on mobile */
+  .stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Worker row no hover transform on mobile */
+  .worker-row:hover {
+    background: none;
+    padding-left: 0;
+    padding-right: 0;
+    margin: 0;
+  }
+
+  /* Auth card mobile */
+  .auth-screen {
+    align-items: flex-start;
+    padding: 24px 16px;
+    overflow-y: auto;
+    min-height: 100dvh;
+  }
+
+  .auth-card {
+    margin: 0 auto;
+    width: 100% !important;
+  }
+
+  /* Modal full screen on mobile */
+  .modal-overlay {
+    align-items: flex-end !important;
+  }
+}

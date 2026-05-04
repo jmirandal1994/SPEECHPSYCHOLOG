@@ -272,3 +272,22 @@ CREATE POLICY "account_req_select" ON public.account_requests
 
 CREATE POLICY "account_req_update" ON public.account_requests
   FOR UPDATE USING (public.is_admin());
+
+-- ═══════════════════════════════════════════════════
+--  PAYMENTS TABLE — Pagos asignados por admin
+-- ═══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.payments (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  worker_id     UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+  amount        INTEGER NOT NULL DEFAULT 0,
+  period_month  INTEGER NOT NULL CHECK (period_month BETWEEN 1 AND 12),
+  period_year   INTEGER NOT NULL,
+  status        TEXT DEFAULT 'pending' CHECK (status IN ('pending','in_process','paid')),
+  description   TEXT,
+  assigned_by   UUID REFERENCES public.profiles(id),
+  paid_at       TIMESTAMPTZ,
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "payments_worker_read" ON public.payments FOR SELECT USING (worker_id = auth.uid() OR public.is_admin());
+CREATE POLICY "payments_admin_write" ON public.payments FOR ALL USING (public.is_admin());
