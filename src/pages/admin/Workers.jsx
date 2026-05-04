@@ -24,16 +24,16 @@ export default function Workers() {
 
   async function loadData() {
     setLoading(true)
-    const { data: w } = await supabase
-      .from('profiles').select('*').eq('role', 'worker').order('full_name')
-    const { data: p } = await supabase
-      .from('projects').select('*').eq('active', true).order('name')
+    const [{ data: w }, { data: p }] = await Promise.all([
+      supabase.from('profiles').select('*').eq('role', 'worker').order('full_name'),
+      supabase.from('projects').select('*').eq('active', true).order('name'),
+    ])
     setWorkers(w || [])
     setProjects(p || [])
     setLoading(false)
   }
 
-  function f(key, val) { setForm(prev => ({ ...prev, [key]: val })) }
+  function f(k, v) { setForm(prev => ({ ...prev, [k]: v })) }
 
   async function handleAdd(e) {
     e.preventDefault(); setSaving(true); setError('')
@@ -54,8 +54,7 @@ export default function Workers() {
     setSaving(false)
   }
 
-  // Quick project assign directly from table row
-  async function quickAssignProject(workerId, project) {
+  async function quickProject(workerId, project) {
     await supabase.from('profiles').update({ project }).eq('id', workerId)
     setWorkers(w => w.map(x => x.id === workerId ? { ...x, project } : x))
   }
@@ -85,10 +84,10 @@ export default function Workers() {
     )
   }
 
-  function FormFields() {
+  function Fields() {
     return (
       <div className="g2" style={{ marginBottom: 0 }}>
-        {error && <div style={{ gridColumn:'1/-1', background:'var(--red-l)', border:'1px solid #fca5a5', borderRadius:'var(--r)', padding:'10px 14px', fontSize:12, color:'var(--red)', marginBottom:4 }}>⚠ {error}</div>}
+        {error && <div style={{ gridColumn:'1/-1', background:'var(--red-l)', border:'1px solid #fca5a5', borderRadius:'var(--r)', padding:'10px', fontSize:12, color:'var(--red)', marginBottom:8 }}>⚠ {error}</div>}
         <div className="form-group">
           <label className="form-label">Nombre completo *</label>
           <input className="form-input" required placeholder="María González" value={form.full_name} onChange={e=>f('full_name',e.target.value)}/>
@@ -100,17 +99,17 @@ export default function Workers() {
         <div className="form-group">
           <label className="form-label">Cargo *</label>
           <select className="form-input" required value={form.role_label} onChange={e=>f('role_label',e.target.value)}>
-            <option value="">Seleccionar cargo...</option>
+            <option value="">Seleccionar...</option>
             {ROLES.map(r=><option key={r}>{r}</option>)}
           </select>
         </div>
         <div className="form-group">
-          <label className="form-label">Proyecto asignado</label>
+          <label className="form-label">Proyecto</label>
           <select className="form-input" value={form.project} onChange={e=>f('project',e.target.value)}>
             <option value="">Sin proyecto</option>
             {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
           </select>
-          {projects.length === 0 && <p style={{fontSize:11,color:'var(--amber)',marginTop:4}}>⚠ Primero agrega proyectos en ⚙ Configuración</p>}
+          {projects.length===0 && <p style={{fontSize:11,color:'var(--amber)',marginTop:4}}>⚠ Crea proyectos primero en ⚙ Configuración</p>}
         </div>
         <div className="form-group">
           <label className="form-label">Correo</label>
@@ -126,23 +125,20 @@ export default function Workers() {
 
   return (
     <div className="page-enter">
-      {/* Edit modal */}
       {editing && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}>
           <div style={{background:'var(--surface)',borderRadius:'var(--r-lg)',padding:28,width:'100%',maxWidth:560,maxHeight:'90vh',overflowY:'auto',boxShadow:'var(--sh-lg)'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <div>
                 <div style={{fontFamily:'var(--font-display)',fontSize:16,fontWeight:700}}>Editar profesional</div>
-                <div style={{fontSize:12,color:'var(--text-4)',marginTop:2}}>Actualiza datos y proyecto asignado</div>
+                <div style={{fontSize:12,color:'var(--text-4)',marginTop:2}}>Actualiza datos y proyecto</div>
               </div>
               <button className="btn btn-ghost btn-sm" onClick={()=>{setEditing(null);setError('')}}>✕</button>
             </div>
             <form onSubmit={handleEdit}>
-              <FormFields/>
-              <div style={{display:'flex',gap:10,marginTop:20}}>
-                <button className="btn btn-primary" type="submit" disabled={saving} style={{flex:1,justifyContent:'center'}}>
-                  {saving?'Guardando...':'💾 Guardar cambios'}
-                </button>
+              <Fields/>
+              <div style={{display:'flex',gap:10,marginTop:18}}>
+                <button className="btn btn-primary" type="submit" disabled={saving} style={{flex:1,justifyContent:'center'}}>{saving?'Guardando...':'💾 Guardar'}</button>
                 <button type="button" className="btn" onClick={()=>{setEditing(null);setError('')}}>Cancelar</button>
               </div>
             </form>
@@ -165,34 +161,31 @@ export default function Workers() {
       <div className="content">
         {showAdd && (
           <div className="card" style={{borderColor:'var(--navy-300)',boxShadow:'var(--sh-accent)',marginBottom:16}}>
-            <div style={{fontFamily:'var(--font-display)',fontSize:14,fontWeight:700,marginBottom:18}}>Nuevo profesional</div>
+            <div style={{fontFamily:'var(--font-display)',fontSize:14,fontWeight:700,marginBottom:16}}>Nuevo profesional</div>
             <form onSubmit={handleAdd}>
-              <FormFields/>
+              <Fields/>
               <div className="alert alert-info" style={{margin:'14px 0'}}>
                 <span className="alert-icon">💡</span>
-                <div className="alert-body"><div className="alert-msg">Para crear la cuenta de acceso ve a <strong>📬 Solicitudes acceso</strong> o <strong>🔑 Usuarios</strong>.</div></div>
+                <div className="alert-body"><div className="alert-msg">Para la cuenta de acceso ve a <strong>📬 Solicitudes acceso</strong> o <strong>🔑 Usuarios</strong>.</div></div>
               </div>
-              <button className="btn btn-primary" type="submit" disabled={saving}>
-                {saving?'Guardando...':'💾 Guardar profesional'}
-              </button>
+              <button className="btn btn-primary" type="submit" disabled={saving}>{saving?'Guardando...':'💾 Guardar profesional'}</button>
             </form>
           </div>
         )}
 
-        <div className="card" style={{padding:'12px 18px',marginBottom:14}}>
-          <input className="form-input" style={{marginBottom:0}} placeholder="🔍  Buscar por nombre, cargo o proyecto..."
-            value={search} onChange={e=>setSearch(e.target.value)}/>
-        </div>
-
-        {projects.length === 0 && !loading && (
+        {projects.length===0 && !loading && (
           <div className="alert alert-warn" style={{marginBottom:14}}>
             <span className="alert-icon">⚠</span>
             <div className="alert-body">
-              <div className="alert-title">No hay proyectos creados</div>
-              <div className="alert-msg">Ve a <strong>⚙ Configuración</strong> y agrega tus proyectos/licitaciones para poder asignarlos a los profesionales.</div>
+              <div className="alert-title">Sin proyectos creados</div>
+              <div className="alert-msg">Ve a <strong>⚙ Configuración</strong> → crea proyectos y asigna profesionales desde ahí.</div>
             </div>
           </div>
         )}
+
+        <div className="card" style={{padding:'12px 18px',marginBottom:14}}>
+          <input className="form-input" style={{marginBottom:0}} placeholder="🔍  Buscar por nombre, cargo o proyecto..." value={search} onChange={e=>setSearch(e.target.value)}/>
+        </div>
 
         <div className="card">
           <div className="table-wrap">
@@ -203,7 +196,7 @@ export default function Workers() {
               <tbody>
                 {loading ? (
                   <tr><td colSpan={6} style={{textAlign:'center',padding:40}}><div className="spinner"/></td></tr>
-                ) : filtered.length === 0 ? (
+                ) : filtered.length===0 ? (
                   <tr><td colSpan={6}>
                     <div className="empty-state">
                       <div className="empty-state-icon">👥</div>
@@ -211,41 +204,29 @@ export default function Workers() {
                       <div className="empty-state-sub">{search?'Prueba otro término':'Agrega el primer profesional arriba'}</div>
                     </div>
                   </td></tr>
-                ) : filtered.map((w,i) => (
+                ) : filtered.map((w,i)=>(
                   <tr key={w.id}>
                     <td>
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
                         <Avatar name={w.full_name} idx={i}/>
                         <div>
                           <div style={{fontWeight:600,color:'var(--text-1)',fontSize:13}}>{w.full_name||'—'}</div>
-                          {w.rut && <div style={{fontSize:11,color:'var(--text-4)',fontFamily:'var(--font-mono)'}}>{w.rut}</div>}
+                          {w.rut&&<div style={{fontSize:11,color:'var(--text-4)',fontFamily:'var(--font-mono)'}}>{w.rut}</div>}
                         </div>
                       </div>
                     </td>
+                    <td><span className="badge badge-gray" style={{fontSize:11}}>{w.role_label||'—'}</span></td>
                     <td>
-                      <span className="badge badge-gray" style={{fontSize:11}}>{w.role_label||'—'}</span>
-                    </td>
-                    <td>
-                      {/* QUICK PROJECT ASSIGN — dropdown directly in table */}
                       <select
                         value={w.project||''}
-                        onChange={e=>quickAssignProject(w.id,e.target.value)}
-                        style={{
-                          fontSize:12,fontWeight:600,border:'1.5px solid var(--border-2)',
-                          borderRadius:'var(--r-sm)',padding:'5px 8px',
-                          background:w.project?'var(--navy-100)':'var(--slate-100)',
-                          color:w.project?'var(--navy-700)':'var(--text-4)',
-                          cursor:'pointer',maxWidth:170,fontFamily:'var(--font-body)',
-                          outline:'none',
-                        }}
+                        onChange={e=>quickProject(w.id,e.target.value)}
+                        style={{fontSize:12,fontWeight:600,border:'1.5px solid var(--border-2)',borderRadius:'var(--r-sm)',padding:'5px 8px',background:w.project?'var(--navy-100)':'var(--slate-100)',color:w.project?'var(--navy-700)':'var(--text-4)',cursor:'pointer',maxWidth:170,fontFamily:'var(--font-body)',outline:'none'}}
                       >
                         <option value="">Sin proyecto</option>
                         {projects.map(p=><option key={p.id} value={p.name}>{p.name}</option>)}
                       </select>
                     </td>
-                    <td style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--text-3)'}}>
-                      {w.phone||w.email||'—'}
-                    </td>
+                    <td style={{fontFamily:'var(--font-mono)',fontSize:11,color:'var(--text-3)'}}>{w.phone||w.email||'—'}</td>
                     <td>
                       <span className={`badge ${w.status==='active'?'badge-green':w.status==='alert'?'badge-amber':'badge-red'}`}>
                         {w.status==='active'?'● Activo':w.status==='alert'?'⚠ Alerta':'○ Inactivo'}
@@ -254,9 +235,7 @@ export default function Workers() {
                     <td>
                       <div style={{display:'flex',gap:5}}>
                         <button className="btn btn-primary btn-xs" onClick={()=>openEdit(w)}>✏ Editar</button>
-                        <button className="btn btn-xs" onClick={()=>toggleStatus(w.id,w.status)}>
-                          {w.status==='active'?'⏸':'▶'}
-                        </button>
+                        <button className="btn btn-xs" onClick={()=>toggleStatus(w.id,w.status)}>{w.status==='active'?'⏸':'▶'}</button>
                       </div>
                     </td>
                   </tr>

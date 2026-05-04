@@ -291,3 +291,33 @@ CREATE TABLE IF NOT EXISTS public.payments (
 ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "payments_worker_read" ON public.payments FOR SELECT USING (worker_id = auth.uid() OR public.is_admin());
 CREATE POLICY "payments_admin_write" ON public.payments FOR ALL USING (public.is_admin());
+
+-- ═══════════════════════════════════════════════════
+--  SYSTEM CONFIG — stores app settings (rates, limits)
+-- ═══════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.system_config (
+  key        TEXT PRIMARY KEY,
+  value      JSONB NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE public.system_config ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "config_read"  ON public.system_config FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY "config_write" ON public.system_config FOR ALL   USING (public.is_admin());
+
+-- Seed default rates
+INSERT INTO public.system_config (key, value) VALUES
+  ('role_fees', '{"Enfermera/o": 35000, "TENS": 28000, "Auxiliar de servicio": 22000, "Administrativo": 30000}')
+ON CONFLICT (key) DO NOTHING;
+
+-- Add fee_per_role column to projects if not exists
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS required_enfermera  INTEGER DEFAULT 0;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS required_tens       INTEGER DEFAULT 0;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS required_auxiliar   INTEGER DEFAULT 0;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS required_admin      INTEGER DEFAULT 0;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_enfermera       INTEGER DEFAULT 35000;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_tens            INTEGER DEFAULT 28000;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_auxiliar        INTEGER DEFAULT 22000;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS fee_admin           INTEGER DEFAULT 30000;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS location            TEXT;
+ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS hospital            TEXT;

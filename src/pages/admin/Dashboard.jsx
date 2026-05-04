@@ -71,7 +71,7 @@ export default function Dashboard() {
     { bg: '#ede9fe', col: '#4c1d95' }, { bg: '#cffafe', col: '#0e7490' },
   ]
   const initials = name => (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const fmtFee   = n => n >= 1000000 ? `$${(n/1000000).toFixed(1)}M` : n > 0 ? `$${(n/1000).toFixed(0)}K` : '$0'
+  const fmtFee   = n => n > 0 ? `$${Number(n).toLocaleString('es-CL')} CLP` : '$0 CLP'
   const TYPE_ICON  = { inasistencia: '📋', reclamo: '⚠', cambio: '🔄' }
   const TYPE_LABEL = { inasistencia: 'Inasistencia', reclamo: 'Reclamo', cambio: 'Cambio turno' }
 

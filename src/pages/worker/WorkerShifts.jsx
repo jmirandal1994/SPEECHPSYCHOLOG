@@ -107,7 +107,7 @@ export default function WorkerShifts() {
             { label: 'Completados', value: done.length, accent: 'accent-green', icon: '✔', ibg: 'var(--emerald-l)', icl: 'var(--emerald-d)', delta: monthLabel },
             { label: 'Programados', value: upcoming, accent: 'accent-blue', icon: '📅', ibg: 'var(--navy-200)', icl: 'var(--navy-700)', delta: 'Próximos' },
             { label: 'Atrasos', value: lateC, accent: lateC > 0 ? 'accent-amber' : 'accent-green', icon: '⏰', ibg: lateC > 0 ? 'var(--amber-l)' : 'var(--emerald-l)', icl: lateC > 0 ? 'var(--amber)' : 'var(--emerald-d)', delta: lateC === 0 ? '✓ Sin atrasos' : `⚠ ${lateC}` },
-            { label: 'Honorarios', value: totalFee > 0 ? `$${(totalFee/1000).toFixed(0)}K` : '$0', accent: 'accent-teal', icon: '💰', ibg: 'var(--teal-l)', icl: 'var(--teal)', delta: 'CLP acumulado' },
+            { label: 'Honorarios', value: totalFee > 0 ? `$${totalFee.toLocaleString('es-CL')}` : '$0', accent: 'accent-teal', icon: '💰', ibg: 'var(--teal-l)', icl: 'var(--teal)', delta: totalFee > 0 ? 'CLP acumulado' : 'Sin honorarios' },
           ].map(s => (
             <div className="stat-card" key={s.label}>
               <div className={`stat-accent-bar ${s.accent}`} />
