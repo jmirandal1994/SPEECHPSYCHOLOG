@@ -303,7 +303,7 @@ html, body, #root {
 }
 
 /* ── Main ── */
-.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 
 /* ── Topbar ── */
 .topbar {
@@ -335,6 +335,8 @@ html, body, #root {
   padding: 24px 28px;
   overflow-y: auto;
   flex: 1;
+  min-height: 0;
+  box-sizing: border-box;
 }
 
 /* ── Buttons ── */
@@ -1173,3 +1175,53 @@ textarea.form-input { resize: vertical; min-height: 90px; line-height: 1.55; }
     align-items: flex-end !important;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   DESKTOP SCROLL & LAYOUT FIXES
+   ══════════════════════════════════════════════════════ */
+
+/* Ensure proper scroll on all screen sizes */
+.app { height: 100vh; height: 100dvh; overflow: hidden; }
+
+.main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* Desktop specific - content should fill remaining height */
+@media (min-width: 769px) {
+  .app { display: flex; flex-direction: row; }
+  .sidebar { flex-shrink: 0; }
+  .content { padding: 24px 28px; }
+}
+
+/* Fix grid layouts not overflowing on small desktop */
+@media (max-width: 1100px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .g13, .g31 { grid-template-columns: 1fr !important; }
+}
+
+/* GeoMonitor map container always correct height */
+.geo-map-container {
+  height: 460px;
+  width: 100%;
+  position: relative;
+  z-index: 0;
+}
+
+/* Leaflet popup fix */
+.leaflet-container { font-family: var(--font-body) !important; }
+.leaflet-popup-content-wrapper { border-radius: 10px !important; box-shadow: var(--sh-lg) !important; }
+.leaflet-popup-content { margin: 12px 14px !important; }

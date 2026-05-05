@@ -26,12 +26,24 @@ export default function Shifts() {
   const [filterW,   setFilterW]  = useState('all')
   const [form,      setForm]     = useState(EMPTY)
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => {
+    loadData()
+    // Real-time: auto-update when attendance is marked
+    const channel = supabase.channel('shifts_attendance_sync')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendances' }, () => {
+        loadData()
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'attendances' }, () => {
+        loadData()
+      })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [])
 
   async function loadData() {
     setLoading(true)
     const [{ data: s }, { data: w }, { data: p }, { data: cfg }] = await Promise.all([
-      supabase.from('shifts').select('*, profiles(full_name, role_label)').order('shift_date', { ascending: false }).limit(100),
+      supabase.from('shifts').select('*, profiles(full_name, role_label), attendances(checked_in_at, checked_out_at, status, checkin_lat, checkin_lng)').order('shift_date', { ascending: false }).limit(100),
       supabase.from('profiles').select('id, full_name, role_label, project').eq('role','worker').eq('status','active').order('full_name'),
       supabase.from('projects').select('*, fee_enfermera, fee_tens, fee_auxiliar, fee_admin').eq('active',true).order('name'),
       supabase.from('system_config').select('*'),
@@ -222,6 +234,18 @@ export default function Shifts() {
                       <td><span className={`badge ${b.cls}`}>{b.label}</span></td>
                       <td style={{fontFamily:'var(--font-mono)',fontWeight:800,color:'var(--emerald)',fontSize:12,whiteSpace:'nowrap'}}>
                         {fmtCLP(s.fee)}
+                      </td>
+                      {/* Attendance times from real check-in/out */}
+                      <td style={{fontFamily:'var(--font-mono)',fontSize:11}}>
+                        {s.attendances?.[0] ? (
+                          <div>
+                            <div style={{color:'var(--emerald)',fontWeight:700}}>↑ {s.attendances[0].checked_in_at ? new Date(s.attendances[0].checked_in_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '—'}</div>
+                            <div style={{color:s.attendances[0].checked_out_at?'#6366f1':'var(--text-4)',fontWeight:s.attendances[0].checked_out_at?700:400}}>
+                              {s.attendances[0].checked_out_at ? '↓ ' + new Date(s.attendances[0].checked_out_at).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : 'Sin salida'}
+                            </div>
+                            {s.attendances[0].checkin_lat && <div style={{fontSize:9,color:'var(--text-4)',marginTop:2}}>📍 GPS ✓</div>}
+                          </div>
+                        ) : <span style={{color:'var(--text-4)'}}>Sin marcar</span>}
                       </td>
                       <td>
                         <div style={{display:'flex',gap:4}}>
