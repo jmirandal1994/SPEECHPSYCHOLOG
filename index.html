@@ -1,18 +1,2061 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="theme-color" content="#0a1628" />
-    <title>Speech Psychology & CardioHome</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#0a1628"/>
+<title>Speech Psychology & CardioHome</title>
+<link rel="icon" href="/favicon.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#0a1628;--navy2:#0f1e35;--navy3:#162447;--navy4:#1d4ed8;
+  --accent:#3b82f6;--accent-l:#dbeafe;
+  --emerald:#059669;--emerald-l:#d1fae5;--emerald-d:#065f46;
+  --amber:#d97706;--amber-l:#fef3c7;
+  --red:#dc2626;--red-l:#fee2e2;
+  --teal:#0891b2;--teal-l:#cffafe;
+  --slate:#f8fafc;--border:#e2e8f0;--border2:#cbd5e1;
+  --text1:#0f172a;--text2:#1e293b;--text3:#475569;--text4:#94a3b8;
+  --surface:#fff;--sidebar:#0a1628;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.06);
+  --sh-lg:0 10px 40px rgba(0,0,0,.12),0 4px 16px rgba(0,0,0,.08);
+  --r:8px;--r-md:10px;--r-lg:14px;
+  --font:'Sora',system-ui,sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html,body,#app{height:100%;width:100%}
+body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-font-smoothing:antialiased;overflow:hidden}
+#app{display:flex;height:100vh;height:100dvh}
+
+/* AUTH */
+.auth-screen{width:100%;display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#050d1a 0%,#0a1628 50%,#0d1f3c 100%);padding:20px}
+.auth-card{width:100%;max-width:400px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:var(--r-lg);padding:36px 32px;box-shadow:0 24px 80px rgba(0,0,0,.4)}
+.auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+.auth-logo img{width:44px;height:44px;object-fit:contain;border-radius:8px}
+.auth-logo-text .t1{font-size:14px;font-weight:700;color:#fff;line-height:1.2}
+.auth-logo-text .t2{font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em}
+.auth-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.04em;margin-bottom:6px}
+.auth-sub{font-size:13px;color:rgba(255,255,255,.4);margin-bottom:28px}
+.auth-label{font-size:12px;font-weight:600;color:rgba(255,255,255,.55);margin-bottom:6px;display:block}
+.auth-input{width:100%;padding:11px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:var(--r);font-size:14px;font-family:var(--font);color:#fff;outline:none;transition:border-color .2s;margin-bottom:14px}
+.auth-input:focus{border-color:var(--accent)}
+.auth-input::placeholder{color:rgba(255,255,255,.2)}
+.auth-btn{width:100%;padding:13px;background:linear-gradient(135deg,#1d4ed8,#1e3a8a);border:none;border-radius:var(--r);font-size:14px;font-weight:700;font-family:var(--font);color:#fff;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px rgba(29,78,216,.4);letter-spacing:-.01em;margin-top:4px}
+.auth-btn:hover{box-shadow:0 6px 28px rgba(29,78,216,.5);transform:translateY(-1px)}
+.auth-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.auth-err{background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.3);border-radius:var(--r);padding:10px 14px;font-size:12px;color:#fca5a5;margin-bottom:14px}
+.auth-link{text-align:center;margin-top:16px;font-size:12px;color:rgba(255,255,255,.25);cursor:pointer}
+.auth-link:hover{color:rgba(255,255,255,.5)}
+
+/* SHELL */
+.shell{display:flex;width:100%;height:100dvh;overflow:hidden}
+.sidebar{width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
+.brand{padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.brand-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.brand-img{width:38px;height:38px;object-fit:contain;border-radius:7px;background:rgba(255,255,255,.05);padding:3px;flex-shrink:0}
+.brand-t1{font-size:12px;font-weight:700;color:#fff;line-height:1.2}
+.brand-t2{font-size:10px;color:rgba(255,255,255,.3);text-transform:uppercase;letter-spacing:.07em}
+.role-chip{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:6px;padding:5px 10px}
+.role-dot{width:6px;height:6px;border-radius:50%}
+.role-label{font-size:10px;color:rgba(255,255,255,.45);font-weight:600}
+.nav{flex:1;overflow-y:auto;padding:8px 0}
+.nav::-webkit-scrollbar{width:4px}.nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.08);border-radius:4px}
+.nav-section{padding:16px 16px 4px;font-size:9px;font-weight:700;color:rgba(255,255,255,.2);text-transform:uppercase;letter-spacing:.1em}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 14px;margin:1px 8px;border-radius:var(--r);cursor:pointer;transition:all .15s;color:rgba(255,255,255,.5);font-size:13px;font-weight:500;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.05);color:rgba(255,255,255,.8)}
+.nav-item.active{background:rgba(59,130,246,.15);color:#93c5fd;font-weight:600}
+.nav-item.active::before{content:'';position:absolute;left:-8px;top:50%;transform:translateY(-50%);width:3px;height:60%;background:var(--accent);border-radius:2px}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;border-radius:20px;font-size:9px;padding:2px 6px;font-weight:700;min-width:18px;text-align:center}
+.nav-badge.warn{background:var(--amber)}
+.sidebar-foot{padding:10px 12px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.user-row{display:flex;align-items:center;gap:10px;padding:8px 6px;margin-bottom:6px}
+.user-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;font-family:var(--font);box-shadow:0 0 0 2px rgba(255,255,255,.1)}
+.user-name{font-size:12px;font-weight:600;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.user-role{font-size:10px;color:rgba(255,255,255,.3);margin-top:1px}
+.signout-btn{width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.15);border-radius:8px;color:rgba(252,165,165,.8);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s}
+.signout-btn:hover{background:rgba(220,38,38,.18)}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--slate)}
+
+/* TOPBAR */
+.topbar{padding:0 28px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 0 rgba(15,23,42,.04)}
+.topbar-left{display:flex;flex-direction:column}
+.topbar-title{font-size:16px;font-weight:700;color:var(--text1);letter-spacing:-.03em;line-height:1.2}
+.topbar-sub{font-size:11px;color:var(--text4);margin-top:1px}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.content{padding:24px 28px;overflow-y:auto;flex:1;min-height:0}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .18s;font-family:var(--font);box-shadow:var(--sh);white-space:nowrap;letter-spacing:-.01em}
+.btn:hover{background:#f8fafc;border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-primary{background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;border:none;box-shadow:0 4px 14px rgba(29,78,216,.35)}
+.btn-primary:hover{box-shadow:0 6px 20px rgba(29,78,216,.45);transform:translateY(-1px);background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none}
+.btn-success{background:linear-gradient(135deg,var(--emerald),var(--emerald-d));color:#fff;border:none}
+.btn-success:hover{color:#fff;border:none}
+.btn-danger{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);color:var(--red)}
+.btn-danger:hover{background:rgba(220,38,38,.15);color:var(--red)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 8px;font-size:11px}
+.btn-ghost{background:transparent;border-color:transparent;box-shadow:none}
+
+/* CARDS */
+.card{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.card-title{font-size:14px;font-weight:700;color:var(--text1);letter-spacing:-.02em}
+.card-sub{font-size:12px;color:var(--text4);margin-top:2px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.badge-green{background:var(--emerald-l);color:var(--emerald-d)}
+.badge-blue{background:var(--accent-l);color:#1e40af}
+.badge-amber{background:var(--amber-l);color:#92400e}
+.badge-red{background:var(--red-l);color:#991b1b}
+.badge-gray{background:#f1f5f9;color:#475569}
+.badge-teal{background:var(--teal-l);color:#0e7490}
+.badge-live{background:rgba(5,150,105,.12);color:var(--emerald);border:1px solid rgba(5,150,105,.25);animation:pulse-badge 2s ease-in-out infinite}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* FORMS */
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:5px;display:block}
+.form-input{width:100%;padding:9px 12px;border:1.5px solid var(--border2);border-radius:var(--r);font-size:13px;font-family:var(--font);color:var(--text1);background:var(--surface);outline:none;transition:border-color .15s;margin-bottom:0}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.form-input option{color:var(--text1)}
+textarea.form-input{resize:vertical;min-height:80px}
+
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.stat-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
+.stat-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px}
+.stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
+.stat-label{font-size:11px;color:var(--text4);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.stat-val{font-size:26px;font-weight:800;color:var(--text1);line-height:1;letter-spacing:-.04em;font-family:var(--font)}
+.stat-delta{font-size:11px;color:var(--text4);margin-top:4px}
+.stat-delta.warn{color:var(--amber);font-weight:600}
+
+/* TABLE */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead tr{background:#f8fafc;border-bottom:2px solid var(--border)}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#f8fafc}
+
+/* ALERT */
+.alert{display:flex;gap:12px;padding:12px 16px;border-radius:var(--r-md);border:1px solid;margin-bottom:14px}
+.alert-info{background:var(--accent-l);border-color:#93c5fd;color:#1e3a8a}
+.alert-warn{background:var(--amber-l);border-color:#fde68a;color:#92400e}
+.alert-crit{background:var(--red-l);border-color:#fca5a5;color:#991b1b}
+.alert-success{background:var(--emerald-l);border-color:#6ee7b7;color:var(--emerald-d)}
+.alert-icon{font-size:18px;flex-shrink:0}
+.alert-title{font-weight:700;font-size:13px;margin-bottom:2px}
+.alert-msg{font-size:12px;opacity:.85}
+
+/* TABS */
+.tabs{display:flex;gap:2px;background:#f1f5f9;border-radius:var(--r);padding:4px;margin-bottom:16px;overflow-x:auto}
+.tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;color:var(--text4);cursor:pointer;transition:all .15s;white-space:nowrap}
+.tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--sh)}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:48px 24px}
+.empty-icon{font-size:48px;margin-bottom:14px}
+.empty-title{font-size:16px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.empty-sub{font-size:13px;color:var(--text4);line-height:1.6}
+
+/* SPINNER */
+.spinner{width:22px;height:22px;border:2.5px solid rgba(59,130,246,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--surface);border-radius:var(--r-lg);padding:28px;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--sh-lg)}
+.modal-title{font-size:16px;font-weight:800;color:var(--text1);margin-bottom:4px;letter-spacing:-.03em}
+.modal-sub{font-size:12px;color:var(--text4);margin-bottom:20px}
+.modal-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+
+/* GRID HELPERS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g13{display:grid;grid-template-columns:1fr 320px;gap:16px}
+
+/* MOBILE */
+.mobile-bar{display:none}
+.hamburger{display:none}
+.sidebar-overlay{display:none}
+
+@media(max-width:900px){
+  .shell{flex-direction:column}
+  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:900;transform:translateX(-100%);width:260px}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sidebar-overlay.visible{opacity:1;pointer-events:auto}
+  .main{height:100dvh}
+  .mobile-bar{display:flex;height:56px;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100}
+  .hamburger{display:flex;flex-direction:column;gap:4px;padding:8px;cursor:pointer;background:none;border:none;flex-shrink:0}
+  .hamburger span{display:block;width:20px;height:2px;background:var(--text2);border-radius:2px;transition:all .2s}
+  .topbar{display:none}
+  .content{padding:16px}
+  .stats-grid{grid-template-columns:1fr 1fr!important}
+  .g13{grid-template-columns:1fr!important}
+  .g2{grid-template-columns:1fr!important}
+  .stat-val{font-size:20px}
+  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:800}
+  .mobile-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px;cursor:pointer;color:var(--text4);position:relative}
+  .mobile-nav-item.active{color:var(--accent)}
+  .mobile-nav-icon{font-size:20px;line-height:1}
+  .mobile-nav-label{font-size:9px;font-weight:600}
+  .mobile-nav-badge{position:absolute;top:2px;right:calc(50% - 16px);background:var(--red);color:#fff;border-radius:10px;font-size:8px;padding:1px 4px;font-weight:700}
+  body{overflow:auto}
+}
+
+/* CHECKIN BUTTON */
+.checkin-btn{width:100%;padding:16px;border-radius:var(--r-md);border:none;font-size:16px;font-weight:700;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,.2);margin-bottom:10px}
+.checkin-btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important}
+.checkin-btn:not(:disabled):hover{transform:translateY(-2px)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+// ═══════════════════════════════════════════════
+// CONFIG — tu conexión Supabase
+// ═══════════════════════════════════════════════
+const SUPABASE_URL = 'https://irodzmlnddwkjyshcgct.supabase.co'
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlyb2R6bWxuZGR3a2p5c2hjZ2N0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc4MjI2MzIsImV4cCI6MjA5MzM5ODYzMn0.vYXU33gGElZzCwhMTAsMj8b0574jnOosS0L0ZnBzUxs'
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:true }
+})
+
+// ═══════════════════════════════════════════════
+// ROUTER — simple hash-based
+// ═══════════════════════════════════════════════
+let currentRoute = '/'
+let currentUser  = null
+let currentProfile = null
+
+function navigate(path) {
+  currentRoute = path
+  render()
+}
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+const fmtCLP  = n => n ? `$${Number(n).toLocaleString('es-CL')} CLP` : '$0 CLP'
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) : '—'
+const fmtDate = s => { if(!s) return '—'; const d=new Date(s+'T12:00:00'); const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']; const m=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return `${days[d.getDay()]} ${d.getDate()} ${m[d.getMonth()]}` }
+const today   = () => new Date().toISOString().slice(0,10)
+const el      = id => document.getElementById(id)
+const ini     = name => (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+const isAdmin = () => currentProfile?.role === 'admin'
+
+function showLoading(container) {
+  container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:60px;gap:12px"><div class="spinner"></div><span style="color:var(--text4);font-size:14px">Cargando...</span></div>`
+}
+
+// ═══════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════
+async function loadProfile(userId) {
+  const {data} = await db.from('profiles').select('*').eq('id',userId).maybeSingle()
+  return data
+}
+
+async function signIn(email, password) {
+  const {data,error} = await db.auth.signInWithPassword({email,password})
+  if (error) throw error
+  currentUser    = data.user
+  currentProfile = await loadProfile(data.user.id)
+  return currentProfile
+}
+
+async function signOut() {
+  await db.auth.signOut()
+  currentUser = null; currentProfile = null
+  navigate('/login')
+}
+
+// ═══════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════
+async function init() {
+  const {data:{session}} = await db.auth.getSession()
+  if (session?.user) {
+    currentUser    = session.user
+    currentProfile = await loadProfile(session.user.id)
+  }
+  render()
+}
+
+function render() {
+  const app = el('app')
+  if (!currentUser || !currentProfile) {
+    renderLogin(app); return
+  }
+  renderShell(app)
+}
+
+// ═══════════════════════════════════════════════
+// LOGIN PAGE
+// ═══════════════════════════════════════════════
+function renderLogin(app) {
+  app.innerHTML = `
+  <div class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <img src="/logo.png" onerror="this.style.display='none'"/>
+        <div class="auth-logo-text">
+          <div class="t1">Speech Psychology</div>
+          <div class="t2">& CardioHome · Salud</div>
+        </div>
+      </div>
+      <div class="auth-title">Iniciar sesión</div>
+      <div class="auth-sub">Ingresa tus credenciales para continuar</div>
+      <div id="auth-err" class="auth-err" style="display:none"></div>
+      <form id="login-form">
+        <label class="auth-label">Correo electrónico</label>
+        <input id="login-email" class="auth-input" type="email" placeholder="tu@correo.cl" required/>
+        <label class="auth-label">Contraseña</label>
+        <input id="login-pwd" class="auth-input" type="password" placeholder="••••••••" required/>
+        <button class="auth-btn" type="submit" id="login-btn">Ingresar</button>
+      </form>
+      <div class="auth-link" onclick="navigate('/register')">¿No tienes cuenta? Solicitar acceso →</div>
+    </div>
+  </div>`
+  el('login-form').onsubmit = async e => {
+    e.preventDefault()
+    const btn = el('login-btn')
+    btn.disabled = true; btn.textContent = 'Ingresando...'
+    try {
+      await signIn(el('login-email').value, el('login-pwd').value)
+      navigate(isAdmin() ? '/' : '/w')
+    } catch(err) {
+      const errEl = el('auth-err')
+      errEl.style.display='block'
+      errEl.textContent = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
+      btn.disabled=false; btn.textContent='Ingresar'
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// REGISTER PAGE
+// ═══════════════════════════════════════════════
+function renderRegisterPage(app) {
+  app.innerHTML = `
+  <div class="auth-screen" style="overflow-y:auto;align-items:flex-start;padding:24px 20px">
+    <div class="auth-card" style="max-width:460px;margin:0 auto">
+      <div class="auth-logo">
+        <img src="/logo.png" onerror="this.style.display='none'"/>
+        <div class="auth-logo-text">
+          <div class="t1">Speech Psychology & CardioHome</div>
+          <div class="t2">Solicitud de acceso</div>
+        </div>
+      </div>
+      <div class="auth-title">Crear cuenta</div>
+      <div class="auth-sub">La administración aprobará tu solicitud en minutos</div>
+      <div id="reg-success" style="display:none;background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.3);border-radius:var(--r);padding:14px;color:#d1fae5;text-align:center;margin-bottom:14px">
+        <div style="font-size:28px;margin-bottom:6px">✅</div>
+        <div style="font-weight:700;font-size:14px">Solicitud enviada</div>
+        <div style="font-size:12px;opacity:.8;margin-top:4px">En 5 minutos vuelve a ingresar</div>
+        <div style="margin-top:12px"><button class="auth-btn" style="background:transparent;border:1px solid rgba(255,255,255,.2);max-width:200px" onclick="navigate('/login')">← Ir al login</button></div>
+      </div>
+      <div id="reg-err" class="auth-err" style="display:none"></div>
+      <form id="reg-form">
+        <div class="g2" style="gap:10px">
+          <div class="form-group" style="margin-bottom:0"><label class="auth-label">Nombre completo *</label><input id="r-name" class="auth-input" style="margin-bottom:0" placeholder="María González" required/></div>
+          <div class="form-group" style="margin-bottom:0"><label class="auth-label">RUT *</label><input id="r-rut" class="auth-input" style="margin-bottom:0" placeholder="12.345.678-9" required/></div>
+        </div>
+        <br/>
+        <label class="auth-label">Cargo *</label>
+        <select id="r-role" class="auth-input" required>
+          <option value="">Seleccionar cargo...</option>
+          <option>Enfermera/o</option><option>TENS</option>
+          <option>Auxiliar de servicio</option><option>Administrativo</option>
+        </select>
+        <label class="auth-label">Correo electrónico *</label>
+        <input id="r-email" class="auth-input" type="email" placeholder="tu@correo.cl" required/>
+        <label class="auth-label">Teléfono</label>
+        <input id="r-phone" class="auth-input" placeholder="+56 9 XXXX XXXX"/>
+        <label class="auth-label">Contraseña *</label>
+        <input id="r-pwd" class="auth-input" type="password" placeholder="Mínimo 8 caracteres" required minlength="8"/>
+        <button class="auth-btn" type="submit" id="reg-btn">Solicitar acceso</button>
+      </form>
+      <div class="auth-link" onclick="navigate('/login')">← Ya tengo cuenta</div>
+    </div>
+  </div>`
+  el('reg-form').onsubmit = async e => {
+    e.preventDefault()
+    const btn=el('reg-btn'); btn.disabled=true; btn.textContent='Enviando...'
+    const {error} = await db.from('account_requests').insert([{
+      full_name: el('r-name').value, rut: el('r-rut').value,
+      email: el('r-email').value, phone: el('r-phone').value,
+      role_label: el('r-role').value, password: el('r-pwd').value, status:'pending'
+    }])
+    if (error) {
+      const e2=el('reg-err'); e2.style.display='block'; e2.textContent=error.message
+      btn.disabled=false; btn.textContent='Solicitar acceso'
+    } else {
+      el('reg-form').style.display='none'
+      el('reg-success').style.display='block'
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SHELL
+// ═══════════════════════════════════════════════
+function renderShell(app) {
+  const admin   = isAdmin()
+  const name    = currentProfile?.full_name || 'Usuario'
+  const roleL   = currentProfile?.role_label || (admin?'Administrador':'Profesional')
+  const initials = ini(name)
+
+  // Handle register route without auth
+  if (currentRoute === '/register') { renderRegisterPage(app); return }
+
+  const adminNav = [
+    {section:'Principal'},
+    {id:'/',label:'Dashboard',icon:'⊞',path:'/'},
+    {id:'/workers',label:'Personal',icon:'👥',path:'/workers'},
+    {id:'/shifts',label:'Turnos',icon:'📅',path:'/shifts'},
+    {id:'/geo',label:'Geolocalización',icon:'📍',path:'/geo'},
+    {section:'Gestión'},
+    {id:'/alerts',label:'Atrasos',icon:'⚠',path:'/alerts',badgeKey:'late',warn:true},
+    {id:'/requests',label:'Solicitudes',icon:'📋',path:'/requests',badgeKey:'req'},
+    {id:'/documents',label:'Documentos',icon:'🗂',path:'/documents'},
+    {id:'/boletas',label:'Pagos',icon:'💰',path:'/boletas'},
+    {section:'Sistema'},
+    {id:'/accounts',label:'Solicitudes acceso',icon:'📬',path:'/accounts',badgeKey:'acc'},
+    {id:'/users',label:'Usuarios',icon:'🔑',path:'/users'},
+    {id:'/settings',label:'Configuración',icon:'⚙',path:'/settings'},
+  ]
+  const workerNav = [
+    {section:'Mi Panel'},
+    {id:'/w',label:'Inicio',icon:'🏠',path:'/w'},
+    {id:'/w/checkin',label:'Asistencia',icon:'📍',path:'/w/checkin'},
+    {id:'/w/shifts',label:'Mis turnos',icon:'📅',path:'/w/shifts'},
+    {section:'Gestión'},
+    {id:'/w/requests',label:'Solicitudes',icon:'📋',path:'/w/requests'},
+    {id:'/w/boletas',label:'Mis pagos',icon:'💰',path:'/w/boletas'},
+  ]
+  const nav = admin ? adminNav : workerNav
+  const bottomItems = admin
+    ? [{id:'/',path:'/',icon:'⊞',label:'Inicio'},{id:'/shifts',path:'/shifts',icon:'📅',label:'Turnos'},{id:'/geo',path:'/geo',icon:'📍',label:'Geo'},{id:'/requests',path:'/requests',icon:'📋',label:'Solicitudes'},{id:'/accounts',path:'/accounts',icon:'📬',label:'Accesos'}]
+    : [{id:'/w',path:'/w',icon:'🏠',label:'Inicio'},{id:'/w/checkin',path:'/w/checkin',icon:'📍',label:'Asistencia'},{id:'/w/shifts',path:'/w/shifts',icon:'📅',label:'Turnos'},{id:'/w/requests',path:'/w/requests',icon:'📋',label:'Solicitudes'},{id:'/w/boletas',path:'/w/boletas',icon:'💰',label:'Pagos'}]
+
+  const isActive = p => p==='/'||p==='/w' ? currentRoute===p : currentRoute.startsWith(p)
+  const curLabel = [...adminNav,...workerNav].filter(x=>x.path&&isActive(x.path))[0]?.label||'HealthOps'
+
+  const navHTML = nav.map(item => item.section
+    ? `<div class="nav-section">${item.section}</div>`
+    : `<div class="nav-item ${isActive(item.path)?'active':''}" onclick="navigate('${item.path}')">
+        <span class="nav-icon">${item.icon}</span>
+        <span style="flex:1">${item.label}</span>
+       </div>`
+  ).join('')
+
+  const bottomHTML = bottomItems.map(item =>
+    `<div class="mobile-nav-item ${isActive(item.path)?'active':''}" onclick="navigate('${item.path}')">
+      <span class="mobile-nav-icon">${item.icon}</span>
+      <span class="mobile-nav-label">${item.label}</span>
+    </div>`
+  ).join('')
+
+  app.innerHTML = `
+  <div class="shell" id="shell">
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-row">
+          <img class="brand-img" src="/logo.png" onerror="this.style.display='none'"/>
+          <div><div class="brand-t1">Speech Psychology</div><div class="brand-t2">& CardioHome</div></div>
+        </div>
+        <div class="role-chip">
+          <div class="role-dot" style="background:${admin?'#3b82f6':'#22c55e'}"></div>
+          <span class="role-label">${admin?'Panel Administrador':'Panel Trabajador'}</span>
+        </div>
+      </div>
+      <nav class="nav">${navHTML}</nav>
+      <div class="sidebar-foot">
+        <div class="user-row">
+          <div class="user-av" style="background:${admin?'linear-gradient(135deg,#1d4ed8,#1e3a8a)':'linear-gradient(135deg,#059669,#065f46)'};color:#fff">${initials}</div>
+          <div style="flex:1;min-width:0">
+            <div class="user-name">${name}</div>
+            <div class="user-role">${roleL}</div>
+          </div>
+        </div>
+        <button class="signout-btn" onclick="signOut()"><span>🚪</span> Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="mobile-bar">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <div style="font-weight:700;font-size:15px;color:var(--text1)">${curLabel}</div>
+        <div style="width:38px"></div>
+      </div>
+      <div id="page-content" style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column"></div>
+      <nav class="mobile-nav">${bottomHTML}</nav>
+    </main>
+  </div>`
+
+  renderPage()
+}
+
+function toggleSidebar() {
+  el('sidebar').classList.toggle('open')
+  el('sidebar-overlay').classList.toggle('visible')
+}
+function closeSidebar() {
+  el('sidebar').classList.remove('open')
+  el('sidebar-overlay').classList.remove('visible')
+}
+
+// ═══════════════════════════════════════════════
+// PAGE ROUTER
+// ═══════════════════════════════════════════════
+function renderPage() {
+  const pc = el('page-content')
+  if (!pc) return
+  const r = currentRoute
+  if (!isAdmin()) {
+    if (r==='/w')             { pageWorkerHome(pc); return }
+    if (r==='/w/checkin')     { pageWorkerCheckin(pc); return }
+    if (r==='/w/shifts')      { pageWorkerShifts(pc); return }
+    if (r==='/w/requests')    { pageWorkerRequests(pc); return }
+    if (r==='/w/boletas')     { pageWorkerBoletas(pc); return }
+    navigate('/w'); return
+  }
+  if (r==='/')             { pageDashboard(pc); return }
+  if (r==='/workers')      { pageWorkers(pc); return }
+  if (r==='/shifts')       { pageShifts(pc); return }
+  if (r==='/geo')          { pageGeo(pc); return }
+  if (r==='/alerts')       { pageAlerts(pc); return }
+  if (r==='/requests')     { pageRequests(pc); return }
+  if (r==='/documents')    { pageDocuments(pc); return }
+  if (r==='/boletas')      { pageBoletas(pc); return }
+  if (r==='/accounts')     { pageAccounts(pc); return }
+  if (r==='/users')        { pageUsers(pc); return }
+  if (r==='/settings')     { pageSettings(pc); return }
+  navigate('/')
+}
+
+// ═══════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════
+async function pageDashboard(pc) {
+  pc.innerHTML = `
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Dashboard</div><div class="topbar-sub">Resumen operacional</div></div>
+    <div class="topbar-right"><button class="btn btn-sm" onclick="pageDashboard(el('page-content'))">↻</button><button class="btn btn-primary btn-sm" onclick="navigate('/shifts')">+ Nuevo turno</button></div>
+  </div>
+  <div class="content" id="dash-content"><div style="display:flex;align-items:center;justify-content:center;height:200px"><div class="spinner" style="width:32px;height:32px"></div></div></div>`
+
+  const todayStr = today()
+  const monthStart = new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
+
+  const [{count:workers},{count:shifts},{count:late},{data:activity},{data:reqs}] = await Promise.all([
+    db.from('profiles').select('*',{count:'exact',head:true}).eq('role','worker').eq('status','active'),
+    db.from('shifts').select('*',{count:'exact',head:true}).in('status',['completed','late']).gte('shift_date',monthStart.slice(0,10)),
+    db.from('attendances').select('*',{count:'exact',head:true}).eq('status','late').gte('checked_in_at',monthStart),
+    db.from('attendances').select('*, profiles(full_name,role_label,project)').gte('checked_in_at',todayStr+'T00:00:00').order('checked_in_at',{ascending:false}).limit(8),
+    db.from('requests').select('*, profiles(full_name)').eq('status','pending').order('created_at',{ascending:false}).limit(5),
+  ])
+
+  const actHTML = (activity||[]).length===0
+    ? `<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin registros hoy</div><div class="empty-sub">Los marcajes aparecerán aquí en tiempo real</div></div>`
+    : (activity||[]).map(a=>{
+        const isLate=a.status==='late', hasOut=!!a.checked_out_at
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-l);color:#1e40af;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${ini(a.profiles?.full_name)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px">${a.profiles?.full_name||'—'}</div>
+            <div style="font-size:11px;color:var(--text4)">${a.profiles?.role_label||''}${a.profiles?.project?' · '+a.profiles.project:''}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--emerald)">↑ ${fmtTime(a.checked_in_at)}</div>
+            ${hasOut?`<div style="font-family:var(--mono);font-size:12px;font-weight:700;color:#6366f1">↓ ${fmtTime(a.checked_out_at)}</div>`:`<div style="font-size:11px;color:var(--text4)">En turno</div>`}
+          </div>
+          <span class="badge ${isLate?'badge-red':hasOut?'badge-green':'badge-live'}">${isLate?'⚠ Tarde':hasOut?'✓':'● Activo'}</span>
+        </div>`
+      }).join('')
+
+  const reqHTML = (reqs||[]).length===0
+    ? `<div class="empty-state" style="padding:20px 0"><div class="empty-icon" style="font-size:32px">✅</div><div class="empty-title" style="font-size:13px">Todo al día</div></div>`
+    : (reqs||[]).map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:18px">${{inasistencia:'📋',reclamo:'⚠',cambio:'🔄'}[r.type]||'📋'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.profiles?.full_name||'—'}</div>
+          <div style="font-size:11px;color:var(--text4)">${r.type||''}</div>
+        </div>
+        <div style="display:flex;gap:4px">
+          <button class="btn btn-success btn-xs" onclick="approveReq('${r.id}',this)">✓</button>
+          <button class="btn btn-danger btn-xs" onclick="rejectReq('${r.id}',this)">✗</button>
+        </div>
+      </div>`).join('')
+
+  el('dash-content').innerHTML = `
+    ${late>0?`<div class="alert alert-crit"><span class="alert-icon">🚨</span><div><div class="alert-title">${late} atraso${late>1?'s':''} este mes</div><div class="alert-msg"><button class="btn btn-xs" onclick="navigate('/alerts')" style="margin-top:4px">Ver detalle →</button></div></div></div>`:''}
+    <div class="stats-grid">
+      <div class="stat-card" onclick="navigate('/workers')"><div class="stat-bar" style="background:var(--accent)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">👥</div><div class="stat-label">Personal activo</div><div class="stat-val">${workers||0}</div><div class="stat-delta">Profesionales</div></div>
+      <div class="stat-card" onclick="navigate('/shifts')"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✔</div><div class="stat-label">Turnos completados</div><div class="stat-val">${shifts||0}</div><div class="stat-delta">Este mes</div></div>
+      <div class="stat-card" onclick="navigate('/alerts')"><div class="stat-bar" style="background:${late>0?'var(--amber)':'var(--emerald)'}"></div><div class="stat-icon" style="background:${late>0?'var(--amber-l)':'var(--emerald-l)'};color:${late>0?'var(--amber)':'var(--emerald)'}">⏰</div><div class="stat-label">Atrasos</div><div class="stat-val">${late||0}</div><div class="stat-delta ${late>0?'warn':''}">${late>0?'⚠ Revisar':'✓ Sin atrasos'}</div></div>
+      <div class="stat-card" onclick="navigate('/geo')"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">📍</div><div class="stat-label">En turno ahora</div><div class="stat-val" id="active-now">—</div><div class="stat-delta"><span class="badge badge-live" style="font-size:10px">● En vivo</span></div></div>
+    </div>
+    <div class="g13">
+      <div class="card" style="margin-bottom:0">
+        <div class="card-hdr"><div><div class="card-title">Actividad de hoy</div><div class="card-sub">Entradas y salidas en tiempo real</div></div><div style="display:flex;gap:8px"><span class="badge badge-live">● En vivo</span><button class="btn btn-xs" onclick="navigate('/geo')">📍 Mapa</button></div></div>
+        ${actHTML}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-hdr" style="margin-bottom:12px"><div class="card-title">Solicitudes pendientes</div>${reqs?.length?`<span class="badge badge-red">${reqs.length}</span>`:''}</div>
+          ${reqHTML}
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-title" style="margin-bottom:14px">Acciones rápidas</div>
+          ${[['👥','Agregar profesional','/users'],['📅','Programar turno','/shifts'],['📍','Mapa en vivo','/geo'],['💰','Gestionar pagos','/boletas']].map(([i,l,p])=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate('${p}')">
+            <div style="width:36px;height:36px;border-radius:9px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${i}</div>
+            <div style="flex:1"><div style="font-weight:600;font-size:13px">${l}</div></div>
+            <span style="color:var(--text4);font-size:18px">›</span>
+          </div>`).join('')}
+        </div>
+      </div>
+    </div>`
+
+  // Load active count
+  const {count:activeC} = await db.from('attendances').select('*',{count:'exact',head:true}).gte('checked_in_at',todayStr+'T00:00:00').is('checked_out_at',null)
+  const an = el('active-now')
+  if (an) an.textContent = activeC||0
+}
+
+window.approveReq = async (id, btn) => {
+  btn.disabled=true
+  await db.from('requests').update({status:'approved'}).eq('id',id)
+  btn.closest('[style]').remove()
+}
+window.rejectReq = async (id, btn) => {
+  btn.disabled=true
+  await db.from('requests').update({status:'rejected'}).eq('id',id)
+  btn.closest('[style]').remove()
+}
+
+// ═══════════════════════════════════════════════
+// WORKERS PAGE
+// ═══════════════════════════════════════════════
+async function pageWorkers(pc) {
+  pc.innerHTML = `
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Personal</div><div class="topbar-sub">Gestión de profesionales</div></div>
+    <div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="showAddWorker()">+ Agregar</button></div>
+  </div>
+  <div class="content" id="workers-body"></div>`
+  await loadWorkersList()
+}
+
+async function loadWorkersList() {
+  const body = el('workers-body')
+  if (!body) return
+  showLoading(body)
+  const [{data:workers},{data:projects}] = await Promise.all([
+    db.from('profiles').select('*').eq('role','worker').order('full_name'),
+    db.from('projects').select('id,name').eq('active',true).order('name'),
+  ])
+
+  const projOpts = (projects||[]).map(p=>`<option value="${p.name}">${p.name}</option>`).join('')
+  const rows = (workers||[]).map((w,i)=>{
+    const colors=[['#dbeafe','#1e3a8a'],['#d1fae5','#065f46'],['#fef9c3','#92400e'],['#fce7f3','#9d174d'],['#ede9fe','#4c1d95'],['#cffafe','#0e7490']]
+    const [bg,col]=colors[i%colors.length]
+    return `<tr>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:50%;background:${bg};color:${col};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${ini(w.full_name)}</div>
+        <div><div style="font-weight:600;font-size:13px">${w.full_name||'—'}</div>${w.rut?`<div style="font-size:11px;color:var(--text4);font-family:var(--mono)">${w.rut}</div>`:''}</div>
+      </div></td>
+      <td><span class="badge badge-gray" style="font-size:11px">${w.role_label||'—'}</span></td>
+      <td><select class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;max-width:180px;background:${w.project?'var(--accent-l)':'var(--slate)'};color:${w.project?'#1e40af':'var(--text4)'};font-weight:600;cursor:pointer" onchange="quickAssignProject('${w.id}',this.value)">
+        <option value="">Sin proyecto</option>
+        ${projOpts}
+        ${w.project&&!(projects||[]).find(p=>p.name===w.project)?`<option value="${w.project}" selected>${w.project}</option>`:''}
+      </select>${w.project&&(projects||[]).find(p=>p.name===w.project)?`<script>document.querySelector('select[onchange*="${w.id}"]').value='${w.project}'<\/script>`:''}</td>
+      <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${w.phone||w.email||'—'}</td>
+      <td><span class="badge ${w.status==='active'?'badge-green':'badge-red'}">${w.status==='active'?'● Activo':'○ Inactivo'}</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-primary btn-xs" onclick="openEditWorker(${JSON.stringify(JSON.stringify(w))})">✏ Editar</button>
+        <button class="btn btn-xs" onclick="toggleWorkerStatus('${w.id}','${w.status}')">${w.status==='active'?'⏸':'▶'}</button>
+      </div></td>
+    </tr>`
+  }).join('')
+
+  body.innerHTML = `
+    <div id="worker-modal"></div>
+    <div class="card" style="padding:12px 18px;margin-bottom:14px"><input class="form-input" style="margin-bottom:0" placeholder="🔍 Buscar por nombre, cargo o proyecto..." oninput="filterWorkersTable(this.value)" id="worker-search"/></div>
+    ${projects?.length===0?'<div class="alert alert-warn"><span class="alert-icon">⚠</span><div><div class="alert-title">Sin proyectos</div><div class="alert-msg">Ve a ⚙ Configuración para crear proyectos primero.</div></div></div>':''}
+    <div class="card"><div class="table-wrap"><table id="workers-table">
+      <thead><tr><th>Profesional</th><th>Cargo</th><th>Proyecto asignado</th><th>Contacto</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>${rows||'<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">Sin profesionales</div></div></td></tr>'}</tbody>
+    </table></div></div>`
+
+  // Set selected project values properly
+  ;(workers||[]).forEach(w => {
+    if (w.project) {
+      const sel = body.querySelector(`select[onchange*="${w.id}"]`)
+      if (sel) sel.value = w.project
+    }
+  })
+}
+
+window.filterWorkersTable = (q) => {
+  const rows = document.querySelectorAll('#workers-table tbody tr')
+  rows.forEach(row => { row.style.display = row.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none' })
+}
+
+window.quickAssignProject = async (id, project) => {
+  await db.from('profiles').update({project}).eq('id',id)
+}
+
+window.toggleWorkerStatus = async (id, current) => {
+  const next = current==='active'?'inactive':'active'
+  await db.from('profiles').update({status:next}).eq('id',id)
+  await loadWorkersList()
+}
+
+window.openEditWorker = (wJson) => {
+  const w = JSON.parse(wJson)
+  const modal = el('worker-modal')
+  modal.innerHTML = `
+  <div class="modal-bg" onclick="if(event.target===this)closeWorkerModal()">
+    <div class="modal">
+      <div class="modal-hdr"><div><div class="modal-title">Editar profesional</div><div class="modal-sub">Actualiza datos y proyecto</div></div><button class="btn btn-ghost btn-sm" onclick="closeWorkerModal()">✕</button></div>
+      <div id="edit-w-err" class="auth-err" style="display:none"></div>
+      <form id="edit-w-form">
+        <div class="g2">
+          <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="ew-name" required value="${w.full_name||''}"/></div>
+          <div class="form-group"><label class="form-label">RUT</label><input class="form-input" id="ew-rut" value="${w.rut||''}"/></div>
+          <div class="form-group"><label class="form-label">Cargo</label><select class="form-input" id="ew-role">
+            ${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].map(r=>`<option ${w.role_label===r?'selected':''}>${r}</option>`).join('')}
+          </select></div>
+          <div class="form-group"><label class="form-label">Proyecto</label><select class="form-input" id="ew-proj">
+            <option value="">Sin proyecto</option>
+          </select></div>
+          <div class="form-group"><label class="form-label">Correo</label><input class="form-input" id="ew-email" type="email" value="${w.email||''}"/></div>
+          <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="ew-phone" value="${w.phone||''}"/></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:6px">
+          <button class="btn btn-primary" type="submit" style="flex:1;justify-content:center">💾 Guardar</button>
+          <button type="button" class="btn" onclick="closeWorkerModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>`
+  // Load projects into select
+  db.from('projects').select('id,name').eq('active',true).then(({data:p})=>{
+    const sel = el('ew-proj')
+    if (!sel) return
+    ;(p||[]).forEach(proj=>{ const o=document.createElement('option'); o.value=proj.name; o.textContent=proj.name; if(w.project===proj.name)o.selected=true; sel.appendChild(o) })
+    if (w.project && !(p||[]).find(x=>x.name===w.project)) {
+      const o=document.createElement('option'); o.value=w.project; o.textContent=w.project; o.selected=true; sel.appendChild(o)
+    }
+  })
+  el('edit-w-form').onsubmit = async e => {
+    e.preventDefault()
+    const {error} = await db.from('profiles').update({
+      full_name:el('ew-name').value, rut:el('ew-rut').value,
+      role_label:el('ew-role').value, project:el('ew-proj').value,
+      email:el('ew-email').value, phone:el('ew-phone').value,
+    }).eq('id',w.id)
+    if (error) { const e2=el('edit-w-err'); e2.style.display='block'; e2.textContent=error.message; return }
+    closeWorkerModal(); loadWorkersList()
+  }
+}
+window.closeWorkerModal = () => { const m=el('worker-modal'); if(m) m.innerHTML='' }
+
+window.showAddWorker = () => {
+  const modal = el('worker-modal') || document.querySelector('.content')
+  const div = document.createElement('div'); div.id='add-w-modal'
+  div.innerHTML = `
+  <div class="modal-bg" onclick="if(event.target===this){this.parentNode.remove()}">
+    <div class="modal">
+      <div class="modal-hdr"><div><div class="modal-title">Nuevo profesional</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
+      <div id="add-w-err" class="auth-err" style="display:none"></div>
+      <div class="alert alert-info"><span class="alert-icon">💡</span><div class="alert-msg">Para crear cuenta de acceso ve a <strong>🔑 Usuarios</strong> o <strong>📬 Solicitudes acceso</strong>.</div></div>
+      <form id="add-w-form">
+        <div class="g2">
+          <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="aw-name" required placeholder="María González"/></div>
+          <div class="form-group"><label class="form-label">RUT</label><input class="form-input" id="aw-rut" placeholder="12.345.678-9"/></div>
+          <div class="form-group"><label class="form-label">Cargo *</label><select class="form-input" id="aw-role" required>
+            <option value="">Seleccionar...</option>
+            ${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].map(r=>`<option>${r}</option>`).join('')}
+          </select></div>
+          <div class="form-group"><label class="form-label">Proyecto</label><select class="form-input" id="aw-proj"><option value="">Sin proyecto</option></select></div>
+          <div class="form-group"><label class="form-label">Correo</label><input class="form-input" id="aw-email" type="email" placeholder="correo@ejemplo.cl"/></div>
+          <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" id="aw-phone" placeholder="+56 9 XXXX XXXX"/></div>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">💾 Guardar</button>
+      </form>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+  db.from('projects').select('id,name').eq('active',true).then(({data:p})=>{
+    const sel=el('aw-proj'); if(!sel)return
+    ;(p||[]).forEach(proj=>{ const o=document.createElement('option'); o.value=proj.name; o.textContent=proj.name; sel.appendChild(o) })
+  })
+  el('add-w-form').onsubmit = async e => {
+    e.preventDefault()
+    const {error} = await db.from('profiles').insert([{
+      full_name:el('aw-name').value, rut:el('aw-rut').value,
+      role_label:el('aw-role').value, project:el('aw-proj').value,
+      email:el('aw-email').value, phone:el('aw-phone').value,
+      role:'worker', status:'active'
+    }])
+    if (error) { const e2=el('add-w-err'); e2.style.display='block'; e2.textContent=error.message; return }
+    div.remove(); loadWorkersList()
+  }
+}
+
+// ═══════════════════════════════════════════════
+// SHIFTS PAGE
+// ═══════════════════════════════════════════════
+async function pageShifts(pc) {
+  pc.innerHTML = `
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Gestión de Turnos</div><div class="topbar-sub">Seguimiento diario de asistencia</div></div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="pageShifts(el('page-content'))">↻</button>
+      <button class="btn btn-primary btn-sm" onclick="showShiftForm()">+ Nuevo turno</button>
+    </div>
+  </div>
+  <div class="content" id="shifts-content"><div style="display:flex;align-items:center;justify-content:center;height:200px"><div class="spinner" style="width:32px;height:32px"></div></div></div>`
+  await loadShiftsContent()
+}
+
+async function loadShiftsContent() {
+  const body = el('shifts-content')
+  if (!body) return
+
+  const todayStr = today()
+  const [{data:shifts},{data:workers},{data:att}] = await Promise.all([
+    db.from('shifts').select('*, profiles(id,full_name,role_label)').order('shift_date',{ascending:false}).limit(200),
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('attendances').select('id,worker_id,shift_id,status,checked_in_at,checked_out_at,late_minutes,checkin_lat').order('checked_in_at',{ascending:false}).limit(500),
+  ])
+
+  // Build attendance map
+  const attMap = {}
+  ;(att||[]).forEach(a=>{ if(a.shift_id) attMap[a.shift_id]=a })
+  ;(att||[]).forEach(a=>{ if(!a.shift_id&&a.checked_in_at) attMap[`${a.worker_id}_${a.checked_in_at.slice(0,10)}`]=a })
+
+  const getAtt = s => attMap[s.id] || attMap[`${s.worker_id}_${s.shift_date}`] || null
+
+  const todayShifts = (shifts||[]).filter(s=>s.shift_date===todayStr)
+  const activeNow   = todayShifts.filter(s=>{ const a=getAtt(s); return a?.checked_in_at&&!a?.checked_out_at })
+  const doneToday   = todayShifts.filter(s=>{ const a=getAtt(s); return !!a?.checked_out_at })
+
+  // Current filter state
+  const filterD  = window._shiftFilterD  || 'all'
+  const filterW  = window._shiftFilterW  || 'all'
+  const filterS  = window._shiftFilterS  || 'all'
+
+  let displayed = [...(shifts||[])]
+  if (filterD==='today')    displayed=displayed.filter(s=>s.shift_date===todayStr)
+  else if (filterD==='week') { const w7=new Date(Date.now()-7*86400000).toISOString().slice(0,10); displayed=displayed.filter(s=>s.shift_date>=w7) }
+  if (filterW!=='all')       displayed=displayed.filter(s=>s.worker_id===filterW)
+  if (filterS!=='all')       displayed=displayed.filter(s=>{
+    if (filterS==='in_progress') { const a=getAtt(s); return a?.checked_in_at&&!a?.checked_out_at }
+    return s.status===filterS
+  })
+
+  const STATUS = {completed:'badge-green',in_progress:'badge-teal',scheduled:'badge-gray',late:'badge-amber',absent:'badge-red'}
+  const SL     = {completed:'✅ Completado',in_progress:'● En curso',scheduled:'📅 Programado',late:'⚠ Atraso',absent:'❌ Inasistencia'}
+
+  const rows = displayed.map(s=>{
+    const a = getAtt(s)
+    const isToday = s.shift_date===todayStr
+    let liveSt = s.status, liveBadge = STATUS[s.status]||'badge-gray'
+    if(a){ if(a.checked_in_at&&!a.checked_out_at){liveSt='in_progress';liveBadge='badge-teal'} else if(a.checked_out_at){liveSt=a.status==='late'?'late':'completed';liveBadge=STATUS[liveSt]||'badge-green'} }
+    const attCell = a
+      ? `<div style="line-height:1.7">
+          <div style="font-family:var(--mono);font-size:12px;color:var(--emerald);font-weight:700">↑ ${fmtTime(a.checked_in_at)}${a.status==='late'&&a.late_minutes?` <span style="font-size:10px;color:var(--amber)">+${a.late_minutes}m</span>`:''}</div>
+          ${a.checked_out_at?`<div style="font-family:var(--mono);font-size:12px;color:#6366f1;font-weight:700">↓ ${fmtTime(a.checked_out_at)}</div>`:`<div style="font-size:11px;color:var(--teal);font-weight:600">● Sin salida</div>`}
+          ${a.checkin_lat?`<div style="font-size:9px;color:var(--text4)">📍 GPS ✓</div>`:''}
+        </div>`
+      : `<span style="font-size:12px;color:var(--text4);font-style:italic">${isToday?'Sin marcar':'—'}</span>`
+    return `<tr style="${isToday&&a?.checked_in_at&&!a?.checked_out_at?'background:rgba(8,145,178,.04)':''}">
+      <td><div style="font-weight:600;font-size:13px">${s.profiles?.full_name||'—'}</div><div style="font-size:11px;color:var(--text4)">${s.profiles?.role_label||''}</div></td>
+      <td>${s.project?`<span class="badge badge-blue">${s.project}</span>`:`<span style="color:var(--text4)">—</span>`}</td>
+      <td style="font-family:var(--mono);font-size:12px">${s.shift_date}${isToday?`<div style="font-size:10px;color:var(--accent);font-weight:700">HOY</div>`:''}</td>
+      <td style="font-family:var(--mono);font-size:12px">${s.start_time}–${s.end_time}</td>
+      <td>${attCell}</td>
+      <td><span class="badge ${liveBadge}">${SL[liveSt]||liveSt}</span></td>
+      <td style="font-family:var(--mono);font-weight:800;color:var(--emerald);font-size:12px;white-space:nowrap">${fmtCLP(s.fee)}</td>
+      <td><div style="display:flex;gap:4px">
+        ${s.status==='scheduled'?`<button class="btn btn-success btn-xs" onclick="markShift('${s.id}','completed')">✓</button><button class="btn btn-xs" onclick="markShift('${s.id}','absent')">✗</button>`:''}
+        <button class="btn btn-danger btn-xs" onclick="deleteShift('${s.id}')">🗑</button>
+      </div></td>
+    </tr>`
+  }).join('') || `<tr><td colspan="8"><div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">${(shifts||[]).length===0?'Sin turnos registrados aún':'Sin turnos con este filtro'}</div><div class="empty-sub">${(shifts||[]).length===0?'Los turnos se crean automáticamente al marcar entrada, o créalos manualmente':'Cambia el filtro de período o estado'}</div></div></td></tr>`
+
+  const wOpts = (workers||[]).map(w=>`<option value="${w.id}" ${filterW===w.id?'selected':''}>${w.full_name}</option>`).join('')
+
+  body.innerHTML = `
+    <div id="shift-modal-area"></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--accent)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">📅</div><div class="stat-label">Turnos hoy</div><div class="stat-val">${todayShifts.length}</div><div class="stat-delta">programados</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">🔄</div><div class="stat-label">En curso ahora</div><div class="stat-val">${activeNow.length}</div><div class="stat-delta badge badge-live" style="margin-top:4px">● activos</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✅</div><div class="stat-label">Completados hoy</div><div class="stat-val">${doneToday.length}</div><div class="stat-delta">con entrada y salida</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--amber)"></div><div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⏳</div><div class="stat-label">Sin marcar hoy</div><div class="stat-val">${todayShifts.length-activeNow.length-doneToday.length}</div><div class="stat-delta">pendientes</div></div>
+    </div>
+    <div class="card" style="padding:12px 18px;margin-bottom:14px">
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <div style="display:flex;gap:4px">
+          ${[['all','Todos'],['today','Hoy'],['week','7 días']].map(([v,l])=>`<button class="btn btn-sm ${filterD===v?'btn-primary':''}" onclick="window._shiftFilterD='${v}';loadShiftsContent()">${l}</button>`).join('')}
+        </div>
+        <select class="form-input" style="margin-bottom:0;font-size:12px;padding:6px 10px;min-width:160px" onchange="window._shiftFilterW=this.value;loadShiftsContent()">
+          <option value="all">👥 Todos los profesionales</option>
+          ${wOpts}
+        </select>
+      </div>
+    </div>
+    <div class="tabs">
+      ${[['all','Todos'],['scheduled','Programados'],['in_progress','En curso'],['completed','Completados'],['late','Con atraso'],['absent','Inasistencias']].map(([v,l])=>`<div class="tab ${filterS===v?'active':''}" onclick="window._shiftFilterS='${v}';loadShiftsContent()">${l}</div>`).join('')}
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Profesional</th><th>Proyecto</th><th>Fecha</th><th>Horario</th><th>Marcaje real</th><th>Estado</th><th>Honorario</th><th>Acciones</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div></div>`
+}
+
+window.markShift  = async (id,status) => { await db.from('shifts').update({status}).eq('id',id); loadShiftsContent() }
+window.deleteShift= async (id) => { if(!confirm('¿Eliminar?'))return; await db.from('shifts').delete().eq('id',id); loadShiftsContent() }
+
+window.showShiftForm = async () => {
+  const [{data:workers},{data:projects},{data:cfg}] = await Promise.all([
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('projects').select('id,name,fee_enfermera,fee_tens,fee_auxiliar,fee_admin').eq('active',true).order('name'),
+    db.from('system_config').select('value').eq('key','role_fees').maybeSingle(),
+  ])
+  const rates = cfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
+  const allProj = [...new Set([...(projects||[]).map(p=>p.name)])]
+
+  const div = document.createElement('div')
+  div.innerHTML=`
+  <div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
+    <div class="modal">
+      <div class="modal-hdr"><div><div class="modal-title">Programar turno</div><div class="modal-sub">Asignar turno con honorario automático</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
+      <div id="sf-err" class="auth-err" style="display:none"></div>
+      <form id="shift-form">
+        <div class="g2">
+          <div class="form-group"><label class="form-label">Profesional *</label>
+            <select class="form-input" id="sf-worker" required onchange="autoFillShiftFee(${JSON.stringify(JSON.stringify(workers||[]))},${JSON.stringify(JSON.stringify(projects||[]))},${JSON.stringify(JSON.stringify(rates))})">
+              <option value="">Seleccionar...</option>
+              ${(workers||[]).map(w=>`<option value="${w.id}" data-role="${w.role_label}" data-proj="${w.project||''}">${w.full_name} — ${w.role_label||''}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Proyecto</label>
+            <select class="form-input" id="sf-project">
+              <option value="">Sin proyecto</option>
+              ${allProj.map(p=>`<option>${p}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">Fecha *</label><input class="form-input" id="sf-date" type="date" required value="${today()}"/></div>
+          <div class="form-group"><label class="form-label">Honorario (CLP) *</label><input class="form-input" id="sf-fee" type="number" required placeholder="28000" min="1"/></div>
+          <div class="form-group"><label class="form-label">Hora inicio</label><input class="form-input" id="sf-start" type="time" value="08:00"/></div>
+          <div class="form-group"><label class="form-label">Hora fin</label><input class="form-input" id="sf-end" type="time" value="17:00"/></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Notas</label><textarea class="form-input" id="sf-notes" rows="2"></textarea></div>
+        </div>
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">💾 Guardar turno</button>
+      </form>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+  el('shift-form').onsubmit = async e => {
+    e.preventDefault()
+    const wid=el('sf-worker').value, fee=el('sf-fee').value
+    if(!wid){const err=el('sf-err');err.style.display='block';err.textContent='Selecciona un profesional';return}
+    if(!fee||Number(fee)<=0){const err=el('sf-err');err.style.display='block';err.textContent='Ingresa el honorario';return}
+    const {error} = await db.from('shifts').insert([{
+      worker_id:wid, project:el('sf-project').value||null,
+      shift_date:el('sf-date').value, fee:Number(fee),
+      start_time:el('sf-start').value, end_time:el('sf-end').value,
+      notes:el('sf-notes').value||null, status:'scheduled'
+    }])
+    if(error){const err=el('sf-err');err.style.display='block';err.textContent=error.message;return}
+    div.remove(); loadShiftsContent()
+  }
+}
+
+window.autoFillShiftFee = (wJson,pJson,rates) => {
+  const workers=JSON.parse(wJson), projects=JSON.parse(pJson)
+  const sel=el('sf-worker'); if(!sel)return
+  const opt=sel.selectedOptions[0]; if(!opt||!opt.value)return
+  const role=opt.dataset.role, proj=opt.dataset.proj
+  if(proj){el('sf-project').value=proj}
+  const projObj=projects.find(p=>p.name===proj)
+  const feeMap={'Enfermera/o':projObj?.fee_enfermera,'TENS':projObj?.fee_tens,'Auxiliar de servicio':projObj?.fee_auxiliar,'Administrativo':projObj?.fee_admin}
+  const fee=feeMap[role]||(typeof rates==='object'?rates[role]:0)||0
+  if(fee) el('sf-fee').value=fee
+}
+
+// ═══════════════════════════════════════════════
+// GEOMONITOR — Professional dark command center
+// ═══════════════════════════════════════════════
+let geoMap = null, geoMarkers = [], geoRecords = [], geoSelected = null
+
+async function pageGeo(pc) {
+  // Full-height layout, no content padding
+  pc.style.display='flex'; pc.style.flexDirection='column'; pc.style.overflow='hidden'
+  pc.innerHTML = `
+  <div style="padding:0 24px;height:60px;background:#060d1a;border-bottom:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:16px">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#f1f5f9;letter-spacing:-.03em">📍 Centro de Monitoreo</div>
+        <div style="font-size:11px;color:#475569">Seguimiento GPS en tiempo real</div>
+      </div>
+      <div id="geo-live-chip" style="display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);border-radius:20px;padding:4px 12px">
+        <div style="width:7px;height:7px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b98188;animation:pulse-badge 2s ease-in-out infinite"></div>
+        <span style="font-size:11px;color:#10b981;font-weight:700">EN VIVO</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <select id="geo-date" style="background:rgba(255,255,255,.04);border:1px solid rgba(59,130,246,.2);border-radius:6px;color:#94a3b8;padding:6px 10px;font-size:12px;font-family:var(--font)">
+        <option value="today">Hoy</option><option value="yesterday">Ayer</option><option value="week">7 días</option>
+      </select>
+      <select id="geo-proj-filter" style="background:rgba(255,255,255,.04);border:1px solid rgba(59,130,246,.2);border-radius:6px;color:#94a3b8;padding:6px 10px;font-size:12px;font-family:var(--font)">
+        <option value="all">Todos los proyectos</option>
+      </select>
+      <button onclick="loadGeoData()" style="background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">↻ Actualizar</button>
+    </div>
+  </div>
+  <div style="display:flex;flex:1;overflow:hidden">
+    <div id="geo-sidebar" style="width:300px;flex-shrink:0;background:rgba(10,18,32,.98);border-right:1px solid rgba(59,130,246,.1);display:flex;flex-direction:column;overflow:hidden">
+      <div id="geo-mini-stats" style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(59,130,246,.08)">
+        <div style="padding:12px 10px;text-align:center;border-right:1px solid rgba(59,130,246,.06)"><div style="font-size:22px;font-weight:800;color:#3b82f6;line-height:1" id="gs-total">—</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-top:3px">Total</div></div>
+        <div style="padding:12px 10px;text-align:center;border-right:1px solid rgba(59,130,246,.06)"><div style="font-size:22px;font-weight:800;color:#10b981;line-height:1" id="gs-active">—</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-top:3px">Activos</div></div>
+        <div style="padding:12px 10px;text-align:center"><div style="font-size:22px;font-weight:800;color:#f59e0b;line-height:1" id="gs-late">—</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase;letter-spacing:.07em;margin-top:3px">Atrasos</div></div>
+      </div>
+      <div id="geo-list" style="overflow-y:auto;flex:1;padding:8px 0"></div>
+    </div>
+    <div style="flex:1;position:relative">
+      <div id="geo-map" style="position:absolute;inset:0;background:#060d1a"></div>
+      <div id="geo-map-overlay" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;background:#060d1a;z-index:10">
+        <div class="spinner" style="width:32px;height:32px;border-color:rgba(59,130,246,.15);border-top-color:#3b82f6"></div>
+        <div style="color:#475569;font-size:13px">Inicializando mapa...</div>
+      </div>
+      <div id="geo-counter" style="position:absolute;top:14px;right:14px;z-index:400;background:rgba(10,18,32,.92);backdrop-filter:blur(10px);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:8px 14px;display:none">
+        <div style="display:flex;gap:16px">
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#3b82f6;font-family:var(--font)" id="gc-total">0</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase">Total</div></div>
+          <div style="width:1px;background:rgba(59,130,246,.15)"></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#10b981;font-family:var(--font)" id="gc-active">0</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase">Activos</div></div>
+          <div style="width:1px;background:rgba(59,130,246,.15)"></div>
+          <div style="text-align:center"><div style="font-size:20px;font-weight:800;color:#8b5cf6;font-family:var(--font)" id="gc-done">0</div><div style="font-size:9px;color:#475569;font-weight:700;text-transform:uppercase">Completados</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`
+
+  // Init Leaflet map
+  setTimeout(() => {
+    try {
+      if (geoMap) { try{geoMap.remove()}catch(_){} geoMap=null }
+      const mapDiv = el('geo-map')
+      if (!mapDiv) return
+      geoMap = L.map(mapDiv,{zoomControl:false,attributionControl:false}).setView([-33.45,-70.65],11)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19,subdomains:'abcd'}).addTo(geoMap)
+      L.control.zoom({position:'bottomright'}).addTo(geoMap)
+      L.control.attribution({prefix:'© CARTO',position:'bottomright'}).addTo(geoMap)
+      setTimeout(()=>{try{geoMap.invalidateSize()}catch(_){}},300)
+      el('geo-map-overlay').style.display='none'
+      el('geo-counter').style.display='block'
+    } catch(e){ console.error('Geo map error:',e) }
+  }, 200)
+
+  // Set up filters
+  el('geo-date').onchange = loadGeoData
+  el('geo-proj-filter').onchange = renderGeoMarkers
+
+  await loadGeoData()
+
+  // Inject popup CSS once
+  if (!document.getElementById('geo-popup-css')) {
+    const s=document.createElement('style'); s.id='geo-popup-css'
+    s.textContent=`.leaflet-popup-content-wrapper{background:#0f172a!important;border:1px solid rgba(59,130,246,.3)!important;border-radius:12px!important;box-shadow:0 20px 60px rgba(0,0,0,.6)!important;padding:0!important}.leaflet-popup-tip{background:#0f172a!important}.leaflet-popup-content{margin:0!important}.leaflet-popup-close-button{color:#64748b!important;top:10px!important;right:12px!important;font-size:18px!important}`
+    document.head.appendChild(s)
+  }
+}
+
+async function loadGeoData() {
+  const mode = el('geo-date')?.value || 'today'
+  const todayStr = today()
+  const from = mode==='today'?todayStr:mode==='yesterday'?new Date(Date.now()-86400000).toISOString().slice(0,10):new Date(Date.now()-7*86400000).toISOString().slice(0,10)
+  const {data} = await db.from('attendances').select('*,profiles(full_name,role_label,project)').gte('checked_in_at',from+'T00:00:00').lte('checked_in_at',(mode==='week'?todayStr:from)+'T23:59:59').order('checked_in_at',{ascending:false})
+  geoRecords = data||[]
+
+  // Populate project filter
+  const pf=el('geo-proj-filter'); if(!pf)return
+  const projs=[...new Set(geoRecords.map(r=>r.profiles?.project).filter(Boolean))]
+  const curVal=pf.value
+  pf.innerHTML='<option value="all">Todos los proyectos</option>'+projs.map(p=>`<option value="${p}">${p}</option>`).join('')
+  if(projs.includes(curVal))pf.value=curVal
+
+  renderGeoMarkers()
+}
+
+function renderGeoMarkers() {
+  const projF = el('geo-proj-filter')?.value||'all'
+  const filtered = projF==='all' ? geoRecords : geoRecords.filter(r=>r.profiles?.project===projF)
+  const withGeo  = filtered.filter(r=>r.checkin_lat)
+  const active   = filtered.filter(r=>r.checked_in_at&&!r.checked_out_at)
+  const done     = filtered.filter(r=>r.checked_out_at)
+  const late     = filtered.filter(r=>r.status==='late')
+
+  // Update stats
+  if(el('gs-total'))  el('gs-total').textContent=filtered.length
+  if(el('gs-active')) el('gs-active').textContent=active.length
+  if(el('gs-late'))   el('gs-late').textContent=late.length
+  if(el('gc-total'))  el('gc-total').textContent=filtered.length
+  if(el('gc-active')) el('gc-active').textContent=active.length
+  if(el('gc-done'))   el('gc-done').textContent=done.length
+
+  // Draw map markers
+  if (geoMap) {
+    geoMarkers.forEach(m=>{try{geoMap.removeLayer(m)}catch(_){}})
+    geoMarkers=[]
+    const uids=[...new Set(filtered.map(r=>r.worker_id))]
+    const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16','#f97316','#6366f1']
+    const colorMap={}; uids.forEach((id,i)=>colorMap[id]=COLORS[i%COLORS.length])
+    const bounds=[]
+    filtered.forEach(r=>{
+      if(!r.checkin_lat||!r.checkin_lng)return
+      const color=colorMap[r.worker_id]||'#3b82f6'
+      const isSel=r.id===geoSelected
+      const sz=isSel?48:38
+      const isAct=r.checked_in_at&&!r.checked_out_at
+      const avatarIni=ini(r.profiles?.full_name)
+      const icon=L.divIcon({
+        html:`<div style="position:relative;width:${sz}px;height:${sz+10}px">
+          ${isAct?`<div style="position:absolute;inset:-5px;border-radius:50%;border:2px solid ${color};opacity:.4;animation:pulse-badge 2s ease-in-out infinite"></div>`:''}
+          <div style="width:${sz}px;height:${sz}px;border-radius:50%;background:${color};border:${isSel?3:2}px solid rgba(255,255,255,${isSel?.9:.6});box-shadow:0 4px 16px ${color}66${isSel?',0 0 0 4px '+color+'33':''};display:flex;align-items:center;justify-content:center;font-size:${isSel?14:12}px;font-weight:900;color:#fff;font-family:system-ui;cursor:pointer">${avatarIni}</div>
+          <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:${sz/4}px solid transparent;border-right:${sz/4}px solid transparent;border-top:${Math.round(sz/3)}px solid ${color};filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))"></div>
+        </div>`,
+        className:'', iconSize:[sz,sz+10], iconAnchor:[sz/2,sz+10], popupAnchor:[0,-(sz+10)],
+      })
+      const popup=`<div style="font-family:system-ui;min-width:210px;padding:0;background:#0f172a;color:#f1f5f9;border-radius:12px;overflow:hidden">
+        <div style="background:${color}22;padding:12px 14px;border-bottom:1px solid ${color}33">
+          <div style="font-weight:800;font-size:14px;color:#fff;margin-bottom:2px">${r.profiles?.full_name||'—'}</div>
+          <div style="font-size:11px;color:${color};font-weight:600">${r.profiles?.role_label||''}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:1px">📍 ${r.profiles?.project||'—'}</div>
+        </div>
+        <div style="padding:10px 14px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div style="background:#0f2720;border-radius:6px;padding:8px;border:1px solid #10b98133;text-align:center">
+              <div style="font-size:9px;color:#10b981;font-weight:700;margin-bottom:2px;text-transform:uppercase">ENTRADA</div>
+              <div style="font-size:16px;font-weight:800;color:#10b981;font-family:monospace">${fmtTime(r.checked_in_at)}</div>
+            </div>
+            <div style="background:${r.checked_out_at?'#1e1040':'#1e293b'};border-radius:6px;padding:8px;border:1px solid ${r.checked_out_at?'#8b5cf633':'#334155'};text-align:center">
+              <div style="font-size:9px;color:${r.checked_out_at?'#8b5cf6':'#475569'};font-weight:700;margin-bottom:2px;text-transform:uppercase">SALIDA</div>
+              <div style="font-size:16px;font-weight:800;color:${r.checked_out_at?'#a78bfa':'#475569'};font-family:monospace">${r.checked_out_at?fmtTime(r.checked_out_at):'En turno'}</div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:#475569;font-family:monospace">${r.checkin_lat?.toFixed(5)}, ${r.checkin_lng?.toFixed(5)}</div>
+          <div style="margin-top:8px;display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:${r.status==='late'?'rgba(245,158,11,.2)':'rgba(16,185,129,.2)'};color:${r.status==='late'?'#f59e0b':'#10b981'};border:1px solid ${r.status==='late'?'rgba(245,158,11,.3)':'rgba(16,185,129,.3)'}">
+            ${r.status==='late'?'⚠ Con atraso':'✓ Puntual'}
+          </div>
+        </div>
+      </div>`
+      try{
+        const m=L.marker([r.checkin_lat,r.checkin_lng],{icon}).addTo(geoMap)
+        m.bindPopup(popup,{maxWidth:250,className:''})
+        m.on('click',()=>{geoSelected=r.id;renderGeoMarkers();m.openPopup()})
+        if(isSel)setTimeout(()=>{try{m.openPopup()}catch(_){}},100)
+        geoMarkers.push(m); bounds.push([r.checkin_lat,r.checkin_lng])
+        if(r.checkout_lat&&r.checkout_lng){
+          const outIcon=L.divIcon({html:`<div style="width:16px;height:16px;border-radius:50%;background:#7c3aed;border:2px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:8px">🏁</div>`,className:'',iconSize:[16,16],iconAnchor:[8,8]})
+          const m2=L.marker([r.checkout_lat,r.checkout_lng],{icon:outIcon}).addTo(geoMap)
+          m2.bindPopup(`<div style="font-family:system-ui;font-size:12px;background:#0f172a;color:#f1f5f9;padding:8px 12px;border-radius:8px"><b>${r.profiles?.full_name}</b><br>Salida: ${fmtTime(r.checked_out_at)}</div>`,{className:''})
+          geoMarkers.push(m2); bounds.push([r.checkout_lat,r.checkout_lng])
+          const line=L.polyline([[r.checkin_lat,r.checkin_lng],[r.checkout_lat,r.checkout_lng]],{color,weight:2,opacity:.3,dashArray:'5 6'}).addTo(geoMap)
+          geoMarkers.push(line)
+        }
+      }catch(_){}
+    })
+    if(bounds.length>0){try{geoMap.fitBounds(bounds,{padding:[50,50],maxZoom:15,animate:true})}catch(_){}}
+    else {
+      // Show no-GPS message
+      if(!withGeo.length&&filtered.length>0){
+        // overlays handled below
+      }
+    }
+    setTimeout(()=>{try{geoMap.invalidateSize()}catch(_){}},100)
+  }
+
+  // Render sidebar list
+  const listEl=el('geo-list'); if(!listEl)return
+  const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16']
+  const uids=[...new Set(filtered.map(r=>r.worker_id))]
+  const colorMap={}; uids.forEach((id,i)=>colorMap[id]=COLORS[i%COLORS.length])
+
+  if(filtered.length===0){
+    listEl.innerHTML=`<div style="padding:40px 20px;text-align:center"><div style="font-size:32px;margin-bottom:10px">🛰</div><div style="color:#475569;font-size:13px;font-weight:600">Sin registros</div></div>`
+    return
+  }
+
+  const byDate=filtered.reduce((acc,r)=>{const d=r.checked_in_at?.slice(0,10)||'x';if(!acc[d])acc[d]=[];acc[d].push(r);return acc},{})
+  listEl.innerHTML=Object.entries(byDate).sort(([a],[b])=>b.localeCompare(a)).map(([date,recs])=>`
+    <div style="padding:6px 14px;background:rgba(59,130,246,.05);border-bottom:1px solid rgba(59,130,246,.08);font-size:10px;font-weight:800;color:#3b82f6;text-transform:uppercase;letter-spacing:.1em;display:flex;justify-content:space-between">
+      <span>${fmtDate(date)}</span><span style="color:#334155;font-weight:600">${recs.length} reg.</span>
+    </div>
+    ${recs.map(r=>{
+      const isAct=r.checked_in_at&&!r.checked_out_at
+      const isSel=r.id===geoSelected
+      const color=colorMap[r.worker_id]||'#3b82f6'
+      return `<div onclick="geoFlyTo('${r.worker_id}','${r.checkin_lat||''}','${r.checkin_lng||''}','${r.id}')"
+        style="padding:10px 14px;border-bottom:1px solid rgba(59,130,246,.06);cursor:${r.checkin_lat?'pointer':'default'};background:${isSel?color+'12':'transparent'};border-left:3px solid ${isSel?color:'transparent'};transition:all .15s">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">
+          <div style="position:relative;flex-shrink:0">
+            ${isAct?`<div style="position:absolute;inset:-2px;border-radius:50%;border:1px solid ${color};opacity:.5;animation:pulse-badge 2s ease-in-out infinite"></div>`:''}
+            <div style="width:30px;height:30px;border-radius:50%;background:${color}22;border:2px solid ${color}55;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:${color}">${ini(r.profiles?.full_name)}</div>
+          </div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:12px;color:${isSel?color:'#e2e8f0'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.profiles?.full_name||'—'}</div>
+            <div style="font-size:10px;color:#475569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">${r.profiles?.role_label||''}${r.profiles?.project?' · '+r.profiles.project:''}</div>
+          </div>
+          <div style="width:7px;height:7px;border-radius:50%;background:${r.status==='late'?'#f59e0b':isAct?'#10b981':'#475569'};flex-shrink:0;${isAct?'box-shadow:0 0 6px #10b981':''}"></div>
+        </div>
+        <div style="display:flex;gap:10px;font-size:10px;font-family:var(--mono)">
+          <span style="color:#10b981;font-weight:700">↑ ${fmtTime(r.checked_in_at)}</span>
+          ${r.checked_out_at?`<span style="color:#8b5cf6;font-weight:700">↓ ${fmtTime(r.checked_out_at)}</span>`:isAct?`<span style="color:#3b82f6">● activo</span>`:''}
+        </div>
+        ${!r.checkin_lat?`<div style="font-size:9px;color:#f59e0b;margin-top:2px">⚠ Sin GPS</div>`:''}
+      </div>`
+    }).join('')}
+  `).join('')
+}
+
+window.geoFlyTo = (wid,lat,lng,rid) => {
+  geoSelected=rid
+  if(lat&&lng&&geoMap){try{geoMap.flyTo([parseFloat(lat),parseFloat(lng)],16,{duration:.8,animate:true})}catch(_){}}
+  renderGeoMarkers()
+}
+
+// ═══════════════════════════════════════════════
+// WORKER PAGES
+// ═══════════════════════════════════════════════
+async function pageWorkerHome(pc) {
+  pc.innerHTML=`
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Inicio</div><div class="topbar-sub">Panel del profesional</div></div></div>
+  <div class="content" id="wh-content"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
+  const uid = currentUser.id
+  const todayStr = today()
+  const month1 = new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString().slice(0,10)
+  const [{data:shift},{data:att},{data:shiftFees},{data:pendingPay}] = await Promise.all([
+    db.from('shifts').select('*').eq('worker_id',uid).eq('shift_date',todayStr).maybeSingle(),
+    db.from('attendances').select('*').eq('worker_id',uid).gte('checked_in_at',todayStr+'T00:00:00').lte('checked_in_at',todayStr+'T23:59:59').maybeSingle(),
+    db.from('shifts').select('fee').eq('worker_id',uid).in('status',['completed','late']).gte('shift_date',month1),
+    db.from('payments').select('amount').eq('worker_id',uid).neq('status','paid'),
+  ])
+  const totalFees = (shiftFees||[]).reduce((a,s)=>a+(s.fee||0),0)
+  const totalPend = (pendingPay||[]).reduce((a,p)=>a+(p.amount||0),0)
+  const inShift   = att?.checked_in_at && !att?.checked_out_at
+  const name1st   = currentProfile?.full_name?.split(' ')[0]||'Profesional'
+  el('wh-content').innerHTML=`
+    <div class="card" style="background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08);margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div><div style="font-size:20px;font-weight:700;color:#fff;margin-bottom:4px">Hola, ${name1st} 👋</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.4)">${currentProfile?.role_label||''}${currentProfile?.project?' · '+currentProfile.project:''}</div>
+        </div>
+        ${inShift?`<div style="text-align:right"><div style="font-family:var(--mono);font-size:24px;font-weight:700;color:#22c55e" id="wh-timer">—</div><div style="font-size:10px;color:rgba(255,255,255,.3)">● En turno</div></div>`:''}
+      </div>
+    </div>
+    ${shift?`<div class="card" style="margin-bottom:16px;border-color:${inShift?'var(--emerald)':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <div><div class="card-title">Turno de hoy</div><div class="card-sub">${todayStr}</div></div>
+        <span class="badge ${inShift?'badge-live':att?.checked_out_at?'badge-green':'badge-gray'}">${inShift?'● En curso':att?.checked_out_at?'✓ Completado':'Sin marcar'}</span>
+      </div>
+      <div class="g2" style="margin-bottom:14px">
+        ${[['🏥','Proyecto',shift.project||'—'],['⏰','Horario',shift.start_time+' – '+shift.end_time],['📍','Entrada',att?fmtTime(att.checked_in_at):'—'],['💰','Honorario',shift.fee?fmtCLP(shift.fee):'—']].map(([ic,l,v])=>`<div style="background:var(--slate);border-radius:var(--r);padding:10px 12px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text4);font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em">${ic} ${l}</div><div style="font-weight:700;font-size:13px;color:var(--text1);font-family:${['Honorario','Entrada','Horario'].includes(l)?'var(--mono)':'var(--font)'}">${v}</div></div>`).join('')}
+      </div>
+      ${!att?`<button class="checkin-btn" style="background:linear-gradient(135deg,#059669,#065f46);color:#fff" onclick="navigate('/w/checkin')"><span>📍</span> Marcar entrada</button>`:''}
+      ${inShift?`<button class="checkin-btn" style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff" onclick="navigate('/w/checkin')"><span>🚪</span> Marcar salida</button>`:''}
+    </div>`:`<div class="card" style="margin-bottom:16px;text-align:center;padding:24px">
+      <div style="font-size:36px;margin-bottom:8px">📍</div>
+      <div style="font-weight:600;font-size:14px;color:var(--text2)">¿Listo para comenzar?</div>
+      <div style="font-size:12px;color:var(--text4);margin:6px 0 16px;line-height:1.6">El turno se registra automáticamente al marcar entrada</div>
+      <button class="checkin-btn" style="background:linear-gradient(135deg,#059669,#065f46);color:#fff" onclick="navigate('/w/checkin')"><span>📍</span> Marcar entrada ahora</button>
+    </div>`}
+    <div class="stats-grid" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">💰</div><div class="stat-label">Honorarios del mes</div><div style="font-size:17px;font-weight:800;color:var(--text1);margin-top:6px">${fmtCLP(totalFees)}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:${totalPend>0?'var(--amber)':'var(--emerald)'}"></div><div class="stat-icon" style="background:${totalPend>0?'var(--amber-l)':'var(--emerald-l)'};color:${totalPend>0?'var(--amber)':'var(--emerald)'}">⏳</div><div class="stat-label">Pagos pendientes</div><div style="font-size:17px;font-weight:800;color:var(--text1);margin-top:6px">${fmtCLP(totalPend)}</div></div>
+    </div>
+    <div class="card">${[['📍','Marcar asistencia','Registrar entrada o salida','/w/checkin'],['📅','Mis turnos','Historial y honorarios por día','/w/shifts'],['💰','Mis pagos','Estado de pagos y honorarios','/w/boletas'],['📋','Solicitudes','Inasistencias, reclamos, cambios','/w/requests']].map(([i,l,s,p])=>`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" onclick="navigate('${p}')">
+      <div style="width:36px;height:36px;border-radius:9px;background:var(--slate);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${i}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:13px">${l}</div><div style="font-size:11px;color:var(--text4)">${s}</div></div>
+      <span style="color:var(--text4);font-size:18px">›</span>
+    </div>`).join('')}</div>`
+
+  if(inShift&&att?.checked_in_at){
+    const start=new Date(att.checked_in_at).getTime()
+    const timer=el('wh-timer'); if(!timer)return
+    const iv=setInterval(()=>{
+      if(!el('wh-timer')){clearInterval(iv);return}
+      const m=Math.floor((Date.now()-start)/60000); const h=Math.floor(m/60); const mm=m%60
+      el('wh-timer').textContent=`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`
+    },30000)
+    const m=Math.floor((Date.now()-start)/60000); const h=Math.floor(m/60); const mm=m%60
+    timer.textContent=`${String(h).padStart(2,'0')}:${String(mm).padStart(2,'0')}`
+  }
+}
+
+async function pageWorkerCheckin(pc) {
+  pc.innerHTML=`
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Marcar Asistencia</div><div class="topbar-sub">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</div></div></div>
+  <div class="content"><div style="max-width:480px;margin:0 auto" id="checkin-body"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div></div>`
+  await renderCheckin()
+}
+
+async function renderCheckin() {
+  const body = el('checkin-body'); if(!body)return
+  const uid = currentUser.id
+  const todayStr = today()
+  const [{data:shift},{data:att}] = await Promise.all([
+    db.from('shifts').select('*').eq('worker_id',uid).eq('shift_date',todayStr).maybeSingle(),
+    db.from('attendances').select('*').eq('worker_id',uid).gte('checked_in_at',todayStr+'T00:00:00').lte('checked_in_at',todayStr+'T23:59:59').maybeSingle(),
+  ])
+
+  if(att?.checked_out_at){
+    // Done for today
+    body.innerHTML=`<div class="card" style="text-align:center;padding:36px 24px">
+      <div style="font-size:56px;margin-bottom:14px">🎉</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:6px">¡Turno completado!</div>
+      <div style="display:flex;justify-content:center;gap:32px;margin:20px 0">
+        <div><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;margin-bottom:4px">Entrada</div><div style="font-family:var(--mono);font-weight:800;font-size:22px;color:var(--emerald)">${fmtTime(att.checked_in_at)}</div></div>
+        <div style="font-size:28px;color:var(--text4);align-self:center">→</div>
+        <div><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;margin-bottom:4px">Salida</div><div style="font-family:var(--mono);font-weight:800;font-size:22px;color:#6366f1">${fmtTime(att.checked_out_at)}</div></div>
+      </div>
+      ${shift?.fee?`<div style="background:var(--emerald-l);border:1px solid #6ee7b7;border-radius:var(--r);padding:12px;margin-bottom:16px;font-size:14px;font-weight:700;color:var(--emerald-d)">💰 Honorario del día: ${fmtCLP(shift.fee)}</div>`:''}
+      <div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:var(--r);padding:14px;font-size:13px;color:#1e3a8a;line-height:1.7">
+        <strong>El marcaje del próximo día se habilitará mañana.</strong><br>
+        <span style="font-size:12px;color:var(--text4)">Solo un marcaje por día.</span>
+      </div>
+    </div>`
+    return
+  }
+
+  if(att?.checked_in_at){
+    // Active shift - show checkout
+    body.innerHTML=`<div class="card" style="border-color:var(--emerald)">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px">
+        <div style="width:52px;height:52px;border-radius:50%;background:var(--emerald-l);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">✅</div>
+        <div><div style="font-size:16px;font-weight:700;color:var(--emerald-d)">Entrada registrada</div><div style="font-size:12px;color:var(--text4);margin-top:2px">${fmtTime(att.checked_in_at)} · ${att.status==='late'?'⚠️ Con atraso':'✓ A tiempo'}</div></div>
+      </div>
+      <div class="g2" style="margin-bottom:16px">
+        ${[['📍','Entrada',fmtTime(att.checked_in_at)],['💰','Honorario',shift?.fee?fmtCLP(shift.fee):'—'],['🏥','Proyecto',shift?.project||currentProfile?.project||'—'],['⏰','Turno',shift?(shift.start_time+' – '+shift.end_time):'—']].map(([ic,l,v])=>`<div style="background:var(--slate);border-radius:var(--r);padding:10px 12px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--text4);font-weight:700;margin-bottom:3px;text-transform:uppercase">${ic} ${l}</div><div style="font-weight:700;font-size:13px;font-family:var(--mono)">${v}</div></div>`).join('')}
+      </div>
+      <button class="checkin-btn" style="background:linear-gradient(135deg,#dc2626,#991b1b);color:#fff" id="checkout-btn" onclick="doCheckout('${att.id}','${shift?.id||''}')"><span>🚪</span> Marcar salida</button>
+      <div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#1e3a8a;line-height:1.6;margin-top:14px">
+        ℹ️ Presiona <strong>Marcar salida</strong> solo al finalizar tu turno.
+      </div>
+    </div>`
+    return
+  }
+
+  // No attendance yet - show check-in
+  body.innerHTML=`<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08)">
+    <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">${shift?'Turno · '+shift.start_time+' – '+shift.end_time:'Hoy'}</div>
+    <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:-.03em">${currentProfile?.project||shift?.project||'Sin proyecto asignado'}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">${currentProfile?.full_name?.split(' ')[0]||'Profesional'} · ${currentProfile?.role_label||''}</div>
+    ${shift?`<div style="margin-top:6px;display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(5,150,105,.15);color:#6ee7b7;border:1px solid rgba(5,150,105,.25)">💰 ${fmtCLP(shift.fee)}</div>`:''}
+  </div>
+  <div class="card" style="text-align:center;padding:32px 24px" id="confirm-card">
+    <div style="font-size:60px;margin-bottom:14px;line-height:1">🏥</div>
+    <div style="font-size:19px;font-weight:700;color:var(--text1);margin-bottom:6px">¡Listo para marcar!</div>
+    <div style="background:var(--slate);border-radius:var(--r);padding:12px 16px;margin-bottom:22px;font-size:12px;color:var(--text3);line-height:1.6">
+      🔒 Se registrará tu ubicación GPS al marcar entrada.<br>Solo visible para administración.
+    </div>
+    ${shift?'':`<div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1e3a8a;line-height:1.6">
+      ℹ️ Sin turno asignado — se creará automáticamente con tu horario configurado.
+    </div>`}
+    <button class="checkin-btn" style="background:linear-gradient(135deg,#059669,#065f46);color:#fff" onclick="doCheckin('${shift?.id||''}','${shift?.start_time||''}','${shift?.fee||0}')"><span>📍</span> Confirmar entrada</button>
+  </div>`
+}
+
+window.doCheckin = async (shiftId, startTime, fee) => {
+  const btn=document.querySelector('.checkin-btn')
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
+
+  let lat=null,lng=null
+  try{
+    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:12000,maximumAge:0}))
+    lat=pos.coords.latitude; lng=pos.coords.longitude
+  }catch(e){ console.warn('GPS not available:',e.message) }
+
+  let activeShiftId = shiftId || null
+
+  // Auto-create shift if none
+  if(!shiftId){
+    let newFee=0, newStart='08:00', newEnd='17:00'
+    try{
+      const dayKeys=['sun','mon','tue','wed','thu','fri','sat']
+      const dayKey=dayKeys[new Date().getDay()]
+      if(currentProfile?.project){
+        const {data:proj}=await db.from('projects').select('*').eq('name',currentProfile.project).maybeSingle()
+        if(proj){
+          const fm={'Enfermera/o':proj.fee_enfermera,'TENS':proj.fee_tens,'Auxiliar de servicio':proj.fee_auxiliar,'Administrativo':proj.fee_admin}
+          if(fm[currentProfile?.role_label]) newFee=fm[currentProfile.role_label]
+          if(proj.schedule?.[dayKey]?.active){newStart=proj.schedule[dayKey].start||'08:00';newEnd=proj.schedule[dayKey].end||'17:00'}
+        }
+      }
+      if(!newFee){const{data:cfg}=await db.from('system_config').select('value').eq('key','role_fees').maybeSingle();if(cfg?.value&&currentProfile?.role_label)newFee=cfg.value[currentProfile.role_label]||0}
+    }catch(_){}
+    const{data:ns}=await db.from('shifts').insert([{worker_id:currentUser.id,project:currentProfile?.project||null,shift_date:today(),start_time:newStart,end_time:newEnd,fee:newFee||0,status:'in_progress'}]).select().single()
+    if(ns) activeShiftId=ns.id
+  }
+
+  // Check if late
+  let status='present', lateMins=0
+  if(startTime){
+    const[h,m]=startTime.split(':').map(Number)
+    const shiftStart=new Date(); shiftStart.setHours(h,m+5,0,0)
+    if(new Date()>shiftStart){status='late';lateMins=Math.floor((Date.now()-shiftStart.getTime())/60000)}
+  }
+
+  const{error}=await db.from('attendances').insert([{worker_id:currentUser.id,shift_id:activeShiftId,status,late_minutes:lateMins,checked_in_at:new Date().toISOString(),checkin_lat:lat,checkin_lng:lng}])
+  if(error){alert('Error al registrar: '+error.message);return}
+  await renderCheckin()
+}
+
+window.doCheckout = async (attId, shiftId) => {
+  const btn=el('checkout-btn')
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
+  let lat=null,lng=null
+  try{
+    const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:12000,maximumAge:0}))
+    lat=pos.coords.latitude;lng=pos.coords.longitude
+  }catch(_){}
+  await db.from('attendances').update({checked_out_at:new Date().toISOString(),checkout_lat:lat,checkout_lng:lng}).eq('id',attId)
+  if(shiftId) await db.from('shifts').update({status:'completed'}).eq('id',shiftId)
+  await renderCheckin()
+}
+
+async function pageWorkerShifts(pc) {
+  pc.innerHTML=`
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Mis Turnos</div></div></div>
+  <div class="content" id="ws-content"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
+  const now=new Date()
+  let curMonth=now.getMonth(), curYear=now.getFullYear()
+  window._wsMonth=curMonth; window._wsYear=curYear
+  await loadWorkerShifts()
+}
+
+async function loadWorkerShifts() {
+  const body=el('ws-content'); if(!body)return
+  const m=window._wsMonth??new Date().getMonth(), y=window._wsYear??new Date().getFullYear()
+  const months=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const mStart=new Date(y,m,1).toISOString().slice(0,10), mEnd=new Date(y,m+1,0).toISOString().slice(0,10)
+  const {data:shifts}=await db.from('shifts').select('*').eq('worker_id',currentUser.id).gte('shift_date',mStart).lte('shift_date',mEnd).order('shift_date',{ascending:false})
+  const done=(shifts||[]).filter(s=>s.status==='completed'||s.status==='late')
+  const totalFee=done.reduce((a,s)=>a+(s.fee||0),0)
+  const canNext=!(y===new Date().getFullYear()&&m>=new Date().getMonth())
+
+  body.innerHTML=`
+    <div class="card" style="padding:12px 18px;margin-bottom:16px"><div style="display:flex;align-items:center;justify-content:space-between">
+      <button class="btn btn-sm" onclick="window._wsMonth=window._wsMonth===0?11:window._wsMonth-1;if(window._wsMonth===11)window._wsYear--;loadWorkerShifts()">← Anterior</button>
+      <div style="font-size:16px;font-weight:700;letter-spacing:-.03em">${months[m]} ${y}</div>
+      <button class="btn btn-sm ${canNext?'':'btn-ghost'}" ${canNext?'':'disabled style="opacity:.4"'} onclick="window._wsMonth=window._wsMonth===11?0:window._wsMonth+1;if(window._wsMonth===0)window._wsYear++;loadWorkerShifts()">Siguiente →</button>
+    </div></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✔</div><div class="stat-label">Completados</div><div class="stat-val">${done.length}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--amber)"></div><div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⏰</div><div class="stat-label">Atrasos</div><div class="stat-val">${(shifts||[]).filter(s=>s.status==='late').length}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">💰</div><div class="stat-label">Honorarios</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(totalFee)}</div></div>
+    </div>
+    ${(shifts||[]).length===0?`<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Sin turnos en ${months[m]}</div></div>`:(shifts||[]).map(s=>{
+      const isToday=s.shift_date===today()
+      const STATUS={completed:'badge-green',in_progress:'badge-teal',scheduled:'badge-gray',late:'badge-amber',absent:'badge-red'}
+      const SL={completed:'✅ Completado',in_progress:'● En curso',scheduled:'📅 Programado',late:'⚠ Con atraso',absent:'❌ Inasistencia'}
+      const d=new Date(s.shift_date+'T12:00:00'); const days=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+      return `<div class="card" style="margin-bottom:10px;padding:0;overflow:hidden">
+        <div style="padding:12px 16px;background:var(--slate);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:700;font-size:14px">${days[d.getDay()]} ${d.getDate()} ${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][d.getMonth()]}${isToday?' <span style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-l);padding:2px 7px;border-radius:20px">HOY</span>':''}</div>
+          ${s.fee?`<span style="font-family:var(--mono);font-weight:800;font-size:13px;color:var(--emerald)">${fmtCLP(s.fee)}</span>`:''}
+        </div>
+        <div style="padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-weight:700;font-size:13px">${s.project||'Sin proyecto'}</div><div style="font-family:var(--mono);font-size:12px;color:var(--text4);margin-top:2px">${s.start_time} – ${s.end_time}</div></div>
+          <span class="badge ${STATUS[s.status]||'badge-gray'}">${SL[s.status]||s.status}</span>
+        </div>
+      </div>`
+    }).join('')}`
+}
+
+async function pageWorkerBoletas(pc) {
+  pc.innerHTML=`
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Mis Pagos</div><div class="topbar-sub">Honorarios y estado de pagos</div></div></div>
+  <div class="content" id="wb-content"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
+  const uid=currentUser.id
+  const now=new Date(); const month1=new Date(now.getFullYear(),now.getMonth(),1).toISOString().slice(0,10)
+  const months=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const [{data:payments},{data:shifts}]=await Promise.all([
+    db.from('payments').select('*').eq('worker_id',uid).order('period_year',{ascending:false}).order('period_month',{ascending:false}),
+    db.from('shifts').select('*').eq('worker_id',uid).in('status',['completed','late']).order('shift_date',{ascending:false}),
+  ])
+  const thisMonthShifts=(shifts||[]).filter(s=>s.shift_date>=month1)
+  const thisMonthFee=thisMonthShifts.reduce((a,s)=>a+(s.fee||0),0)
+  const totalPend=(payments||[]).filter(p=>p.status!=='paid').reduce((a,p)=>a+(p.amount||0),0)
+  const totalPaid=(payments||[]).filter(p=>p.status==='paid').reduce((a,p)=>a+(p.amount||0),0)
+  const PSTATUS={pending:{cls:'badge-amber',l:'⏳ Pendiente'},in_process:{cls:'badge-blue',l:'🔄 En proceso'},paid:{cls:'badge-green',l:'✅ Pagado'}}
+  el('wb-content').innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">💰</div><div class="stat-label">Ganado este mes</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(thisMonthFee)}</div><div style="font-size:11px;color:var(--text4);margin-top:4px">${thisMonthShifts.length} turno${thisMonthShifts.length!==1?'s':''}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:${totalPend>0?'var(--amber)':'var(--emerald)'}"></div><div class="stat-icon" style="background:${totalPend>0?'var(--amber-l)':'var(--emerald-l)'};color:${totalPend>0?'var(--amber)':'var(--emerald)'}">⏳</div><div class="stat-label">Pendientes de pago</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(totalPend)}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald-d)">✅</div><div class="stat-label">Total recibido</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(totalPaid)}</div></div>
+    </div>
+    <div class="tabs"><div class="tab active" id="wb-tab-pay" onclick="setWbTab('pay')">Mis pagos</div><div class="tab" id="wb-tab-turn" onclick="setWbTab('turn')">Por turno</div></div>
+    <div id="wb-pay-section">
+      ${(payments||[]).length===0?`<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">Sin pagos asignados</div><div class="empty-sub">La administración asignará tus pagos aquí</div></div>`:(payments||[]).map(p=>{
+        const s=PSTATUS[p.status]||PSTATUS.pending
+        return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
+          <div style="height:5px;background:${p.status==='paid'?'linear-gradient(90deg,#059669,#34d399)':p.status==='in_process'?'linear-gradient(90deg,#1d4ed8,#3b82f6)':'linear-gradient(90deg,#d97706,#fbbf24)'}"></div>
+          <div style="padding:18px 20px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+              <div><div style="font-size:16px;font-weight:700;margin-bottom:4px">${months[p.period_month]} ${p.period_year}</div>${p.description?`<div style="font-size:12px;color:var(--text4)">${p.description}</div>`:''}</div>
+              <span class="badge ${s.cls}">${s.l}</span>
+            </div>
+            <div style="background:${p.status==='paid'?'var(--emerald-l)':p.status==='in_process'?'var(--accent-l)':'var(--amber-l)'};border-radius:var(--r);padding:16px 18px;display:flex;justify-content:space-between;align-items:center">
+              <div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:4px">Monto del pago</div>
+                <div style="font-size:24px;font-weight:800;font-family:var(--mono)">${fmtCLP(p.amount)}</div>
+              </div>
+              <div style="font-size:36px">${p.status==='paid'?'✅':p.status==='in_process'?'🔄':'⏳'}</div>
+            </div>
+            ${p.paid_at?`<div style="font-size:11px;color:var(--text4);margin-top:10px;font-family:var(--mono)">Pagado el: ${new Date(p.paid_at).toLocaleDateString('es-CL',{day:'2-digit',month:'long',year:'numeric'})}</div>`:''}
+          </div>
+        </div>`
+      }).join('')}
+    </div>
+    <div id="wb-turn-section" style="display:none">
+      ${(shifts||[]).length===0?`<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">Sin turnos completados</div></div>`:`<div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Proyecto</th><th>Horario</th><th>Estado</th><th>Honorario</th></tr></thead>
+        <tbody>${(shifts||[]).map(s=>`<tr>
+          <td style="font-family:var(--mono);font-size:12px">${s.shift_date}</td>
+          <td>${s.project?`<span class="badge badge-blue">${s.project}</span>`:'—'}</td>
+          <td style="font-family:var(--mono);font-size:12px">${s.start_time}–${s.end_time}</td>
+          <td><span class="badge ${s.status==='completed'?'badge-green':'badge-amber'}">${s.status==='completed'?'✓ Completado':'⚠ Atraso'}</span></td>
+          <td style="font-family:var(--mono);font-weight:800;color:var(--emerald)">${fmtCLP(s.fee)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      <div style="display:flex;justify-content:space-between;padding:14px 0 0;border-top:1px solid var(--border);font-weight:700">
+        <span>Total histórico</span><span style="color:var(--emerald);font-family:var(--mono)">${fmtCLP((shifts||[]).reduce((a,s)=>a+(s.fee||0),0))}</span>
+      </div></div>`}
+    </div>`
+}
+window.setWbTab = (tab) => {
+  el('wb-pay-section').style.display=tab==='pay'?'':'none'
+  el('wb-turn-section').style.display=tab==='turn'?'':'none'
+  el('wb-tab-pay').className='tab'+(tab==='pay'?' active':'')
+  el('wb-tab-turn').className='tab'+(tab==='turn'?' active':'')
+}
+
+async function pageWorkerRequests(pc) {
+  pc.innerHTML=`
+  <div class="topbar"><div class="topbar-left"><div class="topbar-title">Mis Solicitudes</div></div></div>
+  <div class="content"><div class="g2">
+    <div class="card" style="margin-bottom:0">
+      <div class="card-title" style="margin-bottom:4px">Nueva solicitud</div>
+      <div class="card-sub" style="margin-bottom:16px">Inasistencia, reclamo o cambio de turno</div>
+      <div id="req-ok" style="display:none" class="alert alert-success"><span class="alert-icon">✅</span><div><div class="alert-title">Enviada correctamente</div><div class="alert-msg">La administración la revisará pronto.</div></div></div>
+      <form id="req-form">
+        <div class="form-group"><label class="form-label">Tipo *</label><select class="form-input" id="req-type" required onchange="toggleReqDate(this.value)">
+          <option value="">Seleccionar...</option><option value="inasistencia">📋 Inasistencia</option>
+          <option value="reclamo">⚠ Reclamo</option><option value="cambio">🔄 Cambio de turno</option>
+        </select></div>
+        <div class="form-group" id="req-date-group" style="display:none"><label class="form-label">Fecha afectada</label><input class="form-input" id="req-date" type="date"/></div>
+        <div class="form-group"><label class="form-label">Descripción *</label><textarea class="form-input" id="req-desc" required rows="4" placeholder="Describe el motivo..."></textarea></div>
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">📤 Enviar solicitud</button>
+      </form>
+    </div>
+    <div class="card" style="margin-bottom:0"><div class="card-title" style="margin-bottom:14px">Historial de solicitudes</div><div id="req-history">
+      <div style="display:flex;justify-content:center;padding:40px"><div class="spinner" style="width:24px;height:24px"></div></div>
+    </div></div>
+  </div></div>`
+  await loadReqHistory()
+  el('req-form').onsubmit = async e => {
+    e.preventDefault()
+    const {error}=await db.from('requests').insert([{worker_id:currentUser.id,type:el('req-type').value,description:el('req-desc').value,affected_date:el('req-date').value||null,status:'pending'}])
+    if(!error){el('req-ok').style.display='flex';el('req-type').value='';el('req-desc').value='';el('req-date').value='';el('req-date-group').style.display='none';setTimeout(()=>el('req-ok').style.display='none',4000);loadReqHistory()}
+  }
+}
+window.toggleReqDate = (v) => { el('req-date-group').style.display=v?'':'none' }
+async function loadReqHistory() {
+  const h=el('req-history'); if(!h)return
+  const {data}=await db.from('requests').select('*').eq('worker_id',currentUser.id).order('created_at',{ascending:false})
+  const S={pending:'badge-amber',approved:'badge-green',rejected:'badge-red'}
+  const SL={pending:'Pendiente',approved:'Aprobada',rejected:'Rechazada'}
+  const TI={inasistencia:'📋',reclamo:'⚠',cambio:'🔄'}
+  h.innerHTML=(data||[]).length===0?`<div class="empty-state" style="padding:24px 0"><div class="empty-icon" style="font-size:32px">📋</div><div class="empty-title" style="font-size:14px">Sin solicitudes</div></div>`:(data||[]).map(r=>`<div style="padding:11px 0;border-bottom:1px solid var(--border)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">${TI[r.type]||'📋'}</span><span style="font-weight:600;font-size:13px">${{inasistencia:'Inasistencia',reclamo:'Reclamo',cambio:'Cambio'}[r.type]||r.type}</span></div>
+      <span class="badge ${S[r.status]||'badge-gray'}">${SL[r.status]||r.status}</span>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:3px">${r.description||'—'}</div>
+    <div style="font-size:11px;color:var(--text4);font-family:var(--mono)">${r.created_at?.slice(0,10)||''}${r.affected_date?' · Fecha: '+r.affected_date:''}</div>
+  </div>`).join('')
+}
+
+// ═══════════════════════════════════════════════
+// REMAINING ADMIN PAGES (simplified stubs)
+// ═══════════════════════════════════════════════
+async function pageAlerts(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Atrasos</div></div></div><div class="content" id="alerts-c"></div>`
+  const month1=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
+  const {data}=await db.from('attendances').select('*, profiles(full_name,role_label,project)').eq('status','late').gte('checked_in_at',month1).order('checked_in_at',{ascending:false})
+  const counts={}; (data||[]).forEach(a=>{ const k=a.worker_id; if(!counts[k])counts[k]={name:a.profiles?.full_name,role:a.profiles?.role_label,proj:a.profiles?.project,count:0,last:a.checked_in_at}; counts[k].count++ })
+  el('alerts-c').innerHTML=Object.values(counts).sort((a,b)=>b.count-a.count).map(w=>`<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:44px;height:44px;border-radius:50%;background:${w.count>=2?'var(--red-l)':'var(--amber-l)'};color:${w.count>=2?'var(--red)':'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${ini(w.name)}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${w.name||'—'}</div><div style="font-size:12px;color:var(--text4)">${w.role||''}${w.proj?' · '+w.proj:''}</div></div>
+      <span class="badge ${w.count>=2?'badge-red':'badge-amber'}">${w.count} atraso${w.count!==1?'s':''}</span>
+    </div>
+  </div>`).join('')||(data||[]).length===0?`<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Sin atrasos este mes</div></div>`:''
+}
+
+async function pageRequests(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Solicitudes</div></div></div><div class="content" id="req-c"></div>`
+  const {data}=await db.from('requests').select('*, profiles(full_name)').order('created_at',{ascending:false})
+  const S={pending:'badge-amber',approved:'badge-green',rejected:'badge-red'}
+  const TI={inasistencia:'📋',reclamo:'⚠',cambio:'🔄'}
+  el('req-c').innerHTML=`<div class="tabs"><div class="tab active">Todas (${(data||[]).length})</div></div><div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Profesional</th><th>Tipo</th><th>Descripción</th><th>Fecha</th><th>Estado</th><th>Acción</th></tr></thead>
+    <tbody>${(data||[]).map(r=>`<tr>
+      <td style="font-weight:600;font-size:13px">${r.profiles?.full_name||'—'}</td>
+      <td>${TI[r.type]||'📋'} ${r.type||''}</td>
+      <td style="font-size:12px;max-width:200px;overflow:hidden;text-overflow:ellipsis">${r.description||'—'}</td>
+      <td style="font-family:var(--mono);font-size:12px">${r.created_at?.slice(0,10)||'—'}</td>
+      <td><span class="badge ${S[r.status]||'badge-gray'}">${r.status}</span></td>
+      <td><div style="display:flex;gap:4px">${r.status==='pending'?`<button class="btn btn-success btn-xs" onclick="updateReqStatus('${r.id}','approved')">✓</button><button class="btn btn-danger btn-xs" onclick="updateReqStatus('${r.id}','rejected')">✗</button>`:''}</div></td>
+    </tr>`).join('')||'<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">Sin solicitudes</div></div></td></tr>'}</tbody>
+  </table></div></div>`
+}
+window.updateReqStatus = async (id,status) => { await db.from('requests').update({status}).eq('id',id); pageRequests(el('page-content')) }
+
+async function pageDocuments(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Documentos</div></div><div class="topbar-right"><label class="btn btn-primary btn-sm" style="cursor:pointer">⬆ Subir<input type="file" style="display:none" onchange="uploadDoc(this)"/></label></div></div><div class="content" id="docs-c"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
+  await loadDocs()
+}
+async function loadDocs() {
+  const {data}=await db.from('documents').select('*').order('created_at',{ascending:false})
+  const body=el('docs-c'); if(!body)return
+  body.innerHTML=`<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Categoría</th><th>Tamaño</th><th>Fecha</th><th>Acciones</th></tr></thead>
+    <tbody>${(data||[]).map(d=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><span style="font-size:18px">${d.file_type?.includes('pdf')?'📄':d.file_type?.includes('xl')?'📊':'📎'}</span><span style="font-weight:600;font-size:12px">${d.name}</span></div></td>
+      <td><span class="badge badge-gray">${d.category||'general'}</span></td>
+      <td style="font-family:var(--mono);font-size:12px">${d.size_bytes?Math.round(d.size_bytes/1024)+' KB':'—'}</td>
+      <td style="font-family:var(--mono);font-size:12px">${d.created_at?.slice(0,10)||'—'}</td>
+      <td><div style="display:flex;gap:4px">${d.file_url?`<a href="${d.file_url}" target="_blank" class="btn btn-xs">⬇ Ver</a>`:''}<button class="btn btn-danger btn-xs" onclick="deleteDoc('${d.id}')">🗑</button></div></td>
+    </tr>`).join('')||'<tr><td colspan="5"><div class="empty-state"><div class="empty-icon">📁</div><div class="empty-title">Sin documentos</div></div></td></tr>'}</tbody>
+  </table></div></div>`
+}
+window.uploadDoc = async (input) => {
+  const file=input.files[0]; if(!file)return
+  const path=`docs/${Date.now()}_${file.name.replace(/\s/g,'_')}`
+  const {error:ue}=await db.storage.from('documents').upload(path,file)
+  if(!ue){const {data:{publicUrl}}=db.storage.from('documents').getPublicUrl(path);await db.from('documents').insert([{name:file.name,file_url:publicUrl,file_type:file.type,size_bytes:file.size,category:'general'}]);loadDocs()}
+  else alert('Error: '+ue.message); input.value=''
+}
+window.deleteDoc = async (id) => { if(!confirm('¿Eliminar?'))return; await db.from('documents').delete().eq('id',id); loadDocs() }
+
+async function pageBoletas(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Pagos y Honorarios</div></div><div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="showPaymentModal()">+ Asignar pago</button></div></div><div class="content" id="bol-c"></div>`
+  await loadBoletas()
+}
+async function loadBoletas() {
+  const body=el('bol-c'); if(!body)return
+  const [{data:pay},{data:workers},{data:shifts}]=await Promise.all([
+    db.from('payments').select('*, profiles(full_name,role_label,project)').order('period_year',{ascending:false}).order('period_month',{ascending:false}),
+    db.from('profiles').select('id,full_name,role_label').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('shifts').select('worker_id,fee,shift_date,status').in('status',['completed','late']),
+  ])
+  const totalPend=(pay||[]).filter(p=>p.status!=='paid').reduce((a,p)=>a+(p.amount||0),0)
+  const totalPaid=(pay||[]).filter(p=>p.status==='paid').reduce((a,p)=>a+(p.amount||0),0)
+  const months=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const S={paid:'badge-green',in_process:'badge-blue',pending:'badge-amber'}
+  const SL={paid:'✅ Pagado',in_process:'🔄 En proceso',pending:'⏳ Pendiente'}
+  body.innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:1fr 1fr 1fr">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--amber)"></div><div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⏳</div><div class="stat-label">Pendiente de pago</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(totalPend)}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✅</div><div class="stat-label">Total pagado</div><div style="font-size:15px;font-weight:800;margin-top:6px">${fmtCLP(totalPaid)}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--accent)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">👥</div><div class="stat-label">Profesionales</div><div class="stat-val">${(workers||[]).length}</div></div>
+    </div>
+    <div class="card"><div class="table-wrap"><table>
+      <thead><tr><th>Profesional</th><th>Período</th><th>Monto</th><th>Estado</th><th>Descripción</th><th>Acciones</th></tr></thead>
+      <tbody>${(pay||[]).map(p=>`<tr>
+        <td><div style="font-weight:600;font-size:13px">${p.profiles?.full_name||'—'}</div><div style="font-size:11px;color:var(--text4)">${p.profiles?.project||''}</div></td>
+        <td style="font-weight:600">${months[p.period_month]} ${p.period_year}</td>
+        <td style="font-family:var(--mono);font-weight:800;font-size:13px;white-space:nowrap">${fmtCLP(p.amount)}</td>
+        <td><span class="badge ${S[p.status]||'badge-gray'}">${SL[p.status]||p.status}</span></td>
+        <td style="font-size:12px;color:var(--text3)">${p.description||'—'}</td>
+        <td><div style="display:flex;gap:4px">
+          ${p.status==='pending'?`<button class="btn btn-xs btn-primary" onclick="updatePay('${p.id}','in_process')">🔄</button>`:''}
+          ${p.status==='in_process'?`<button class="btn btn-xs btn-success" onclick="updatePay('${p.id}','paid')">✅</button>`:''}
+          ${p.status==='paid'?`<span style="font-size:10px;color:var(--text4);font-family:var(--mono)">${p.paid_at?.slice(0,10)||''}</span>`:''}
+          <button class="btn btn-danger btn-xs" onclick="deletePay('${p.id}')">🗑</button>
+        </div></td>
+      </tr>`).join('')||'<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">💰</div><div class="empty-title">Sin pagos asignados</div><div class="empty-sub">Usa "+ Asignar pago" para crear el primero</div></div></td></tr>'}</tbody>
+    </table></div></div>`
+}
+window.updatePay = async (id,status) => {
+  const u={status}; if(status==='paid')u.paid_at=new Date().toISOString()
+  await db.from('payments').update(u).eq('id',id); loadBoletas()
+}
+window.deletePay = async (id) => { if(!confirm('¿Eliminar?'))return; await db.from('payments').delete().eq('id',id); loadBoletas() }
+window.showPaymentModal = async () => {
+  const now=new Date()
+  const [{data:workers},{data:shifts},{data:cfg}]=await Promise.all([
+    db.from('profiles').select('id,full_name,role_label').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('shifts').select('worker_id,fee,shift_date,status').in('status',['completed','late']),
+    db.from('system_config').select('value').eq('key','role_fees').maybeSingle(),
+  ])
+  const months=['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const div=document.createElement('div')
+  div.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
+    <div class="modal"><div class="modal-hdr"><div><div class="modal-title">Asignar pago</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
+      <div id="pay-modal-err" class="auth-err" style="display:none"></div>
+      <form id="pay-form">
+        <div class="g2">
+          <div class="form-group"><label class="form-label">Profesional *</label><select class="form-input" id="pm-worker" required><option value="">Seleccionar...</option>${(workers||[]).map(w=>`<option value="${w.id}">${w.full_name}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Estado</label><select class="form-input" id="pm-status"><option value="pending">⏳ Pendiente</option><option value="in_process">🔄 En proceso</option><option value="paid">✅ Pagado</option></select></div>
+          <div class="form-group"><label class="form-label">Mes</label><select class="form-input" id="pm-month">${months.slice(1).map((m,i)=>`<option value="${i+1}" ${i+1===now.getMonth()+1?'selected':''}>${m}</option>`).join('')}</select></div>
+          <div class="form-group"><label class="form-label">Año</label><select class="form-input" id="pm-year"><option>${now.getFullYear()}</option><option>${now.getFullYear()-1}</option></select></div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Monto (CLP) *</label>
+            <div style="display:flex;gap:8px"><input class="form-input" id="pm-amount" type="number" required placeholder="420000" style="flex:1;margin-bottom:0"/>
+              <button type="button" class="btn btn-sm" onclick="autoCalcPay(${JSON.stringify(JSON.stringify(shifts||[]))})">🧮 Auto</button>
+            </div>
+          </div>
+          <div class="form-group" style="grid-column:1/-1"><label class="form-label">Descripción</label><input class="form-input" id="pm-desc" placeholder="Honorarios mayo 2025"/></div>
+        </div>
+        <div style="display:flex;gap:10px"><button class="btn btn-primary" type="submit" style="flex:1;justify-content:center">💾 Asignar pago</button><button type="button" class="btn" onclick="this.closest('.modal-bg').parentNode.remove()">Cancelar</button></div>
+      </form>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+  el('pay-form').onsubmit=async e=>{
+    e.preventDefault()
+    const {error}=await db.from('payments').insert([{worker_id:el('pm-worker').value,amount:Number(el('pm-amount').value),period_month:Number(el('pm-month').value),period_year:Number(el('pm-year').value),status:el('pm-status').value,description:el('pm-desc').value||null}])
+    if(error){const err=el('pay-modal-err');err.style.display='block';err.textContent=error.message;return}
+    div.remove(); loadBoletas()
+  }
+}
+window.autoCalcPay = (shiftsJson) => {
+  const shifts=JSON.parse(shiftsJson), wid=el('pm-worker')?.value, m=Number(el('pm-month')?.value), y=Number(el('pm-year')?.value)
+  if(!wid){alert('Selecciona un profesional');return}
+  const start=`${y}-${String(m).padStart(2,'0')}-01`, end=`${y}-${String(m).padStart(2,'0')}-31`
+  const earned=shifts.filter(s=>s.worker_id===wid&&s.shift_date>=start&&s.shift_date<=end).reduce((a,s)=>a+(s.fee||0),0)
+  if(earned>0) el('pm-amount').value=earned
+  else alert('Sin turnos completados para este período')
+}
+
+async function pageAccounts(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Solicitudes de acceso</div></div><div class="topbar-right"><button class="btn btn-sm" onclick="pageAccounts(el('page-content'))">↻</button></div></div><div class="content" id="acc-c"></div>`
+  const {data}=await db.from('account_requests').select('*').order('created_at',{ascending:false})
+  const S={pending:'badge-amber',approved:'badge-green',rejected:'badge-red'}
+  el('acc-c').innerHTML=`<div class="card"><div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Cargo</th><th>Correo</th><th>RUT</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>
+    <tbody>${(data||[]).map(r=>`<tr>
+      <td style="font-weight:600;font-size:13px">${r.full_name||'—'}</td>
+      <td><span class="badge badge-gray" style="font-size:11px">${r.role_label||'—'}</span></td>
+      <td style="font-size:12px;font-family:var(--mono)">${r.email||'—'}</td>
+      <td style="font-size:12px;font-family:var(--mono)">${r.rut||'—'}</td>
+      <td><span class="badge ${S[r.status]||'badge-gray'}">${r.status}</span></td>
+      <td style="font-size:12px;font-family:var(--mono)">${r.created_at?.slice(0,10)||'—'}</td>
+      <td><div style="display:flex;gap:4px">${r.status==='pending'?`
+        <button class="btn btn-success btn-xs" onclick="approveAccount('${r.id}','${r.email||''}','${r.password||''}','${r.full_name||''}','${r.role_label||''}','${r.rut||''}','${r.phone||''}')">✓ Aprobar</button>
+        <button class="btn btn-danger btn-xs" onclick="rejectAccount('${r.id}')">✗</button>`:''}</div></td>
+    </tr>`).join('')||'<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📬</div><div class="empty-title">Sin solicitudes pendientes</div></div></td></tr>'}</tbody>
+  </table></div></div>`
+}
+window.approveAccount = async (id,email,pwd,name,role,rut,phone) => {
+  if(!email||!pwd){alert('Faltan datos de la solicitud');return}
+  const {data:authData,error:ae}=await db.auth.admin?.createUser({email,password:pwd}).catch(()=>({data:null,error:{message:'Admin API no disponible'}}))
+  if(ae){
+    // Fallback: just mark approved, admin creates user manually
+    await db.from('account_requests').update({status:'approved'}).eq('id',id)
+    // Try to insert profile if we have a user id somehow
+    alert('Solicitud aprobada. Crea la cuenta manualmente en Supabase Auth > Users si es necesario.')
+    pageAccounts(el('page-content')); return
+  }
+  if(authData?.user){
+    await db.from('profiles').upsert([{id:authData.user.id,full_name:name,email,role:'worker',role_label:role,rut,phone,status:'active'}])
+    await db.from('account_requests').update({status:'approved'}).eq('id',id)
+  }
+  pageAccounts(el('page-content'))
+}
+window.rejectAccount = async (id) => { await db.from('account_requests').update({status:'rejected'}).eq('id',id); pageAccounts(el('page-content')) }
+
+async function pageUsers(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Usuarios</div><div class="topbar-sub">Invitar y gestionar cuentas de acceso</div></div></div><div class="content">
+    <div class="card" style="max-width:480px">
+      <div class="card-title" style="margin-bottom:4px">Invitar nuevo usuario</div>
+      <div class="card-sub" style="margin-bottom:20px">Se enviará un correo con las instrucciones de acceso</div>
+      <div id="inv-ok" class="alert alert-success" style="display:none"><span class="alert-icon">✅</span><div><div class="alert-title">Invitación enviada</div></div></div>
+      <div id="inv-err" class="auth-err" style="display:none"></div>
+      <form id="inv-form">
+        <div class="form-group"><label class="form-label">Correo del profesional *</label><input class="form-input" id="inv-email" type="email" required placeholder="profesional@correo.cl"/></div>
+        <div class="form-group"><label class="form-label">Contraseña temporal *</label><input class="form-input" id="inv-pwd" type="text" required placeholder="Mínimo 8 caracteres"/></div>
+        <div class="form-group"><label class="form-label">Nombre completo</label><input class="form-input" id="inv-name" placeholder="María González"/></div>
+        <div class="form-group"><label class="form-label">Cargo</label><select class="form-input" id="inv-role"><option value="">Sin cargo</option>${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].map(r=>`<option>${r}</option>`).join('')}</select></div>
+        <div class="alert alert-info" style="margin-bottom:14px"><span class="alert-icon">💡</span><div class="alert-msg">El profesional podrá cambiar su contraseña al ingresar. También puedes aprobar solicitudes en <strong>📬 Solicitudes acceso</strong>.</div></div>
+        <button class="btn btn-primary" type="submit" style="width:100%;justify-content:center">✉ Crear cuenta</button>
+      </form>
+    </div>
+  </div>`
+  el('inv-form').onsubmit=async e=>{
+    e.preventDefault()
+    const {data:auth,error:ae}=await db.auth.signUp({email:el('inv-email').value,password:el('inv-pwd').value})
+    if(ae){const err=el('inv-err');err.style.display='block';err.textContent=ae.message;return}
+    if(auth?.user){
+      await db.from('profiles').upsert([{id:auth.user.id,full_name:el('inv-name').value,email:el('inv-email').value,role:'worker',role_label:el('inv-role').value,status:'active'}])
+    }
+    el('inv-ok').style.display='flex'; el('inv-form').reset(); setTimeout(()=>el('inv-ok').style.display='none',4000)
+    const err=el('inv-err'); err.style.display='none'
+  }
+}
+
+async function pageSettings(pc) {
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Configuración</div></div><div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="showNewProject()">+ Crear proyecto</button></div></div><div class="content" id="set-c"></div>`
+  await loadSettings()
+}
+
+async function loadSettings() {
+  const body=el('set-c'); if(!body)return
+  const [{data:projects},{data:workers},{data:cfg}]=await Promise.all([
+    db.from('projects').select('*').order('name'),
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('system_config').select('*'),
+  ])
+  const rates=(cfg||[]).find(c=>c.key==='role_fees')?.value||{'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
+  const DAY_LABELS={mon:'Lun',tue:'Mar',wed:'Mié',thu:'Jue',fri:'Vie',sat:'Sáb',sun:'Dom'}
+  body.innerHTML=`
+    <div class="card" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div><div class="card-title">💰 Tarifas globales por cargo</div><div class="card-sub">Honorario por turno · Guardado en Supabase</div></div>
+        <button class="btn btn-sm" onclick="editRates(${JSON.stringify(JSON.stringify(rates))})">✏ Editar</button>
+      </div>
+      <div class="g2">${Object.entries(rates).map(([role,fee])=>`<div style="background:var(--slate);border-radius:var(--r);padding:14px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <div><div style="font-weight:700;font-size:13px">${role}</div><div style="font-size:11px;color:var(--text4)">por turno</div></div>
+        <div style="font-weight:800;font-size:16px;color:var(--emerald);font-family:var(--mono)">${fmtCLP(fee)}</div>
+      </div>`).join('')}</div>
+    </div>
+    <div class="card-title" style="margin-bottom:10px">🏥 Proyectos / Licitaciones</div>
+    ${(projects||[]).length===0?`<div class="empty-state" style="background:white;border-radius:var(--r-md);border:1px solid var(--border);padding:40px"><div class="empty-icon">🏥</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Crea tu primer proyecto</div><button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="showNewProject()">+ Crear proyecto</button></div>`:''}
+    ${(projects||[]).map(p=>{
+      const pw=(workers||[]).filter(w=>w.project===p.name)
+      const activeDays=p.schedule?Object.entries(p.schedule).filter(([,d])=>d.active):[]
+      return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
+        <div style="height:4px;background:${p.active?'linear-gradient(90deg,#1d4ed8,#0891b2)':'#e2e8f0'}"></div>
+        <div style="padding:16px 20px">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+                <div style="font-size:15px;font-weight:800">${p.name}</div>
+                <span class="badge ${p.active?'badge-green':'badge-gray'}">${p.active?'● Activo':'○ Inactivo'}</span>
+              </div>
+              ${p.hospital||p.location?`<div style="font-size:12px;color:var(--text4);margin-bottom:4px">${p.hospital?'🏥 '+p.hospital:''} ${p.location?'📍 '+p.location:''}</div>`:''}
+              ${activeDays.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${activeDays.map(([day,d])=>`<span style="font-size:10px;font-weight:700;background:var(--accent-l);color:#1e40af;border-radius:4px;padding:2px 7px">${DAY_LABELS[day]||day} ${d.start}–${d.end}</span>`).join('')}</div>`:''}
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0;margin-left:12px">
+              <button class="btn btn-primary btn-xs" onclick="showEditProject(${JSON.stringify(JSON.stringify(p))})">✏</button>
+              <button class="btn btn-xs" onclick="toggleProjActive('${p.id}',${p.active})">${p.active?'⏸':'▶'}</button>
+              <button class="btn btn-danger btn-xs" onclick="deleteProj('${p.id}','${p.name}')">🗑</button>
+            </div>
+          </div>
+          ${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].some(r=>p['fee_'+{Enfermera:'enfermera','TENS':'tens',Auxiliar:'auxiliar',Administrativo:'admin'}[r.split('/')[0].split(' ')[0]]])?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].map(role=>{const fk={'Enfermera/o':'fee_enfermera','TENS':'fee_tens','Auxiliar de servicio':'fee_auxiliar','Administrativo':'fee_admin'}[role];const rk={'Enfermera/o':'required_enfermera','TENS':'required_tens','Auxiliar de servicio':'required_auxiliar','Administrativo':'required_admin'}[role];if(!(p[rk]>0))return'';const assigned=pw.filter(w=>w.role_label===role).length,needed=p[rk]||0,ok=assigned>=needed;return`<div style="background:${ok?'var(--emerald-l)':'var(--amber-l)'};border-radius:6px;padding:6px 10px;border:1px solid ${ok?'#6ee7b7':'#fde68a'};text-align:center;min-width:80px"><div style="font-size:10px;font-weight:700;color:${ok?'var(--emerald-d)':'#92400e'}">${role.split('/')[0]}</div><div style="font-family:var(--mono);font-weight:800;font-size:14px;color:${ok?'var(--emerald-d)':'#92400e'}">${assigned}/${needed}</div><div style="font-size:9px;color:${ok?'var(--emerald-d)':'#b45309'}">${fmtCLP(p[fk]).replace(' CLP','')}</div></div>`}).join('')}</div>`:''}
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${pw.length>0?pw.map(w=>`<span style="font-size:11px;font-weight:600;background:var(--accent-l);color:#1e40af;border-radius:20px;padding:3px 10px">${w.full_name?.split(' ').slice(0,2).join(' ')} · ${w.role_label?.split('/')[0]||w.role_label}</span>`).join(''):`<span style="font-size:12px;color:var(--text4)">Sin profesionales asignados</span>`}</div>
+            <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="showAssignWorkers('${p.id}','${p.name}',${JSON.stringify(JSON.stringify(workers||[]))},${JSON.stringify(JSON.stringify(pw||[]))})">👥 Asignar →</button>
+          </div>
+        </div>
+      </div>`
+    }).join('')}`
+}
+window.toggleProjActive = async (id,active) => { await db.from('projects').update({active:!active}).eq('id',id); loadSettings() }
+window.deleteProj = async (id,name) => { if(!confirm(`¿Eliminar "${name}"?`))return; await db.from('projects').delete().eq('id',id); loadSettings() }
+
+window.showAssignWorkers = (pid,pname,allWJson,pwJson) => {
+  const allW=JSON.parse(allWJson), pw=JSON.parse(pwJson)
+  const selIds=pw.map(w=>w.id)
+  const div=document.createElement('div')
+  div.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
+    <div class="modal"><div class="modal-hdr"><div><div class="modal-title">Asignar profesionales</div><div class="modal-sub" style="color:var(--accent);font-weight:600">${pname}</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
+      <div style="display:flex;gap:8px;margin-bottom:12px">
+        <button class="btn btn-xs" onclick="document.querySelectorAll('.aw-cb').forEach(c=>c.checked=true)">✓ Todos</button>
+        <button class="btn btn-xs" onclick="document.querySelectorAll('.aw-cb').forEach(c=>c.checked=false)">✕ Ninguno</button>
+      </div>
+      <div id="aw-list">${allW.map(w=>{
+        const sel=selIds.includes(w.id)
+        return `<label style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r);border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent-l)':'var(--surface)'};margin-bottom:8px;cursor:pointer" id="aw-row-${w.id}" onclick="this.style.borderColor=document.getElementById('aw-${w.id}').checked?'var(--border)':'var(--accent)';this.style.background=document.getElementById('aw-${w.id}').checked?'var(--surface)':'var(--accent-l)'">
+          <input type="checkbox" class="aw-cb" id="aw-${w.id}" value="${w.id}" ${sel?'checked':''} style="width:18px;height:18px;flex-shrink:0;cursor:pointer"/>
+          <div style="flex:1"><div style="font-weight:600;font-size:13px">${w.full_name}</div><div style="font-size:11px;color:var(--text4)">${w.role_label||'—'}</div></div>
+        </label>`
+      }).join('')}</div>
+      <div style="display:flex;gap:10px;margin-top:18px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAssignW('${pid}','${pname}',${JSON.stringify(JSON.stringify(allW))})">💾 Guardar</button>
+        <button class="btn" onclick="this.closest('.modal-bg').parentNode.remove()">Cancelar</button>
+      </div>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+}
+window.saveAssignW = async (pid,pname,allWJson) => {
+  const allW=JSON.parse(allWJson)
+  const selected=[...document.querySelectorAll('.aw-cb:checked')].map(c=>c.value)
+  for(const w of allW){
+    if(selected.includes(w.id)) await db.from('profiles').update({project:pname}).eq('id',w.id)
+    else if(w.project===pname) await db.from('profiles').update({project:null}).eq('id',w.id)
+  }
+  document.querySelector('.modal-bg')?.parentNode?.remove(); loadSettings()
+}
+
+window.editRates = async (ratesJson) => {
+  const rates=JSON.parse(ratesJson)
+  const div=document.createElement('div')
+  div.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
+    <div class="modal"><div class="modal-hdr"><div><div class="modal-title">Editar tarifas globales</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
+      ${Object.entries(rates).map(([role,fee])=>`<div class="form-group"><label class="form-label">${role} (CLP / turno)</label><input class="form-input" id="rate-${role.replace(/\//g,'_').replace(/ /g,'_')}" type="number" value="${fee}" min="0"/></div>`).join('')}
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveRates(${JSON.stringify(JSON.stringify(Object.keys(rates)))})">💾 Guardar tarifas</button>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+}
+window.saveRates = async (keysJson) => {
+  const keys=JSON.parse(keysJson)
+  const newRates={}; keys.forEach(k=>{ const id='rate-'+k.replace(/\//g,'_').replace(/ /g,'_'); const inp=el(id); if(inp)newRates[k]=Number(inp.value) })
+  await db.from('system_config').upsert([{key:'role_fees',value:newRates,updated_at:new Date().toISOString()}])
+  document.querySelector('.modal-bg')?.parentNode?.remove(); loadSettings()
+}
+
+window.showNewProject = () => showProjectForm(null)
+window.showEditProject = (pJson) => showProjectForm(JSON.parse(pJson))
+
+function showProjectForm(p) {
+  const isEdit=!!p
+  const DEFAULT_SCHED={mon:{active:true,start:'08:00',end:'17:00'},tue:{active:true,start:'08:00',end:'17:00'},wed:{active:true,start:'08:00',end:'17:00'},thu:{active:true,start:'08:00',end:'17:00'},fri:{active:true,start:'08:00',end:'16:00'},sat:{active:false,start:'08:00',end:'14:00'},sun:{active:false,start:'08:00',end:'14:00'}}
+  const sched=p?.schedule||DEFAULT_SCHED
+  const DAY_LABELS={mon:'Lunes',tue:'Martes',wed:'Miércoles',thu:'Jueves',fri:'Viernes',sat:'Sábado',sun:'Domingo'}
+  const div=document.createElement('div')
+  div.innerHTML=`<div class="modal-bg" onclick="" style="align-items:flex-start;padding:16px;overflow-y:auto">
+    <div class="modal" style="max-width:640px;margin:0 auto">
+      <div class="modal-hdr"><div><div class="modal-title">${isEdit?'✏ Editar':'➕ Crear'} proyecto</div><div class="modal-sub">Configura dotación, honorarios y horario</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').remove()">✕</button></div>
+      <div id="pf-err" class="auth-err" style="display:none"></div>
+      <form id="proj-form">
+        <div style="background:var(--slate);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:12px">📋 Información</div>
+          <div class="g2">
+            <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="pf-name" required placeholder="VACUNACION 2026 LO BARNECHEA" value="${p?.name||''}"/></div>
+            <div class="form-group"><label class="form-label">Hospital / CESFAM</label><input class="form-input" id="pf-hospital" placeholder="CESFAM Lo Barnechea" value="${p?.hospital||''}"/></div>
+            <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="pf-location" placeholder="Av. Las Condes 14801" value="${p?.location||''}"/></div>
+            <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="pf-desc" value="${p?.description||''}"/></div>
+          </div>
+        </div>
+        <div style="background:rgba(59,130,246,.04);border-radius:var(--r-md);padding:16px;margin-bottom:14px;border:1px solid rgba(59,130,246,.12)">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 Horario de operación</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Activa los días que opera este proyecto</div>
+          ${Object.entries(DAY_LABELS).map(([day,label])=>{
+            const d=sched[day]||{active:false,start:'08:00',end:'17:00'}
+            return `<div style="display:grid;grid-template-columns:110px 50px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+              <div style="font-weight:600;font-size:13px;color:${d.active?'var(--text1)':'var(--text4)'}" id="pf-daylabel-${day}">${label}</div>
+              <div id="pf-toggle-${day}" onclick="toggleScheduleDay('${day}')" style="width:42px;height:24px;border-radius:12px;background:${d.active?'var(--accent)':'#cbd5e1'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
+                <div id="pf-knob-${day}" style="position:absolute;top:3px;left:${d.active?21:3}px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>
+              </div>
+              <div id="pf-times-${day}" style="display:${d.active?'flex':'none'};align-items:center;gap:8px">
+                <input type="time" id="pf-start-${day}" value="${d.start}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:100px"/>
+                <span style="font-size:12px;color:var(--text4)">→</span>
+                <input type="time" id="pf-end-${day}" value="${d.end}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:100px"/>
+              </div>
+              ${!d.active?`<span id="pf-noday-${day}" style="font-size:12px;color:var(--text4);font-style:italic">No operativo</span>`:`<span id="pf-noday-${day}" style="display:none"></span>`}
+            </div>`
+          }).join('')}
+        </div>
+        <div style="background:var(--emerald-l);border-radius:var(--r-md);padding:16px;margin-bottom:14px;border:1px solid #6ee7b7">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px">👥 Dotación + Honorario por turno</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos necesitas de cada cargo y qué se les paga</div>
+          ${[['Enfermera/o','fee_enfermera','required_enfermera'],['TENS','fee_tens','required_tens'],['Auxiliar de servicio','fee_auxiliar','required_auxiliar'],['Administrativo','fee_admin','required_admin']].map(([label,fk,rk])=>`
+          <div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px">
+            <div style="font-weight:700;font-size:13px">${label}</div>
+            <div><div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:6px;text-transform:uppercase">Dotación</div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" class="btn btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="adjDot('${rk}',-1)">−</button>
+                <span id="pf-req-${rk}" style="font-family:var(--mono);font-weight:800;font-size:18px;min-width:28px;text-align:center">${p?.[rk]||0}</span>
+                <button type="button" class="btn btn-primary btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="adjDot('${rk}',1)">+</button>
+              </div>
+            </div>
+            <div><div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:6px;text-transform:uppercase">Honorario / turno</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="number" id="pf-${fk}" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right" min="0" value="${p?.[fk]||35000}" oninput="updateCost()"/>
+                <span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>
+              </div>
+            </div>
+          </div>`).join('')}
+          <div id="pf-total-cost" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado por turno</span>
+            <span id="pf-cost-val" style="font-weight:800;font-size:16px;color:#1e3a8a;font-family:var(--mono)">$0 CLP</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-primary" type="submit" style="flex:1;justify-content:center;padding:13px">${isEdit?'💾 Guardar cambios':'➕ Crear proyecto'}</button>
+          <button type="button" class="btn" onclick="this.closest('.modal-bg').remove()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>`
+  document.body.appendChild(div)
+  updateCost()
+  el('proj-form').onsubmit=async e=>{
+    e.preventDefault()
+    const name=el('pf-name').value.trim()
+    if(!name){const err=el('pf-err');err.style.display='block';err.textContent='El nombre es requerido';return}
+    // Build schedule
+    const finalSched={}
+    Object.keys(DAY_LABELS).forEach(day=>{
+      const tog=el(`pf-toggle-${day}`)
+      const isAct=tog?.style.background.includes('blue')||tog?.style.background.includes('#3b82f6')||tog?.style.background.includes('var(--accent)')
+      finalSched[day]={active:!!isAct,start:el(`pf-start-${day}`)?.value||'08:00',end:el(`pf-end-${day}`)?.value||'17:00'}
+    })
+    const rks=['required_enfermera','required_tens','required_auxiliar','required_admin']
+    const data={
+      name, description:el('pf-desc').value||null, hospital:el('pf-hospital').value||null, location:el('pf-location').value||null,
+      fee_enfermera:Number(el('pf-fee_enfermera')?.value)||0, fee_tens:Number(el('pf-fee_tens')?.value)||0, fee_auxiliar:Number(el('pf-fee_auxiliar')?.value)||0, fee_admin:Number(el('pf-fee_admin')?.value)||0,
+      required_enfermera:Number(el('pf-req-required_enfermera')?.textContent)||0, required_tens:Number(el('pf-req-required_tens')?.textContent)||0, required_auxiliar:Number(el('pf-req-required_auxiliar')?.textContent)||0, required_admin:Number(el('pf-req-required_admin')?.textContent)||0,
+      schedule:finalSched, active:true
+    }
+    const {error}=isEdit ? await db.from('projects').update(data).eq('id',p.id) : await db.from('projects').insert([data])
+    if(error){const err=el('pf-err');err.style.display='block';err.textContent=error.code==='23505'?'Ya existe un proyecto con ese nombre.':error.message;return}
+    div.remove(); loadSettings()
+  }
+}
+
+window.adjDot = (key,delta) => { const el2=el(`pf-req-${key}`); if(!el2)return; const cur=parseInt(el2.textContent)||0; el2.textContent=Math.max(0,cur+delta); updateCost() }
+window.updateCost = () => {
+  const fks=['fee_enfermera','fee_tens','fee_auxiliar','fee_admin'], rks=['required_enfermera','required_tens','required_auxiliar','required_admin']
+  let total=0; fks.forEach((fk,i)=>{ const f=Number(el('pf-'+fk)?.value)||0; const r=Number(el('pf-req-'+rks[i])?.textContent)||0; total+=f*r })
+  const cv=el('pf-cost-val'); if(cv)cv.textContent=fmtCLP(total)
+}
+window.toggleScheduleDay = (day) => {
+  const tog=el(`pf-toggle-${day}`), knob=el(`pf-knob-${day}`), times=el(`pf-times-${day}`), noday=el(`pf-noday-${day}`), label=el(`pf-daylabel-${day}`)
+  const isNowActive=tog.style.background.includes('#3b82f6')||tog.style.background.includes('var(--accent)')
+  if(isNowActive){tog.style.background='#cbd5e1';knob.style.left='3px';if(times)times.style.display='none';if(noday){noday.style.display='';noday.textContent='No operativo'};if(label)label.style.color='var(--text4)'}
+  else{tog.style.background='var(--accent)';knob.style.left='21px';if(times)times.style.display='flex';if(noday)noday.style.display='none';if(label)label.style.color='var(--text1)'}
+}
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+init()
+</script>
+</body>
 </html>
