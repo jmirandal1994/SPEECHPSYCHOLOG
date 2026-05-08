@@ -57,7 +57,7 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 
 /* SHELL */
 .shell{display:flex;width:100%;height:100dvh;overflow:hidden}
-.sidebar{width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
+.sidebar{width:240px;flex-shrink:0;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.15)}
 .brand{padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
 .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .brand-img{width:38px;height:38px;object-fit:contain;border-radius:7px;background:rgba(255,255,255,.05);padding:3px;flex-shrink:0}
@@ -86,7 +86,7 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--slate)}
 
 /* TOPBAR */
-.topbar{padding:0 28px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 0 rgba(15,23,42,.04)}
+.topbar{padding:0 28px;height:60px;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,23,42,.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 8px rgba(15,23,42,.06);position:sticky;top:0;z-index:50}
 .topbar-left{display:flex;flex-direction:column}
 .topbar-title{font-size:16px;font-weight:700;color:var(--text1);letter-spacing:-.03em;line-height:1.2}
 .topbar-sub{font-size:11px;color:var(--text4);margin-top:1px}
@@ -97,8 +97,9 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .18s;font-family:var(--font);box-shadow:var(--sh);white-space:nowrap;letter-spacing:-.01em}
 .btn:hover{background:#f8fafc;border-color:var(--accent);color:var(--accent)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;border:none;box-shadow:0 4px 14px rgba(29,78,216,.35)}
-.btn-primary:hover{box-shadow:0 6px 20px rgba(29,78,216,.45);transform:translateY(-1px);background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none}
+.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;box-shadow:0 4px 14px rgba(29,78,216,.3),inset 0 1px 0 rgba(255,255,255,.15)}
+.btn-primary:hover{box-shadow:0 6px 24px rgba(29,78,216,.45);transform:translateY(-1px);background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none}
+.btn-primary:active{transform:translateY(0);box-shadow:0 2px 8px rgba(29,78,216,.3)}
 .btn-success{background:linear-gradient(135deg,var(--emerald),var(--emerald-d));color:#fff;border:none}
 .btn-success:hover{color:#fff;border:none}
 .btn-danger{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);color:var(--red)}
@@ -108,7 +109,8 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .btn-ghost{background:transparent;border-color:transparent;box-shadow:none}
 
 /* CARDS */
-.card{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
+.card{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.04);transition:box-shadow .2s}
+.card:hover{box-shadow:0 2px 8px rgba(15,23,42,.1),0 6px 20px rgba(15,23,42,.07)}
 .card-title{font-size:14px;font-weight:700;color:var(--text1);letter-spacing:-.02em}
 .card-sub{font-size:12px;color:var(--text4);margin-top:2px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -134,8 +136,10 @@ textarea.form-input{resize:vertical;min-height:80px}
 
 /* STATS GRID */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
-.stat-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.04)}
+.stat-card:hover{box-shadow:0 8px 32px rgba(15,23,42,.12);transform:translateY(-3px);border-color:var(--accent)}
+.stat-card:hover .stat-icon{transform:scale(1.1)}
+.stat-icon{transition:transform .2s}
 .stat-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px}
 .stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
 .stat-label{font-size:11px;color:var(--text4);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
@@ -174,6 +178,8 @@ tr:hover td{background:#f8fafc}
 .empty-sub{font-size:13px;color:var(--text4);line-height:1.6}
 
 /* SPINNER */
+.page-enter{animation:fadeSlideIn .2s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .spinner{width:22px;height:22px;border:2.5px solid rgba(59,130,246,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -210,19 +216,101 @@ tr:hover td{background:#f8fafc}
   .g13{grid-template-columns:1fr!important}
   .g2{grid-template-columns:1fr!important}
   .stat-val{font-size:20px}
-  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 max(6px,env(safe-area-inset-bottom));z-index:800}
-  .mobile-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px;cursor:pointer;color:var(--text4);position:relative}
+  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;
+    background:rgba(255,255,255,0.96);
+    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+    border-top:1px solid rgba(0,0,0,0.07);
+    padding:8px 4px max(12px,env(safe-area-inset-bottom));
+    z-index:800;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
+  .mobile-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;cursor:pointer;color:#94a3b8;position:relative;transition:all .15s;border-radius:12px;margin:0 2px}
   .mobile-nav-item.active{color:var(--accent)}
-  .mobile-nav-icon{font-size:20px;line-height:1}
-  .mobile-nav-label{font-size:9px;font-weight:600}
-  .mobile-nav-badge{position:absolute;top:2px;right:calc(50% - 16px);background:var(--red);color:#fff;border-radius:10px;font-size:8px;padding:1px 4px;font-weight:700}
+  .mobile-nav-item.active .mobile-nav-icon-wrap{background:rgba(59,130,246,.12);transform:scale(1.08)}
+  .mobile-nav-icon-wrap{width:42px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .mobile-nav-icon{font-size:19px;line-height:1}
+  .mobile-nav-label{font-size:9px;font-weight:700;letter-spacing:.01em}
+  .mobile-nav-badge{position:absolute;top:0px;right:calc(50% - 18px);background:var(--red);color:#fff;border-radius:10px;font-size:8px;padding:1px 5px;font-weight:800;min-width:16px;text-align:center;box-shadow:0 2px 6px rgba(220,38,38,.4)}
+/* Mobile table: hide secondary columns */
+@media(max-width:900px){
+  .hide-mobile{display:none!important}
+  .table-wrap{border-radius:var(--r-md);overflow:hidden}
+  .content{padding:14px 16px}
+  table th,table td{padding:10px 12px}
+  .stats-grid{grid-template-columns:1fr 1fr!important;gap:10px}
+  .g13{grid-template-columns:1fr!important}
+  .g2{grid-template-columns:1fr!important}
+  .g3{grid-template-columns:1fr 1fr!important}
+  .topbar{padding:0 20px;height:56px}
+  .topbar-title{font-size:15px}
+  .card{padding:16px}
+  .stat-val{font-size:22px}
+  .btn{padding:7px 12px;font-size:12px}
+}
   body{overflow:auto}
+  /* Content must not hide under fixed bottom nav */
+  #page-content { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
 }
 
 /* CHECKIN BUTTON */
 .checkin-btn{width:100%;padding:16px;border-radius:var(--r-md);border:none;font-size:16px;font-weight:700;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,.2);margin-bottom:10px}
 .checkin-btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important}
 .checkin-btn:not(:disabled):hover{transform:translateY(-2px)}
+
+/* ─────────────────────────────
+   DESIGN IMPROVEMENTS v2
+   ───────────────────────────── */
+
+/* Smooth scroll on content */
+#page-content { scroll-behavior: smooth; }
+
+/* Better focus states */
+.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
+select.form-input { cursor: pointer; }
+
+/* Table hover highlight */
+tbody tr:hover td { background: rgba(59,130,246,.03); }
+tbody tr { transition: background .1s; }
+
+/* Badge improvements */
+.badge { letter-spacing: .01em; }
+
+/* Better card headers */
+.card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+
+/* Improved empty states */
+.empty-state { text-align: center; padding: 48px 24px; }
+.empty-icon { font-size: 44px; margin-bottom: 14px; line-height: 1; }
+.empty-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 6px; letter-spacing: -.02em; }
+.empty-sub { font-size: 13px; color: var(--text4); line-height: 1.6; max-width: 280px; margin: 0 auto; }
+
+/* Nav active indicator improved */
+.nav-item.active { background: linear-gradient(90deg, rgba(59,130,246,.18), rgba(59,130,246,.08)); }
+
+/* Alert improved */
+.alert { border-radius: var(--r-md); }
+.alert-crit { background: rgba(254,242,242,.95); border: 1.5px solid #fca5a5; }
+.alert-warn { background: rgba(255,251,235,.95); border: 1.5px solid #fde68a; }
+.alert-info { background: rgba(239,246,255,.95); border: 1.5px solid #93c5fd; }
+.alert-success { background: rgba(240,253,244,.95); border: 1.5px solid #86efac; }
+
+/* Table head */
+thead tr { background: linear-gradient(180deg, #f8fafc, #f1f5f9); }
+th { border-bottom: 2px solid var(--border); }
+
+/* Shimmer for loading */
+@keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
+.loading-shimmer { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:400px 100%; animation: shimmer 1.4s ease infinite; border-radius: 4px; }
+
+/* Better scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Checkin button glow */
+.checkin-btn:not(:disabled):hover { filter: brightness(1.08); }
+
+/* Modal backdrop blur */
+.modal-bg { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 </style>
 </head>
 <body>
@@ -469,7 +557,10 @@ function renderShell(app) {
 
   const bottomHTML = bottomItems.map(item =>
     `<div class="mobile-nav-item ${isActive(item.path)?'active':''}" onclick="navigate('${item.path}')">
-      <span class="mobile-nav-icon">${item.icon}</span>
+      <div class="mobile-nav-icon-wrap">
+        <span class="mobile-nav-icon">${item.icon}</span>
+        ${item.badge>0?`<span class="mobile-nav-badge">${item.badge}</span>`:''}
+      </div>
       <span class="mobile-nav-label">${item.label}</span>
     </div>`
   ).join('')
@@ -502,9 +593,16 @@ function renderShell(app) {
     </aside>
     <main class="main">
       <div class="mobile-bar">
-        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
-        <div style="font-weight:700;font-size:15px;color:var(--text1)">${curLabel}</div>
-        <div style="width:38px"></div>
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
+          <span></span><span></span><span></span>
+        </button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="/logo.png" style="width:26px;height:26px;object-fit:contain;border-radius:6px" onerror="this.style.display='none'"/>
+          <div style="font-weight:700;font-size:14px;color:var(--text1);letter-spacing:-.03em">${curLabel}</div>
+        </div>
+        <div style="width:38px;display:flex;justify-content:flex-end">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);margin-top:2px"></div>
+        </div>
       </div>
       <div id="page-content" style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column"></div>
       <nav class="mobile-nav">${bottomHTML}</nav>
@@ -529,6 +627,8 @@ function closeSidebar() {
 function renderPage() {
   const pc = el('page-content')
   if (!pc) return
+  // Reset scroll to top
+  pc.scrollTop = 0
   const r = currentRoute
   if (!isAdmin()) {
     if (r==='/w')             { pageWorkerHome(pc); return }
@@ -606,7 +706,14 @@ async function pageDashboard(pc) {
       </div>`).join('')
 
   el('dash-content').innerHTML = `
-    ${late>0?`<div class="alert alert-crit"><span class="alert-icon">🚨</span><div><div class="alert-title">${late} atraso${late>1?'s':''} este mes</div><div class="alert-msg"><button class="btn btn-xs" onclick="navigate('/alerts')" style="margin-top:4px">Ver detalle →</button></div></div></div>`:''}
+    ${late>0?`<div class="alert alert-crit" style="cursor:pointer" onclick="navigate('/alerts')">
+    <span class="alert-icon">🚨</span>
+    <div style="flex:1">
+      <div class="alert-title">${late} atraso${late>1?'s':''} registrado${late>1?'s':''} este mes · Atrasos >5min</div>
+      <div class="alert-msg">Ver profesionales en riesgo de causal de desvinculación → <strong>Ver detalle</strong></div>
+    </div>
+    <span style="font-size:18px;color:var(--red);align-self:center">›</span>
+  </div>`:''}
     <div class="stats-grid">
       <div class="stat-card" onclick="navigate('/workers')"><div class="stat-bar" style="background:var(--accent)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">👥</div><div class="stat-label">Personal activo</div><div class="stat-val">${workers||0}</div><div class="stat-delta">Profesionales</div></div>
       <div class="stat-card" onclick="navigate('/shifts')"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✔</div><div class="stat-label">Turnos completados</div><div class="stat-val">${shifts||0}</div><div class="stat-delta">Este mes</div></div>
@@ -639,6 +746,17 @@ async function pageDashboard(pc) {
   const {count:activeC} = await db.from('attendances').select('*',{count:'exact',head:true}).gte('checked_in_at',todayStr+'T00:00:00').is('checked_out_at',null)
   const an = el('active-now')
   if (an) an.textContent = activeC||0
+
+  // Real-time: refresh dashboard when attendance changes
+  if (window._dashRT) { try{window._dashRT.unsubscribe()}catch(_){} }
+  window._dashRT = db.channel('dashboard_live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'attendances'},()=>{
+      if(el('dash-content')) pageDashboard(el('page-content'))
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'requests'},()=>{
+      if(el('dash-content')) pageDashboard(el('page-content'))
+    })
+    .subscribe()
 }
 
 window.approveReq = async (id, btn) => {
@@ -859,6 +977,14 @@ async function loadShiftsContent() {
   const todayShifts = (shifts||[]).filter(s=>s.shift_date===todayStr)
   const activeNow   = todayShifts.filter(s=>{ const a=getAtt(s); return a?.checked_in_at&&!a?.checked_out_at })
   const doneToday   = todayShifts.filter(s=>{ const a=getAtt(s); return !!a?.checked_out_at })
+
+  // Real-time shifts
+  if (window._shiftsRT) { try{window._shiftsRT.unsubscribe()}catch(_){} }
+  window._shiftsRT = db.channel('shifts_live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'attendances'},()=>{
+      if(el('shifts-content')) loadShiftsContent()
+    })
+    .subscribe()
 
   // Current filter state
   const filterD  = window._shiftFilterD  || 'all'
@@ -1367,8 +1493,18 @@ async function renderCheckin() {
     return
   }
 
+  // Check late count this month for warning
+  const monthStart2=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
+  const {count:lateCount2}=await db.from('attendances').select('*',{count:'exact',head:true})
+    .eq('worker_id',currentUser.id).eq('status','late').gte('checked_in_at',monthStart2)
+
   // No attendance yet - show check-in
-  body.innerHTML=`<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08)">
+  const lateWarningHTML=lateCount2>=1?`<div class="alert ${lateCount2>=2?'alert-crit':'alert-warn'}" style="margin-bottom:14px">
+    <span class="alert-icon">${lateCount2>=2?'🚨':'⚠'}</span>
+    <div><div class="alert-title" style="font-size:13px">${lateCount2>=2?'ATENCIÓN: '+lateCount2+' atrasos — Causal de desvinculación':'1 atraso registrado este mes'}</div>
+    <div class="alert-msg">${lateCount2>=2?'Has superado el límite. 2+ atrasos >5min son causal de desvinculación.':'Recuerda: 2+ atrasos de más de 5 minutos en el mes son causal de desvinculación.'}</div></div>
+  </div>`:''
+  body.innerHTML=lateWarningHTML+`<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08)">
     <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">${shift?'Turno · '+shift.start_time+' – '+shift.end_time:'Hoy'}</div>
     <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:-.03em">${currentProfile?.project||shift?.project||'Sin proyecto asignado'}</div>
     <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">${currentProfile?.full_name?.split(' ')[0]||'Profesional'} · ${currentProfile?.role_label||''}</div>
@@ -1388,6 +1524,14 @@ async function renderCheckin() {
 }
 
 window.doCheckin = async (shiftId, startTime, fee) => {
+  // Check if already late before GPS
+  let willBeLate=false, willBeLateMins=0
+  if(startTime){
+    const[sh,sm]=startTime.split(':').map(Number)
+    const sStart=new Date(); sStart.setHours(sh,sm,0,0)
+    willBeLateMins=Math.floor((Date.now()-sStart.getTime())/60000)
+    willBeLate=willBeLateMins>=5
+  }
   const btn=document.querySelector('.checkin-btn')
   if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
 
@@ -1419,12 +1563,13 @@ window.doCheckin = async (shiftId, startTime, fee) => {
     if(ns) activeShiftId=ns.id
   }
 
-  // Check if late
+  // Check if late — threshold is 5 minutes per policy
   let status='present', lateMins=0
   if(startTime){
     const[h,m]=startTime.split(':').map(Number)
-    const shiftStart=new Date(); shiftStart.setHours(h,m+5,0,0)
-    if(new Date()>shiftStart){status='late';lateMins=Math.floor((Date.now()-shiftStart.getTime())/60000)}
+    const shiftStart=new Date(); shiftStart.setHours(h,m,0,0)
+    const diffMins=Math.floor((Date.now()-shiftStart.getTime())/60000)
+    if(diffMins>=5){status='late';lateMins=diffMins}
   }
 
   const{error}=await db.from('attendances').insert([{worker_id:currentUser.id,shift_id:activeShiftId,status,late_minutes:lateMins,checked_in_at:new Date().toISOString(),checkin_lat:lat,checkin_lng:lng}])
@@ -1434,14 +1579,47 @@ window.doCheckin = async (shiftId, startTime, fee) => {
 
 window.doCheckout = async (attId, shiftId) => {
   const btn=el('checkout-btn')
-  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Registrando salida...'}
   let lat=null,lng=null
   try{
     const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:12000,maximumAge:0}))
     lat=pos.coords.latitude;lng=pos.coords.longitude
   }catch(_){}
-  await db.from('attendances').update({checked_out_at:new Date().toISOString(),checkout_lat:lat,checkout_lng:lng}).eq('id',attId)
+  const checkoutTime=new Date().toISOString()
+  await db.from('attendances').update({checked_out_at:checkoutTime,checkout_lat:lat,checkout_lng:lng}).eq('id',attId)
   if(shiftId) await db.from('shifts').update({status:'completed'}).eq('id',shiftId)
+  // Calculate hours worked and show daily earning
+  const {data:att}=await db.from('attendances').select('*').eq('id',attId).maybeSingle()
+  const {data:shift}=shiftId ? await db.from('shifts').select('*').eq('id',shiftId).maybeSingle() : {data:null}
+  if(att&&att.checked_in_at){
+    const mins=Math.round((new Date(checkoutTime)-new Date(att.checked_in_at))/60000)
+    const h=Math.floor(mins/60), m=mins%60
+    const fee=shift?.fee||0
+    // Show modal with daily earning
+    const div=document.createElement('div')
+    div.innerHTML=`<div class="modal-bg" style="z-index:2000" onclick="">
+      <div class="modal" style="max-width:380px;text-align:center;padding:36px 32px">
+        <div style="font-size:56px;margin-bottom:14px;line-height:1">🎉</div>
+        <div style="font-size:22px;font-weight:800;color:var(--text1);letter-spacing:-.04em;margin-bottom:6px">¡Turno completado!</div>
+        <div style="font-size:14px;color:var(--text4);margin-bottom:24px">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <div style="display:flex;justify-content:center;gap:24px;margin-bottom:24px">
+          <div style="text-align:center"><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Entrada</div><div style="font-family:var(--mono);font-weight:800;font-size:20px;color:var(--emerald)">${fmtTime(att.checked_in_at)}</div></div>
+          <div style="color:var(--text4);font-size:24px;align-self:center">→</div>
+          <div style="text-align:center"><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Salida</div><div style="font-family:var(--mono);font-weight:800;font-size:20px;color:#6366f1">${fmtTime(checkoutTime)}</div></div>
+        </div>
+        <div style="background:linear-gradient(135deg,var(--navy),#162447);border-radius:var(--r-md);padding:20px;margin-bottom:20px">
+          <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">💰 HONORARIO DEL DÍA</div>
+          ${fee>0?`<div style="font-size:34px;font-weight:800;color:#22c55e;font-family:var(--mono);letter-spacing:-.04em">${fmtCLP(fee)}</div>`:`<div style="font-size:20px;font-weight:800;color:rgba(255,255,255,.4)">Sin honorario asignado</div>`}
+          <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px">Duración: ${h}h ${m}min trabajados</div>
+        </div>
+        <div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#1e3a8a;line-height:1.7;margin-bottom:20px">
+          📅 El próximo marcaje se habilitará mañana.<br><span style="font-size:11px;color:var(--text4)">Solo un registro de asistencia por día.</span>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="this.closest('.modal-bg').remove()">✓ Entendido</button>
+      </div>
+    </div>`
+    document.body.appendChild(div)
+  }
   await renderCheckin()
 }
 
@@ -1611,17 +1789,100 @@ async function loadReqHistory() {
 // REMAINING ADMIN PAGES (simplified stubs)
 // ═══════════════════════════════════════════════
 async function pageAlerts(pc) {
-  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Atrasos</div></div></div><div class="content" id="alerts-c"></div>`
-  const month1=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
-  const {data}=await db.from('attendances').select('*, profiles(full_name,role_label,project)').eq('status','late').gte('checked_in_at',month1).order('checked_in_at',{ascending:false})
-  const counts={}; (data||[]).forEach(a=>{ const k=a.worker_id; if(!counts[k])counts[k]={name:a.profiles?.full_name,role:a.profiles?.role_label,proj:a.profiles?.project,count:0,last:a.checked_in_at}; counts[k].count++ })
-  el('alerts-c').innerHTML=Object.values(counts).sort((a,b)=>b.count-a.count).map(w=>`<div class="card" style="margin-bottom:12px">
-    <div style="display:flex;align-items:center;gap:14px">
-      <div style="width:44px;height:44px;border-radius:50%;background:${w.count>=2?'var(--red-l)':'var(--amber-l)'};color:${w.count>=2?'var(--red)':'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${ini(w.name)}</div>
-      <div style="flex:1"><div style="font-weight:700;font-size:14px">${w.name||'—'}</div><div style="font-size:12px;color:var(--text4)">${w.role||''}${w.proj?' · '+w.proj:''}</div></div>
-      <span class="badge ${w.count>=2?'badge-red':'badge-amber'}">${w.count} atraso${w.count!==1?'s':''}</span>
+  const now=new Date(), months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
+  let viewMonth=window._alertMonth||now.getMonth(), viewYear=window._alertYear||now.getFullYear()
+  window._alertMonth=viewMonth; window._alertYear=viewYear
+
+  pc.innerHTML=`<div class="topbar">
+    <div class="topbar-left"><div class="topbar-title">Control de Atrasos</div><div class="topbar-sub">Atrasos superiores a 5 minutos · 2+ = causal de desvinculación</div></div>
+    <div class="topbar-right">
+      <button class="btn btn-sm" onclick="window._alertMonth=window._alertMonth===0?11:window._alertMonth-1;if(window._alertMonth===11)window._alertYear--;pageAlerts(el('page-content'))">←</button>
+      <span style="font-weight:700;font-size:14px;padding:0 8px;white-space:nowrap">${months[viewMonth]} ${viewYear}</span>
+      <button class="btn btn-sm" onclick="window._alertMonth=window._alertMonth===11?0:window._alertMonth+1;if(window._alertMonth===0)window._alertYear++;pageAlerts(el('page-content'))">→</button>
+      <button class="btn btn-sm" onclick="pageAlerts(el('page-content'))">↻</button>
     </div>
-  </div>`).join('')||(data||[]).length===0?`<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Sin atrasos este mes</div></div>`:''
+  </div>
+  <div class="content" id="alerts-c"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
+
+  const mStart=new Date(viewYear,viewMonth,1).toISOString()
+  const mEnd=new Date(viewYear,viewMonth+1,0,23,59,59).toISOString()
+  const {data}=await db.from('attendances')
+    .select('*, profiles(full_name,role_label,project)')
+    .gte('checked_in_at',mStart).lte('checked_in_at',mEnd)
+    .order('checked_in_at',{ascending:false})
+
+  // Filter: only late >5 min
+  const lateData=(data||[]).filter(a=>a.status==='late'&&(a.late_minutes||0)>=5)
+  const body=el('alerts-c'); if(!body)return
+
+  // Group by worker
+  const groups={}
+  lateData.forEach(a=>{
+    const k=a.worker_id
+    if(!groups[k])groups[k]={name:a.profiles?.full_name,role:a.profiles?.role_label,proj:a.profiles?.project,records:[]}
+    groups[k].records.push(a)
+  })
+
+  const workers=Object.values(groups).sort((a,b)=>b.records.length-a.records.length)
+  const critical=workers.filter(w=>w.records.length>=2)
+  const warning=workers.filter(w=>w.records.length===1)
+
+  if(lateData.length===0){
+    body.innerHTML=`<div class="empty-state" style="padding:80px 24px">
+      <div class="empty-icon">✅</div>
+      <div class="empty-title">Sin atrasos mayores a 5 minutos</div>
+      <div class="empty-sub">Excelente puntualidad en ${months[viewMonth]} ${viewYear}</div>
+    </div>`;return
+  }
+
+  // Stats
+  const totalMinLate=lateData.reduce((a,r)=>a+(r.late_minutes||0),0)
+  const avgMin=Math.round(totalMinLate/lateData.length)
+
+  body.innerHTML=`
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-bar" style="background:var(--red)"></div><div class="stat-icon" style="background:var(--red-l);color:var(--red)">🚨</div><div class="stat-label">Causal desvinculación</div><div class="stat-val" style="color:var(--red)">${critical.length}</div><div class="stat-delta warn">≥2 atrasos >5min</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--amber)"></div><div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⚠</div><div class="stat-label">Con 1 atraso</div><div class="stat-val">${warning.length}</div><div class="stat-delta">Advertencia</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--navy4)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">📋</div><div class="stat-label">Total incidencias</div><div class="stat-val">${lateData.length}</div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">⏱</div><div class="stat-label">Minutos promedio</div><div class="stat-val">${avgMin}</div><div class="stat-delta">por incidencia</div></div>
+    </div>
+
+    ${critical.length>0?`<div class="alert alert-crit" style="margin-bottom:16px">
+      <span class="alert-icon">🚨</span>
+      <div><div class="alert-title">CAUSAL DE DESVINCULACIÓN — ${critical.length} profesional${critical.length>1?'es':''}</div>
+      <div class="alert-msg">${critical.map(w=>w.name).join(', ')} — ${critical[0].records.length}+ atrasos mayores a 5 minutos en ${months[viewMonth]}. Según política interna, esto constituye causal de desvinculación.</div></div>
+    </div>`:''}
+
+    ${workers.map(w=>{
+      const isCrit=w.records.length>=2
+      const totalMin=w.records.reduce((a,r)=>a+(r.late_minutes||0),0)
+      return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden;border-color:${isCrit?'#fca5a5':'#fde68a'}">
+        <div style="height:4px;background:${isCrit?'var(--red)':'var(--amber)'}"></div>
+        <div style="padding:16px 20px">
+          <div style="display:flex;align-items:center;gap:14px;margin-bottom:${w.records.length>0?'14px':'0'}">
+            <div style="width:46px;height:46px;border-radius:50%;background:${isCrit?'var(--red-l)':'var(--amber-l)'};color:${isCrit?'var(--red)':'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${ini(w.name)}</div>
+            <div style="flex:1">
+              <div style="font-weight:700;font-size:15px">${w.name}</div>
+              <div style="font-size:12px;color:var(--text4);margin-top:2px">${w.role||''}${w.proj?' · '+w.proj:''}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0">
+              <span class="badge ${isCrit?'badge-red':'badge-amber'}" style="font-size:13px;padding:5px 12px">${w.records.length} atraso${w.records.length>1?'s':''}</span>
+              ${isCrit?`<div style="font-size:10px;color:var(--red);font-weight:700;margin-top:4px">🚨 CAUSAL DESVINCULACIÓN</div>`:`<div style="font-size:10px;color:var(--amber);font-weight:700;margin-top:4px">⚠ ADVERTENCIA</div>`}
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="background:var(--slate);border-radius:6px;padding:8px 12px;font-size:12px;flex:1;min-width:120px"><div style="color:var(--text4);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:2px">Total minutos tarde</div><div style="font-weight:800;font-family:var(--mono)">${totalMin} min</div></div>
+            <div style="background:var(--slate);border-radius:6px;padding:8px 12px;font-size:12px;flex:1;min-width:120px"><div style="color:var(--text4);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:2px">Promedio por atraso</div><div style="font-weight:800;font-family:var(--mono)">${Math.round(totalMin/w.records.length)} min</div></div>
+          </div>
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Detalle de incidencias</div>
+          ${w.records.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${isCrit?'rgba(220,38,38,.04)':'rgba(245,158,11,.04)'};border-radius:6px;margin-bottom:6px;border:1px solid ${isCrit?'rgba(220,38,38,.12)':'rgba(245,158,11,.12)'}">
+            <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text3)">${r.checked_in_at?.slice(0,10)||'—'}</span>
+            <span style="font-family:var(--mono);font-size:13px;font-weight:800;color:${isCrit?'var(--red)':'var(--amber)'}">↑ ${fmtTime(r.checked_in_at)}</span>
+            <span class="badge ${isCrit?'badge-red':'badge-amber'}" style="margin-left:auto">+${r.late_minutes||0} min tarde</span>
+          </div>`).join('')}
+        </div>
+      </div>`
+    }).join('')}`
 }
 
 async function pageRequests(pc) {
