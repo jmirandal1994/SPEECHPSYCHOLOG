@@ -2006,7 +2006,7 @@ async function loadSettings() {
     html += `<div style="display:flex;gap:6px;flex-shrink:0">`
     html += `<button class="btn btn-primary btn-sm" onclick="showProjectModal(${escJ(p)})">✏ Editar</button>`
     html += `<button class="btn btn-sm" onclick="toggleProjActive('${p.id}',${p.active})">${p.active?'⏸ Pausar':'▶ Activar'}</button>`
-    html += `<button class="btn btn-danger btn-sm" onclick="deleteProj('${p.id}','${p.name.replace(/'/g,'\\\')}')">🗑</button>`
+    html += '<button class="btn btn-danger btn-sm" onclick="deleteProj(\'' + p.id + '\',\'' + p.name.replace(/'/g,'&apos;') + '\')">' + '🗑</button>'
     html += `</div>` // end buttons
     html += `</div>` // end header row
 
@@ -2066,7 +2066,7 @@ async function loadSettings() {
     } else {
       html += `<span style="font-size:12px;color:var(--text4);flex:1">Sin profesionales asignados</span>`
     }
-    html += `<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="showAssignModal('${p.id}','${p.name.replace(/'/g,'\\\')}',${escJ(workers||[])},${escJ(pw||[])})">👥 Asignar</button>`
+    html += '<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="pmAssign(this)" data-pid="' + p.id + '" data-pname="' + encodeURIComponent(p.name) + '">&#x1F465; Asignar</button>'
     html += `</div>` // end workers strip
 
     html += `</div>` // end card padding
@@ -2152,7 +2152,7 @@ window.showAssignModal = (pid, pname, allWStr, pwStr) => {
     </label>`
   })
 
-  area.innerHTML = `<div class="modal-bg" id="asgn-modal" onclick="if(event.target.id==='asgn-modal')closeAssignModal()">
+  area.innerHTML = `<div class="modal-bg" id="asgn-modal" data-pid="${pid}" data-pname="${pname}" data-allw='${JSON.stringify(allW).replace(/'/g,"\'")}'  onclick="if(event.target.id==='asgn-modal')closeAssignModal()">
     <div class="modal" style="max-width:460px">
       <div class="modal-hdr">
         <div>
@@ -2167,7 +2167,7 @@ window.showAssignModal = (pid, pname, allWStr, pwStr) => {
       </div>
       ${allW.length===0?'<div class="empty-state" style="padding:24px 0"><div class="empty-icon" style="font-size:32px">👥</div><div class="empty-title" style="font-size:14px">Sin profesionales</div><div class="empty-sub">Ve a Personal y agrega profesionales primero</div></div>':listHTML}
       <div style="display:flex;gap:10px;margin-top:16px">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAssignWorkers('${pid}','${pname.replace(/'/g,'\\\')}',${escJ(allW)})">💾 Guardar asignación</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="pmSaveAssign()">💾 Guardar asignación</button>
         <button class="btn" onclick="closeAssignModal()">Cancelar</button>
       </div>
     </div>
@@ -2433,10 +2433,31 @@ window.saveProjForm = async (e, projId) => {
   loadSettings()
 }
 
+
+window.pmAssign = async (btn) => {
+  const pid = btn.dataset.pid
+  const pname = decodeURIComponent(btn.dataset.pname)
+  const [{data:allW},{data:pw}] = await Promise.all([
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name'),
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('project',pname),
+  ])
+  showAssignModal(pid, pname, allW||[], pw||[])
+}
+
+
+window.pmSaveAssign = () => {
+  const modal = document.getElementById('asgn-modal')
+  if (!modal) return
+  const pid   = modal.dataset.pid
+  const pname = modal.dataset.pname
+  const allWStr = modal.dataset.allw
+  saveAssignWorkers(pid, pname, allWStr)
+}
+
 // ═══════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════
 init()
 </script>
 </body>
-</html>
+    html += '<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="showAssignModal(\'' + p.id + '\',\'' + p.name.replace(/\'/g,'&apos;') + '\',' + escJ(workers||[]) + ',' + escJ(pw||[]) + ')">👥 Asignar</button>'
