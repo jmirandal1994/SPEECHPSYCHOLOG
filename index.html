@@ -57,7 +57,7 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 
 /* SHELL */
 .shell{display:flex;width:100%;height:100dvh;overflow:hidden}
-.sidebar{width:240px;flex-shrink:0;background:linear-gradient(180deg,#0a1628 0%,#0d1f3c 100%);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.15)}
+.sidebar{width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid rgba(255,255,255,.06);display:flex;flex-direction:column;overflow:hidden;transition:transform .25s ease}
 .brand{padding:16px 16px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
 .brand-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .brand-img{width:38px;height:38px;object-fit:contain;border-radius:7px;background:rgba(255,255,255,.05);padding:3px;flex-shrink:0}
@@ -86,7 +86,7 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--slate)}
 
 /* TOPBAR */
-.topbar{padding:0 28px;height:60px;background:rgba(255,255,255,.97);backdrop-filter:blur(12px);border-bottom:1px solid rgba(15,23,42,.07);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 8px rgba(15,23,42,.06);position:sticky;top:0;z-index:50}
+.topbar{padding:0 28px;height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;box-shadow:0 1px 0 rgba(15,23,42,.04)}
 .topbar-left{display:flex;flex-direction:column}
 .topbar-title{font-size:16px;font-weight:700;color:var(--text1);letter-spacing:-.03em;line-height:1.2}
 .topbar-sub{font-size:11px;color:var(--text4);margin-top:1px}
@@ -97,9 +97,8 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .18s;font-family:var(--font);box-shadow:var(--sh);white-space:nowrap;letter-spacing:-.01em}
 .btn:hover{background:#f8fafc;border-color:var(--accent);color:var(--accent)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn-primary{background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;box-shadow:0 4px 14px rgba(29,78,216,.3),inset 0 1px 0 rgba(255,255,255,.15)}
-.btn-primary:hover{box-shadow:0 6px 24px rgba(29,78,216,.45);transform:translateY(-1px);background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none}
-.btn-primary:active{transform:translateY(0);box-shadow:0 2px 8px rgba(29,78,216,.3)}
+.btn-primary{background:linear-gradient(135deg,#1d4ed8,#1e3a8a);color:#fff;border:none;box-shadow:0 4px 14px rgba(29,78,216,.35)}
+.btn-primary:hover{box-shadow:0 6px 20px rgba(29,78,216,.45);transform:translateY(-1px);background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none}
 .btn-success{background:linear-gradient(135deg,var(--emerald),var(--emerald-d));color:#fff;border:none}
 .btn-success:hover{color:#fff;border:none}
 .btn-danger{background:rgba(220,38,38,.08);border-color:rgba(220,38,38,.2);color:var(--red)}
@@ -109,8 +108,7 @@ body{font-family:var(--font);background:var(--navy);color:var(--text1);-webkit-f
 .btn-ghost{background:transparent;border-color:transparent;box-shadow:none}
 
 /* CARDS */
-.card{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px;margin-bottom:16px;box-shadow:0 1px 4px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.04);transition:box-shadow .2s}
-.card:hover{box-shadow:0 2px 8px rgba(15,23,42,.1),0 6px 20px rgba(15,23,42,.07)}
+.card{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--border);padding:20px;margin-bottom:16px;box-shadow:var(--sh)}
 .card-title{font-size:14px;font-weight:700;color:var(--text1);letter-spacing:-.02em}
 .card-sub{font-size:12px;color:var(--text4);margin-top:2px}
 .card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
@@ -136,10 +134,8 @@ textarea.form-input{resize:vertical;min-height:80px}
 
 /* STATS GRID */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
-.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(15,23,42,.06),0 4px 12px rgba(15,23,42,.04)}
-.stat-card:hover{box-shadow:0 8px 32px rgba(15,23,42,.12);transform:translateY(-3px);border-color:var(--accent)}
-.stat-card:hover .stat-icon{transform:scale(1.1)}
-.stat-icon{transition:transform .2s}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md);padding:16px 18px;position:relative;overflow:hidden;cursor:pointer;transition:all .2s;box-shadow:var(--sh)}
+.stat-card:hover{box-shadow:var(--sh-lg);transform:translateY(-2px)}
 .stat-bar{position:absolute;top:0;left:0;right:0;height:3px;border-radius:2px}
 .stat-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:10px}
 .stat-label{font-size:11px;color:var(--text4);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
@@ -178,8 +174,6 @@ tr:hover td{background:#f8fafc}
 .empty-sub{font-size:13px;color:var(--text4);line-height:1.6}
 
 /* SPINNER */
-.page-enter{animation:fadeSlideIn .2s ease}
-@keyframes fadeSlideIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .spinner{width:22px;height:22px;border:2.5px solid rgba(59,130,246,.2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
 
@@ -199,118 +193,89 @@ tr:hover td{background:#f8fafc}
 .mobile-bar{display:none}
 .hamburger{display:none}
 .sidebar-overlay{display:none}
+.mobile-nav{display:none}
 
 @media(max-width:900px){
   .shell{flex-direction:column}
-  .sidebar{position:fixed;top:0;left:0;bottom:0;z-index:900;transform:translateX(-100%);width:260px}
-  .sidebar.open{transform:translateX(0)}
-  .sidebar-overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:800;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sidebar{
+    position:fixed;top:0;left:0;bottom:0;z-index:900;
+    transform:translateX(-100%);width:260px;
+    transition:transform .25s cubic-bezier(.4,0,.2,1);
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:8px 0 40px rgba(0,0,0,.35)}
+  .sidebar-overlay{
+    display:block;position:fixed;inset:0;
+    background:rgba(0,0,0,.45);z-index:800;
+    opacity:0;pointer-events:none;transition:opacity .2s;
+  }
   .sidebar-overlay.visible{opacity:1;pointer-events:auto}
-  .main{height:100dvh}
-  .mobile-bar{display:flex;height:56px;background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;align-items:center;justify-content:space-between;flex-shrink:0;z-index:100}
-  .hamburger{display:flex;flex-direction:column;gap:4px;padding:8px;cursor:pointer;background:none;border:none;flex-shrink:0}
-  .hamburger span{display:block;width:20px;height:2px;background:var(--text2);border-radius:2px;transition:all .2s}
+  .main{height:100dvh;overflow:hidden;display:flex;flex-direction:column}
+  #page-content{
+    flex:1;overflow-y:auto;min-height:0;
+    padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important;
+  }
+  .mobile-bar{
+    display:flex;height:54px;flex-shrink:0;
+    background:rgba(255,255,255,.97);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(0,0,0,.07);
+    padding:0 16px;align-items:center;justify-content:space-between;
+    box-shadow:0 1px 8px rgba(0,0,0,.06);z-index:100;
+  }
+  .hamburger{
+    display:flex;flex-direction:column;gap:5px;
+    padding:8px;cursor:pointer;background:none;border:none;flex-shrink:0;
+  }
+  .hamburger span{display:block;width:22px;height:2px;background:var(--text2);border-radius:2px;transition:all .2s}
   .topbar{display:none}
   .content{padding:16px}
-  .stats-grid{grid-template-columns:1fr 1fr!important}
-  .g13{grid-template-columns:1fr!important}
-  .g2{grid-template-columns:1fr!important}
-  .stat-val{font-size:20px}
-  .mobile-nav{display:flex;position:fixed;bottom:0;left:0;right:0;
-    background:rgba(255,255,255,0.96);
-    backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-    border-top:1px solid rgba(0,0,0,0.07);
-    padding:8px 4px max(12px,env(safe-area-inset-bottom));
-    z-index:800;box-shadow:0 -4px 24px rgba(0,0,0,.08)}
-  .mobile-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 2px;cursor:pointer;color:#94a3b8;position:relative;transition:all .15s;border-radius:12px;margin:0 2px}
-  .mobile-nav-item.active{color:var(--accent)}
-  .mobile-nav-item.active .mobile-nav-icon-wrap{background:rgba(59,130,246,.12);transform:scale(1.08)}
-  .mobile-nav-icon-wrap{width:42px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;transition:all .2s}
-  .mobile-nav-icon{font-size:19px;line-height:1}
-  .mobile-nav-label{font-size:9px;font-weight:700;letter-spacing:.01em}
-  .mobile-nav-badge{position:absolute;top:0px;right:calc(50% - 18px);background:var(--red);color:#fff;border-radius:10px;font-size:8px;padding:1px 5px;font-weight:800;min-width:16px;text-align:center;box-shadow:0 2px 6px rgba(220,38,38,.4)}
-/* Mobile table: hide secondary columns */
-@media(max-width:900px){
-  .hide-mobile{display:none!important}
-  .table-wrap{border-radius:var(--r-md);overflow:hidden}
-  .content{padding:14px 16px}
-  table th,table td{padding:10px 12px}
   .stats-grid{grid-template-columns:1fr 1fr!important;gap:10px}
   .g13{grid-template-columns:1fr!important}
   .g2{grid-template-columns:1fr!important}
   .g3{grid-template-columns:1fr 1fr!important}
-  .topbar{padding:0 20px;height:56px}
-  .topbar-title{font-size:15px}
+  .stat-val{font-size:20px}
+  .stat-card{padding:14px}
   .card{padding:16px}
-  .stat-val{font-size:22px}
-  .btn{padding:7px 12px;font-size:12px}
-}
+  .mobile-nav{
+    display:flex;position:fixed;bottom:0;left:0;right:0;z-index:800;
+    background:rgba(255,255,255,.96);
+    backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    border-top:1px solid rgba(0,0,0,.06);
+    padding:6px 8px max(10px,env(safe-area-inset-bottom));
+    box-shadow:0 -4px 20px rgba(0,0,0,.08);
+    gap:4px;
+  }
+  .mobile-nav-item{
+    flex:1;display:flex;flex-direction:column;align-items:center;
+    gap:2px;padding:4px 2px;cursor:pointer;
+    color:#94a3b8;position:relative;
+    border-radius:10px;transition:color .15s;
+    min-width:0;
+  }
+  .mobile-nav-item.active{color:var(--accent)}
+  .mobile-nav-icon-wrap{
+    width:40px;height:26px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    transition:all .15s;
+  }
+  .mobile-nav-item.active .mobile-nav-icon-wrap{
+    background:rgba(59,130,246,.12);
+  }
+  .mobile-nav-icon{font-size:18px;line-height:1;display:block}
+  .mobile-nav-label{
+    font-size:9px;font-weight:700;letter-spacing:.01em;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    max-width:100%;text-align:center;
+  }
   body{overflow:auto}
-  /* Content must not hide under fixed bottom nav */
-  #page-content { padding-bottom: calc(70px + env(safe-area-inset-bottom)) !important; }
+  .hide-mobile{display:none!important}
+  table th:nth-child(n+4),table td:nth-child(n+4){display:none}
 }
 
 /* CHECKIN BUTTON */
 .checkin-btn{width:100%;padding:16px;border-radius:var(--r-md);border:none;font-size:16px;font-weight:700;font-family:var(--font);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,.2);margin-bottom:10px}
 .checkin-btn:disabled{opacity:.6;cursor:not-allowed;transform:none!important}
 .checkin-btn:not(:disabled):hover{transform:translateY(-2px)}
-
-/* ─────────────────────────────
-   DESIGN IMPROVEMENTS v2
-   ───────────────────────────── */
-
-/* Smooth scroll on content */
-#page-content { scroll-behavior: smooth; }
-
-/* Better focus states */
-.form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
-select.form-input { cursor: pointer; }
-
-/* Table hover highlight */
-tbody tr:hover td { background: rgba(59,130,246,.03); }
-tbody tr { transition: background .1s; }
-
-/* Badge improvements */
-.badge { letter-spacing: .01em; }
-
-/* Better card headers */
-.card-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
-
-/* Improved empty states */
-.empty-state { text-align: center; padding: 48px 24px; }
-.empty-icon { font-size: 44px; margin-bottom: 14px; line-height: 1; }
-.empty-title { font-size: 16px; font-weight: 700; color: var(--text2); margin-bottom: 6px; letter-spacing: -.02em; }
-.empty-sub { font-size: 13px; color: var(--text4); line-height: 1.6; max-width: 280px; margin: 0 auto; }
-
-/* Nav active indicator improved */
-.nav-item.active { background: linear-gradient(90deg, rgba(59,130,246,.18), rgba(59,130,246,.08)); }
-
-/* Alert improved */
-.alert { border-radius: var(--r-md); }
-.alert-crit { background: rgba(254,242,242,.95); border: 1.5px solid #fca5a5; }
-.alert-warn { background: rgba(255,251,235,.95); border: 1.5px solid #fde68a; }
-.alert-info { background: rgba(239,246,255,.95); border: 1.5px solid #93c5fd; }
-.alert-success { background: rgba(240,253,244,.95); border: 1.5px solid #86efac; }
-
-/* Table head */
-thead tr { background: linear-gradient(180deg, #f8fafc, #f1f5f9); }
-th { border-bottom: 2px solid var(--border); }
-
-/* Shimmer for loading */
-@keyframes shimmer { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
-.loading-shimmer { background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%); background-size:400px 100%; animation: shimmer 1.4s ease infinite; border-radius: 4px; }
-
-/* Better scrollbar */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-/* Checkin button glow */
-.checkin-btn:not(:disabled):hover { filter: brightness(1.08); }
-
-/* Modal backdrop blur */
-.modal-bg { backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
 </style>
 </head>
 <body>
@@ -555,15 +520,13 @@ function renderShell(app) {
        </div>`
   ).join('')
 
-  const bottomHTML = bottomItems.map(item =>
-    `<div class="mobile-nav-item ${isActive(item.path)?'active':''}" onclick="navigate('${item.path}')">
-      <div class="mobile-nav-icon-wrap">
-        <span class="mobile-nav-icon">${item.icon}</span>
-        ${item.badge>0?`<span class="mobile-nav-badge">${item.badge}</span>`:''}
-      </div>
-      <span class="mobile-nav-label">${item.label}</span>
-    </div>`
-  ).join('')
+  const bottomHTML = bottomItems.map(item => {
+    const activeClass = isActive(item.path) ? 'active' : ''
+    return '<div class="mobile-nav-item '+activeClass+'" onclick="navigate(\'' + item.path + '\')">' +
+      '<div class="mobile-nav-icon-wrap"><span class="mobile-nav-icon">' + item.icon + '</span></div>' +
+      '<span class="mobile-nav-label">' + item.label + '</span>' +
+    '</div>'
+  }).join('')
 
   app.innerHTML = `
   <div class="shell" id="shell">
@@ -593,16 +556,9 @@ function renderShell(app) {
     </aside>
     <main class="main">
       <div class="mobile-bar">
-        <button class="hamburger" id="hamburger" onclick="toggleSidebar()">
-          <span></span><span></span><span></span>
-        </button>
-        <div style="display:flex;align-items:center;gap:8px">
-          <img src="/logo.png" style="width:26px;height:26px;object-fit:contain;border-radius:6px" onerror="this.style.display='none'"/>
-          <div style="font-weight:700;font-size:14px;color:var(--text1);letter-spacing:-.03em">${curLabel}</div>
-        </div>
-        <div style="width:38px;display:flex;justify-content:flex-end">
-          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 6px rgba(34,197,94,.5);margin-top:2px"></div>
-        </div>
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <div style="font-weight:700;font-size:15px;color:var(--text1)">${curLabel}</div>
+        <div style="width:38px"></div>
       </div>
       <div id="page-content" style="flex:1;overflow-y:auto;min-height:0;display:flex;flex-direction:column"></div>
       <nav class="mobile-nav">${bottomHTML}</nav>
@@ -627,8 +583,6 @@ function closeSidebar() {
 function renderPage() {
   const pc = el('page-content')
   if (!pc) return
-  // Reset scroll to top
-  pc.scrollTop = 0
   const r = currentRoute
   if (!isAdmin()) {
     if (r==='/w')             { pageWorkerHome(pc); return }
@@ -706,14 +660,7 @@ async function pageDashboard(pc) {
       </div>`).join('')
 
   el('dash-content').innerHTML = `
-    ${late>0?`<div class="alert alert-crit" style="cursor:pointer" onclick="navigate('/alerts')">
-    <span class="alert-icon">🚨</span>
-    <div style="flex:1">
-      <div class="alert-title">${late} atraso${late>1?'s':''} registrado${late>1?'s':''} este mes · Atrasos >5min</div>
-      <div class="alert-msg">Ver profesionales en riesgo de causal de desvinculación → <strong>Ver detalle</strong></div>
-    </div>
-    <span style="font-size:18px;color:var(--red);align-self:center">›</span>
-  </div>`:''}
+    ${late>0?`<div class="alert alert-crit"><span class="alert-icon">🚨</span><div><div class="alert-title">${late} atraso${late>1?'s':''} este mes</div><div class="alert-msg"><button class="btn btn-xs" onclick="navigate('/alerts')" style="margin-top:4px">Ver detalle →</button></div></div></div>`:''}
     <div class="stats-grid">
       <div class="stat-card" onclick="navigate('/workers')"><div class="stat-bar" style="background:var(--accent)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">👥</div><div class="stat-label">Personal activo</div><div class="stat-val">${workers||0}</div><div class="stat-delta">Profesionales</div></div>
       <div class="stat-card" onclick="navigate('/shifts')"><div class="stat-bar" style="background:var(--emerald)"></div><div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✔</div><div class="stat-label">Turnos completados</div><div class="stat-val">${shifts||0}</div><div class="stat-delta">Este mes</div></div>
@@ -1493,18 +1440,8 @@ async function renderCheckin() {
     return
   }
 
-  // Check late count this month for warning
-  const monthStart2=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
-  const {count:lateCount2}=await db.from('attendances').select('*',{count:'exact',head:true})
-    .eq('worker_id',currentUser.id).eq('status','late').gte('checked_in_at',monthStart2)
-
   // No attendance yet - show check-in
-  const lateWarningHTML=lateCount2>=1?`<div class="alert ${lateCount2>=2?'alert-crit':'alert-warn'}" style="margin-bottom:14px">
-    <span class="alert-icon">${lateCount2>=2?'🚨':'⚠'}</span>
-    <div><div class="alert-title" style="font-size:13px">${lateCount2>=2?'ATENCIÓN: '+lateCount2+' atrasos — Causal de desvinculación':'1 atraso registrado este mes'}</div>
-    <div class="alert-msg">${lateCount2>=2?'Has superado el límite. 2+ atrasos >5min son causal de desvinculación.':'Recuerda: 2+ atrasos de más de 5 minutos en el mes son causal de desvinculación.'}</div></div>
-  </div>`:''
-  body.innerHTML=lateWarningHTML+`<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08)">
+  body.innerHTML=`<div class="card" style="margin-bottom:14px;background:linear-gradient(135deg,var(--navy),#162447);border:1px solid rgba(255,255,255,.08)">
     <div style="font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:4px">${shift?'Turno · '+shift.start_time+' – '+shift.end_time:'Hoy'}</div>
     <div style="font-size:17px;font-weight:700;color:#fff;letter-spacing:-.03em">${currentProfile?.project||shift?.project||'Sin proyecto asignado'}</div>
     <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:3px">${currentProfile?.full_name?.split(' ')[0]||'Profesional'} · ${currentProfile?.role_label||''}</div>
@@ -1524,14 +1461,6 @@ async function renderCheckin() {
 }
 
 window.doCheckin = async (shiftId, startTime, fee) => {
-  // Check if already late before GPS
-  let willBeLate=false, willBeLateMins=0
-  if(startTime){
-    const[sh,sm]=startTime.split(':').map(Number)
-    const sStart=new Date(); sStart.setHours(sh,sm,0,0)
-    willBeLateMins=Math.floor((Date.now()-sStart.getTime())/60000)
-    willBeLate=willBeLateMins>=5
-  }
   const btn=document.querySelector('.checkin-btn')
   if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
 
@@ -1563,13 +1492,12 @@ window.doCheckin = async (shiftId, startTime, fee) => {
     if(ns) activeShiftId=ns.id
   }
 
-  // Check if late — threshold is 5 minutes per policy
+  // Check if late
   let status='present', lateMins=0
   if(startTime){
     const[h,m]=startTime.split(':').map(Number)
-    const shiftStart=new Date(); shiftStart.setHours(h,m,0,0)
-    const diffMins=Math.floor((Date.now()-shiftStart.getTime())/60000)
-    if(diffMins>=5){status='late';lateMins=diffMins}
+    const shiftStart=new Date(); shiftStart.setHours(h,m+5,0,0)
+    if(new Date()>shiftStart){status='late';lateMins=Math.floor((Date.now()-shiftStart.getTime())/60000)}
   }
 
   const{error}=await db.from('attendances').insert([{worker_id:currentUser.id,shift_id:activeShiftId,status,late_minutes:lateMins,checked_in_at:new Date().toISOString(),checkin_lat:lat,checkin_lng:lng}])
@@ -1579,47 +1507,14 @@ window.doCheckin = async (shiftId, startTime, fee) => {
 
 window.doCheckout = async (attId, shiftId) => {
   const btn=el('checkout-btn')
-  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Registrando salida...'}
+  if(btn){btn.disabled=true;btn.innerHTML='<div class="spinner" style="width:18px;height:18px"></div> Obteniendo GPS...'}
   let lat=null,lng=null
   try{
     const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{enableHighAccuracy:true,timeout:12000,maximumAge:0}))
     lat=pos.coords.latitude;lng=pos.coords.longitude
   }catch(_){}
-  const checkoutTime=new Date().toISOString()
-  await db.from('attendances').update({checked_out_at:checkoutTime,checkout_lat:lat,checkout_lng:lng}).eq('id',attId)
+  await db.from('attendances').update({checked_out_at:new Date().toISOString(),checkout_lat:lat,checkout_lng:lng}).eq('id',attId)
   if(shiftId) await db.from('shifts').update({status:'completed'}).eq('id',shiftId)
-  // Calculate hours worked and show daily earning
-  const {data:att}=await db.from('attendances').select('*').eq('id',attId).maybeSingle()
-  const {data:shift}=shiftId ? await db.from('shifts').select('*').eq('id',shiftId).maybeSingle() : {data:null}
-  if(att&&att.checked_in_at){
-    const mins=Math.round((new Date(checkoutTime)-new Date(att.checked_in_at))/60000)
-    const h=Math.floor(mins/60), m=mins%60
-    const fee=shift?.fee||0
-    // Show modal with daily earning
-    const div=document.createElement('div')
-    div.innerHTML=`<div class="modal-bg" style="z-index:2000" onclick="">
-      <div class="modal" style="max-width:380px;text-align:center;padding:36px 32px">
-        <div style="font-size:56px;margin-bottom:14px;line-height:1">🎉</div>
-        <div style="font-size:22px;font-weight:800;color:var(--text1);letter-spacing:-.04em;margin-bottom:6px">¡Turno completado!</div>
-        <div style="font-size:14px;color:var(--text4);margin-bottom:24px">${new Date().toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long'})}</div>
-        <div style="display:flex;justify-content:center;gap:24px;margin-bottom:24px">
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Entrada</div><div style="font-family:var(--mono);font-weight:800;font-size:20px;color:var(--emerald)">${fmtTime(att.checked_in_at)}</div></div>
-          <div style="color:var(--text4);font-size:24px;align-self:center">→</div>
-          <div style="text-align:center"><div style="font-size:10px;color:var(--text4);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Salida</div><div style="font-family:var(--mono);font-weight:800;font-size:20px;color:#6366f1">${fmtTime(checkoutTime)}</div></div>
-        </div>
-        <div style="background:linear-gradient(135deg,var(--navy),#162447);border-radius:var(--r-md);padding:20px;margin-bottom:20px">
-          <div style="font-size:11px;color:rgba(255,255,255,.45);font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px">💰 HONORARIO DEL DÍA</div>
-          ${fee>0?`<div style="font-size:34px;font-weight:800;color:#22c55e;font-family:var(--mono);letter-spacing:-.04em">${fmtCLP(fee)}</div>`:`<div style="font-size:20px;font-weight:800;color:rgba(255,255,255,.4)">Sin honorario asignado</div>`}
-          <div style="font-size:12px;color:rgba(255,255,255,.4);margin-top:6px">Duración: ${h}h ${m}min trabajados</div>
-        </div>
-        <div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#1e3a8a;line-height:1.7;margin-bottom:20px">
-          📅 El próximo marcaje se habilitará mañana.<br><span style="font-size:11px;color:var(--text4)">Solo un registro de asistencia por día.</span>
-        </div>
-        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="this.closest('.modal-bg').remove()">✓ Entendido</button>
-      </div>
-    </div>`
-    document.body.appendChild(div)
-  }
   await renderCheckin()
 }
 
@@ -1789,100 +1684,17 @@ async function loadReqHistory() {
 // REMAINING ADMIN PAGES (simplified stubs)
 // ═══════════════════════════════════════════════
 async function pageAlerts(pc) {
-  const now=new Date(), months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-  let viewMonth=window._alertMonth||now.getMonth(), viewYear=window._alertYear||now.getFullYear()
-  window._alertMonth=viewMonth; window._alertYear=viewYear
-
-  pc.innerHTML=`<div class="topbar">
-    <div class="topbar-left"><div class="topbar-title">Control de Atrasos</div><div class="topbar-sub">Atrasos superiores a 5 minutos · 2+ = causal de desvinculación</div></div>
-    <div class="topbar-right">
-      <button class="btn btn-sm" onclick="window._alertMonth=window._alertMonth===0?11:window._alertMonth-1;if(window._alertMonth===11)window._alertYear--;pageAlerts(el('page-content'))">←</button>
-      <span style="font-weight:700;font-size:14px;padding:0 8px;white-space:nowrap">${months[viewMonth]} ${viewYear}</span>
-      <button class="btn btn-sm" onclick="window._alertMonth=window._alertMonth===11?0:window._alertMonth+1;if(window._alertMonth===0)window._alertYear++;pageAlerts(el('page-content'))">→</button>
-      <button class="btn btn-sm" onclick="pageAlerts(el('page-content'))">↻</button>
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Atrasos</div></div></div><div class="content" id="alerts-c"></div>`
+  const month1=new Date(new Date().getFullYear(),new Date().getMonth(),1).toISOString()
+  const {data}=await db.from('attendances').select('*, profiles(full_name,role_label,project)').eq('status','late').gte('checked_in_at',month1).order('checked_in_at',{ascending:false})
+  const counts={}; (data||[]).forEach(a=>{ const k=a.worker_id; if(!counts[k])counts[k]={name:a.profiles?.full_name,role:a.profiles?.role_label,proj:a.profiles?.project,count:0,last:a.checked_in_at}; counts[k].count++ })
+  el('alerts-c').innerHTML=Object.values(counts).sort((a,b)=>b.count-a.count).map(w=>`<div class="card" style="margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="width:44px;height:44px;border-radius:50%;background:${w.count>=2?'var(--red-l)':'var(--amber-l)'};color:${w.count>=2?'var(--red)':'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${ini(w.name)}</div>
+      <div style="flex:1"><div style="font-weight:700;font-size:14px">${w.name||'—'}</div><div style="font-size:12px;color:var(--text4)">${w.role||''}${w.proj?' · '+w.proj:''}</div></div>
+      <span class="badge ${w.count>=2?'badge-red':'badge-amber'}">${w.count} atraso${w.count!==1?'s':''}</span>
     </div>
-  </div>
-  <div class="content" id="alerts-c"><div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div></div>`
-
-  const mStart=new Date(viewYear,viewMonth,1).toISOString()
-  const mEnd=new Date(viewYear,viewMonth+1,0,23,59,59).toISOString()
-  const {data}=await db.from('attendances')
-    .select('*, profiles(full_name,role_label,project)')
-    .gte('checked_in_at',mStart).lte('checked_in_at',mEnd)
-    .order('checked_in_at',{ascending:false})
-
-  // Filter: only late >5 min
-  const lateData=(data||[]).filter(a=>a.status==='late'&&(a.late_minutes||0)>=5)
-  const body=el('alerts-c'); if(!body)return
-
-  // Group by worker
-  const groups={}
-  lateData.forEach(a=>{
-    const k=a.worker_id
-    if(!groups[k])groups[k]={name:a.profiles?.full_name,role:a.profiles?.role_label,proj:a.profiles?.project,records:[]}
-    groups[k].records.push(a)
-  })
-
-  const workers=Object.values(groups).sort((a,b)=>b.records.length-a.records.length)
-  const critical=workers.filter(w=>w.records.length>=2)
-  const warning=workers.filter(w=>w.records.length===1)
-
-  if(lateData.length===0){
-    body.innerHTML=`<div class="empty-state" style="padding:80px 24px">
-      <div class="empty-icon">✅</div>
-      <div class="empty-title">Sin atrasos mayores a 5 minutos</div>
-      <div class="empty-sub">Excelente puntualidad en ${months[viewMonth]} ${viewYear}</div>
-    </div>`;return
-  }
-
-  // Stats
-  const totalMinLate=lateData.reduce((a,r)=>a+(r.late_minutes||0),0)
-  const avgMin=Math.round(totalMinLate/lateData.length)
-
-  body.innerHTML=`
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="stat-card"><div class="stat-bar" style="background:var(--red)"></div><div class="stat-icon" style="background:var(--red-l);color:var(--red)">🚨</div><div class="stat-label">Causal desvinculación</div><div class="stat-val" style="color:var(--red)">${critical.length}</div><div class="stat-delta warn">≥2 atrasos >5min</div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:var(--amber)"></div><div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⚠</div><div class="stat-label">Con 1 atraso</div><div class="stat-val">${warning.length}</div><div class="stat-delta">Advertencia</div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:var(--navy4)"></div><div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">📋</div><div class="stat-label">Total incidencias</div><div class="stat-val">${lateData.length}</div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:var(--teal)"></div><div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">⏱</div><div class="stat-label">Minutos promedio</div><div class="stat-val">${avgMin}</div><div class="stat-delta">por incidencia</div></div>
-    </div>
-
-    ${critical.length>0?`<div class="alert alert-crit" style="margin-bottom:16px">
-      <span class="alert-icon">🚨</span>
-      <div><div class="alert-title">CAUSAL DE DESVINCULACIÓN — ${critical.length} profesional${critical.length>1?'es':''}</div>
-      <div class="alert-msg">${critical.map(w=>w.name).join(', ')} — ${critical[0].records.length}+ atrasos mayores a 5 minutos en ${months[viewMonth]}. Según política interna, esto constituye causal de desvinculación.</div></div>
-    </div>`:''}
-
-    ${workers.map(w=>{
-      const isCrit=w.records.length>=2
-      const totalMin=w.records.reduce((a,r)=>a+(r.late_minutes||0),0)
-      return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden;border-color:${isCrit?'#fca5a5':'#fde68a'}">
-        <div style="height:4px;background:${isCrit?'var(--red)':'var(--amber)'}"></div>
-        <div style="padding:16px 20px">
-          <div style="display:flex;align-items:center;gap:14px;margin-bottom:${w.records.length>0?'14px':'0'}">
-            <div style="width:46px;height:46px;border-radius:50%;background:${isCrit?'var(--red-l)':'var(--amber-l)'};color:${isCrit?'var(--red)':'var(--amber)'};display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0">${ini(w.name)}</div>
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:15px">${w.name}</div>
-              <div style="font-size:12px;color:var(--text4);margin-top:2px">${w.role||''}${w.proj?' · '+w.proj:''}</div>
-            </div>
-            <div style="text-align:right;flex-shrink:0">
-              <span class="badge ${isCrit?'badge-red':'badge-amber'}" style="font-size:13px;padding:5px 12px">${w.records.length} atraso${w.records.length>1?'s':''}</span>
-              ${isCrit?`<div style="font-size:10px;color:var(--red);font-weight:700;margin-top:4px">🚨 CAUSAL DESVINCULACIÓN</div>`:`<div style="font-size:10px;color:var(--amber);font-weight:700;margin-top:4px">⚠ ADVERTENCIA</div>`}
-            </div>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <div style="background:var(--slate);border-radius:6px;padding:8px 12px;font-size:12px;flex:1;min-width:120px"><div style="color:var(--text4);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:2px">Total minutos tarde</div><div style="font-weight:800;font-family:var(--mono)">${totalMin} min</div></div>
-            <div style="background:var(--slate);border-radius:6px;padding:8px 12px;font-size:12px;flex:1;min-width:120px"><div style="color:var(--text4);font-size:10px;font-weight:700;text-transform:uppercase;margin-bottom:2px">Promedio por atraso</div><div style="font-weight:800;font-family:var(--mono)">${Math.round(totalMin/w.records.length)} min</div></div>
-          </div>
-          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Detalle de incidencias</div>
-          ${w.records.map(r=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:${isCrit?'rgba(220,38,38,.04)':'rgba(245,158,11,.04)'};border-radius:6px;margin-bottom:6px;border:1px solid ${isCrit?'rgba(220,38,38,.12)':'rgba(245,158,11,.12)'}">
-            <span style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--text3)">${r.checked_in_at?.slice(0,10)||'—'}</span>
-            <span style="font-family:var(--mono);font-size:13px;font-weight:800;color:${isCrit?'var(--red)':'var(--amber)'}">↑ ${fmtTime(r.checked_in_at)}</span>
-            <span class="badge ${isCrit?'badge-red':'badge-amber'}" style="margin-left:auto">+${r.late_minutes||0} min tarde</span>
-          </div>`).join('')}
-        </div>
-      </div>`
-    }).join('')}`
+  </div>`).join('')||(data||[]).length===0?`<div class="empty-state"><div class="empty-icon">✅</div><div class="empty-title">Sin atrasos este mes</div></div>`:''
 }
 
 async function pageRequests(pc) {
@@ -2088,229 +1900,535 @@ async function pageUsers(pc) {
 }
 
 async function pageSettings(pc) {
-  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">Configuración</div></div><div class="topbar-right"><button class="btn btn-primary btn-sm" onclick="showNewProject()">+ Crear proyecto</button></div></div><div class="content" id="set-c"></div>`
+  pc.innerHTML = `
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">Configuración</div>
+      <div class="topbar-sub">Proyectos, tarifas y parámetros del sistema</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn btn-primary btn-sm" onclick="showProjectModal(null)">+ Nuevo proyecto</button>
+    </div>
+  </div>
+  <div class="content" id="set-c">
+    <div style="display:flex;align-items:center;justify-content:center;height:200px"><div class="spinner" style="width:28px;height:28px"></div></div>
+  </div>`
   await loadSettings()
 }
 
 async function loadSettings() {
-  const body=el('set-c'); if(!body)return
-  const [{data:projects},{data:workers},{data:cfg}]=await Promise.all([
+  const body = el('set-c')
+  if (!body) return
+
+  const [{data:projects},{data:workers},{data:cfg}] = await Promise.all([
     db.from('projects').select('*').order('name'),
     db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name'),
     db.from('system_config').select('*'),
   ])
-  const rates=(cfg||[]).find(c=>c.key==='role_fees')?.value||{'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
-  const DAY_LABELS={mon:'Lun',tue:'Mar',wed:'Mié',thu:'Jue',fri:'Vie',sat:'Sáb',sun:'Dom'}
-  body.innerHTML=`
-    <div class="card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-        <div><div class="card-title">💰 Tarifas globales por cargo</div><div class="card-sub">Honorario por turno · Guardado en Supabase</div></div>
-        <button class="btn btn-sm" onclick="editRates(${JSON.stringify(JSON.stringify(rates))})">✏ Editar</button>
-      </div>
-      <div class="g2">${Object.entries(rates).map(([role,fee])=>`<div style="background:var(--slate);border-radius:var(--r);padding:14px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-weight:700;font-size:13px">${role}</div><div style="font-size:11px;color:var(--text4)">por turno</div></div>
-        <div style="font-weight:800;font-size:16px;color:var(--emerald);font-family:var(--mono)">${fmtCLP(fee)}</div>
-      </div>`).join('')}</div>
-    </div>
-    <div class="card-title" style="margin-bottom:10px">🏥 Proyectos / Licitaciones</div>
-    ${(projects||[]).length===0?`<div class="empty-state" style="background:white;border-radius:var(--r-md);border:1px solid var(--border);padding:40px"><div class="empty-icon">🏥</div><div class="empty-title">Sin proyectos</div><div class="empty-sub">Crea tu primer proyecto</div><button class="btn btn-primary btn-sm" style="margin-top:14px" onclick="showNewProject()">+ Crear proyecto</button></div>`:''}
-    ${(projects||[]).map(p=>{
-      const pw=(workers||[]).filter(w=>w.project===p.name)
-      const activeDays=p.schedule?Object.entries(p.schedule).filter(([,d])=>d.active):[]
-      return `<div class="card" style="margin-bottom:12px;padding:0;overflow:hidden">
-        <div style="height:4px;background:${p.active?'linear-gradient(90deg,#1d4ed8,#0891b2)':'#e2e8f0'}"></div>
-        <div style="padding:16px 20px">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-            <div style="flex:1">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
-                <div style="font-size:15px;font-weight:800">${p.name}</div>
-                <span class="badge ${p.active?'badge-green':'badge-gray'}">${p.active?'● Activo':'○ Inactivo'}</span>
-              </div>
-              ${p.hospital||p.location?`<div style="font-size:12px;color:var(--text4);margin-bottom:4px">${p.hospital?'🏥 '+p.hospital:''} ${p.location?'📍 '+p.location:''}</div>`:''}
-              ${activeDays.length?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px">${activeDays.map(([day,d])=>`<span style="font-size:10px;font-weight:700;background:var(--accent-l);color:#1e40af;border-radius:4px;padding:2px 7px">${DAY_LABELS[day]||day} ${d.start}–${d.end}</span>`).join('')}</div>`:''}
-            </div>
-            <div style="display:flex;gap:6px;flex-shrink:0;margin-left:12px">
-              <button class="btn btn-primary btn-xs" onclick="showEditProject(${JSON.stringify(JSON.stringify(p))})">✏</button>
-              <button class="btn btn-xs" onclick="toggleProjActive('${p.id}',${p.active})">${p.active?'⏸':'▶'}</button>
-              <button class="btn btn-danger btn-xs" onclick="deleteProj('${p.id}','${p.name}')">🗑</button>
-            </div>
-          </div>
-          ${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].some(r=>p['fee_'+{Enfermera:'enfermera','TENS':'tens',Auxiliar:'auxiliar',Administrativo:'admin'}[r.split('/')[0].split(' ')[0]]])?`<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">${['Enfermera/o','TENS','Auxiliar de servicio','Administrativo'].map(role=>{const fk={'Enfermera/o':'fee_enfermera','TENS':'fee_tens','Auxiliar de servicio':'fee_auxiliar','Administrativo':'fee_admin'}[role];const rk={'Enfermera/o':'required_enfermera','TENS':'required_tens','Auxiliar de servicio':'required_auxiliar','Administrativo':'required_admin'}[role];if(!(p[rk]>0))return'';const assigned=pw.filter(w=>w.role_label===role).length,needed=p[rk]||0,ok=assigned>=needed;return`<div style="background:${ok?'var(--emerald-l)':'var(--amber-l)'};border-radius:6px;padding:6px 10px;border:1px solid ${ok?'#6ee7b7':'#fde68a'};text-align:center;min-width:80px"><div style="font-size:10px;font-weight:700;color:${ok?'var(--emerald-d)':'#92400e'}">${role.split('/')[0]}</div><div style="font-family:var(--mono);font-weight:800;font-size:14px;color:${ok?'var(--emerald-d)':'#92400e'}">${assigned}/${needed}</div><div style="font-size:9px;color:${ok?'var(--emerald-d)':'#b45309'}">${fmtCLP(p[fk]).replace(' CLP','')}</div></div>`}).join('')}</div>`:''}
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-            <div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">${pw.length>0?pw.map(w=>`<span style="font-size:11px;font-weight:600;background:var(--accent-l);color:#1e40af;border-radius:20px;padding:3px 10px">${w.full_name?.split(' ').slice(0,2).join(' ')} · ${w.role_label?.split('/')[0]||w.role_label}</span>`).join(''):`<span style="font-size:12px;color:var(--text4)">Sin profesionales asignados</span>`}</div>
-            <button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="showAssignWorkers('${p.id}','${p.name}',${JSON.stringify(JSON.stringify(workers||[]))},${JSON.stringify(JSON.stringify(pw||[]))})">👥 Asignar →</button>
-          </div>
-        </div>
-      </div>`
-    }).join('')}`
-}
-window.toggleProjActive = async (id,active) => { await db.from('projects').update({active:!active}).eq('id',id); loadSettings() }
-window.deleteProj = async (id,name) => { if(!confirm(`¿Eliminar "${name}"?`))return; await db.from('projects').delete().eq('id',id); loadSettings() }
 
-window.showAssignWorkers = (pid,pname,allWJson,pwJson) => {
-  const allW=JSON.parse(allWJson), pw=JSON.parse(pwJson)
-  const selIds=pw.map(w=>w.id)
-  const div=document.createElement('div')
-  div.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
-    <div class="modal"><div class="modal-hdr"><div><div class="modal-title">Asignar profesionales</div><div class="modal-sub" style="color:var(--accent);font-weight:600">${pname}</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
-      <div style="display:flex;gap:8px;margin-bottom:12px">
-        <button class="btn btn-xs" onclick="document.querySelectorAll('.aw-cb').forEach(c=>c.checked=true)">✓ Todos</button>
-        <button class="btn btn-xs" onclick="document.querySelectorAll('.aw-cb').forEach(c=>c.checked=false)">✕ Ninguno</button>
-      </div>
-      <div id="aw-list">${allW.map(w=>{
-        const sel=selIds.includes(w.id)
-        return `<label style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r);border:1.5px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent-l)':'var(--surface)'};margin-bottom:8px;cursor:pointer" id="aw-row-${w.id}" onclick="this.style.borderColor=document.getElementById('aw-${w.id}').checked?'var(--border)':'var(--accent)';this.style.background=document.getElementById('aw-${w.id}').checked?'var(--surface)':'var(--accent-l)'">
-          <input type="checkbox" class="aw-cb" id="aw-${w.id}" value="${w.id}" ${sel?'checked':''} style="width:18px;height:18px;flex-shrink:0;cursor:pointer"/>
-          <div style="flex:1"><div style="font-weight:600;font-size:13px">${w.full_name}</div><div style="font-size:11px;color:var(--text4)">${w.role_label||'—'}</div></div>
-        </label>`
-      }).join('')}</div>
-      <div style="display:flex;gap:10px;margin-top:18px">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAssignW('${pid}','${pname}',${JSON.stringify(JSON.stringify(allW))})">💾 Guardar</button>
-        <button class="btn" onclick="this.closest('.modal-bg').parentNode.remove()">Cancelar</button>
-      </div>
-    </div>
-  </div>`
-  document.body.appendChild(div)
-}
-window.saveAssignW = async (pid,pname,allWJson) => {
-  const allW=JSON.parse(allWJson)
-  const selected=[...document.querySelectorAll('.aw-cb:checked')].map(c=>c.value)
-  for(const w of allW){
-    if(selected.includes(w.id)) await db.from('profiles').update({project:pname}).eq('id',w.id)
-    else if(w.project===pname) await db.from('profiles').update({project:null}).eq('id',w.id)
+  const rates = (cfg||[]).find(c=>c.key==='role_fees')?.value || {
+    'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000
   }
-  document.querySelector('.modal-bg')?.parentNode?.remove(); loadSettings()
-}
 
-window.editRates = async (ratesJson) => {
-  const rates=JSON.parse(ratesJson)
-  const div=document.createElement('div')
-  div.innerHTML=`<div class="modal-bg" onclick="if(event.target===this)this.parentNode.remove()">
-    <div class="modal"><div class="modal-hdr"><div><div class="modal-title">Editar tarifas globales</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').parentNode.remove()">✕</button></div>
-      ${Object.entries(rates).map(([role,fee])=>`<div class="form-group"><label class="form-label">${role} (CLP / turno)</label><input class="form-input" id="rate-${role.replace(/\//g,'_').replace(/ /g,'_')}" type="number" value="${fee}" min="0"/></div>`).join('')}
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveRates(${JSON.stringify(JSON.stringify(Object.keys(rates)))})">💾 Guardar tarifas</button>
+  const DAY = {mon:'Lunes',tue:'Martes',wed:'Miércoles',thu:'Jueves',fri:'Viernes',sat:'Sábado',sun:'Domingo'}
+  const ROLE_FEE_MAP = {'Enfermera/o':'fee_enfermera','TENS':'fee_tens','Auxiliar de servicio':'fee_auxiliar','Administrativo':'fee_admin'}
+  const ROLE_REQ_MAP = {'Enfermera/o':'required_enfermera','TENS':'required_tens','Auxiliar de servicio':'required_auxiliar','Administrativo':'required_admin'}
+
+  // Build HTML
+  let html = `<div id="settings-modal-area"></div>`
+
+  // ── Global rates card ──
+  html += `<div class="card" style="margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div class="card-title">💰 Tarifas globales por cargo</div>
+        <div class="card-sub">Honorario base por turno · Se guarda en Supabase</div>
+      </div>
+      <button class="btn btn-sm" onclick="showRatesModal(${escJ(rates)})">✏ Editar tarifas</button>
+    </div>
+    <div class="g2" style="gap:10px">
+      ${Object.entries(rates).map(([role,fee])=>
+        '<div style="background:var(--slate);border-radius:var(--r);padding:14px 16px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
+        '<div><div style="font-weight:700;font-size:13px">'+role+'</div><div style="font-size:11px;color:var(--text4)">por turno</div></div>' +
+        '<div style="font-weight:800;font-size:16px;color:var(--emerald);font-family:var(--mono)">$'+Number(fee).toLocaleString('es-CL')+' CLP</div>' +
+        '</div>'
+      ).join('')}
     </div>
   </div>`
-  document.body.appendChild(div)
+
+  // ── Projects section ──
+  html += `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="font-size:15px;font-weight:700;color:var(--text1);letter-spacing:-.02em">🏥 Proyectos / Licitaciones</div>
+    <span style="font-size:12px;color:var(--text4)">${(projects||[]).length} proyecto${(projects||[]).length!==1?'s':''}</span>
+  </div>`
+
+  if (!(projects||[]).length) {
+    html += `<div style="background:var(--surface);border:2px dashed var(--border2);border-radius:var(--r-md);padding:48px 24px;text-align:center">
+      <div style="font-size:48px;margin-bottom:14px">🏥</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text2);margin-bottom:6px">Sin proyectos creados</div>
+      <div style="font-size:13px;color:var(--text4);margin-bottom:18px">Crea tu primer proyecto para comenzar a gestionar turnos</div>
+      <button class="btn btn-primary" onclick="showProjectModal(null)">+ Crear primer proyecto</button>
+    </div>`
+  }
+
+  ;(projects||[]).forEach(p => {
+    const pw = (workers||[]).filter(w=>w.project===p.name)
+    const activeDays = p.schedule ? Object.entries(p.schedule).filter(([,d])=>d.active) : []
+    const totalDotNeeded = ['required_enfermera','required_tens','required_auxiliar','required_admin'].reduce((a,k)=>a+(p[k]||0),0)
+    const totalDotHave   = pw.length
+    const dotOk = totalDotHave >= totalDotNeeded
+
+    html += `<div class="card" style="margin-bottom:14px;padding:0;overflow:hidden;border-left:4px solid ${p.active?'var(--accent)':'var(--border2)'}">`
+    // Header strip
+    html += `<div style="padding:16px 20px 0">`
+    html += `<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px">`
+    html += `<div style="flex:1;min-width:0">`
+    html += `<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">`
+    html += `<div style="font-size:16px;font-weight:800;color:var(--text1);letter-spacing:-.03em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</div>`
+    html += `<span class="badge ${p.active?'badge-green':'badge-gray'}" style="flex-shrink:0">${p.active?'● Activo':'○ Inactivo'}</span>`
+    html += `</div>`
+    if (p.hospital || p.location) {
+      html += `<div style="font-size:12px;color:var(--text4)">`
+      if (p.hospital) html += `🏥 ${p.hospital}  `
+      if (p.location) html += `📍 ${p.location}`
+      html += `</div>`
+    }
+    if (p.description) {
+      html += `<div style="font-size:12px;color:var(--text3);margin-top:4px;line-height:1.5">${p.description}</div>`
+    }
+    html += `</div>` // end name div
+    // Action buttons
+    html += `<div style="display:flex;gap:6px;flex-shrink:0">`
+    html += `<button class="btn btn-primary btn-sm" onclick="showProjectModal(${escJ(p)})">✏ Editar</button>`
+    html += `<button class="btn btn-sm" onclick="toggleProjActive('${p.id}',${p.active})">${p.active?'⏸ Pausar':'▶ Activar'}</button>`
+    html += `<button class="btn btn-danger btn-sm" onclick="deleteProj('${p.id}','${p.name.replace(/'/g,'\\\')}')">🗑</button>`
+    html += `</div>` // end buttons
+    html += `</div>` // end header row
+
+    // Schedule chips
+    if (activeDays.length) {
+      html += `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">`
+      activeDays.forEach(([day,d])=>{
+        html += `<span style="font-size:10px;font-weight:700;background:rgba(59,130,246,.1);color:#1e40af;border:1px solid rgba(59,130,246,.2);border-radius:6px;padding:3px 9px">${(DAY[day]||day).slice(0,3)} ${d.start}–${d.end}</span>`
+      })
+      html += `</div>`
+    } else {
+      html += `<div style="font-size:12px;color:var(--amber);margin-bottom:12px">⚠ Sin horario configurado — los trabajadores no podrán marcar atraso correctamente</div>`
+    }
+
+    // Dotation + fees row
+    const roleRows = [
+      ['Enfermera/o','fee_enfermera','required_enfermera'],
+      ['TENS','fee_tens','required_tens'],
+      ['Auxiliar de servicio','fee_auxiliar','required_auxiliar'],
+      ['Administrativo','fee_admin','required_admin'],
+    ].filter(([,fk,rk])=> (p[rk]||0)>0)
+
+    if (roleRows.length) {
+      html += `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">`
+      roleRows.forEach(([label,fk,rk])=>{
+        const assigned = pw.filter(w=>w.role_label===label).length
+        const needed   = p[rk]||0
+        const ok       = assigned>=needed
+        html += `<div style="background:${ok?'var(--emerald-l)':'var(--amber-l)'};border:1px solid ${ok?'#6ee7b7':'#fde68a'};border-radius:8px;padding:8px 12px;min-width:90px;text-align:center">`
+        html += `<div style="font-size:10px;font-weight:700;color:${ok?'var(--emerald-d)':'#92400e'};margin-bottom:3px">${label.split('/')[0]}</div>`
+        html += `<div style="font-family:var(--mono);font-weight:800;font-size:16px;color:${ok?'var(--emerald-d)':'#92400e'}">${assigned}/${needed}</div>`
+        html += `<div style="font-size:10px;color:${ok?'var(--emerald-d)':'#b45309'};margin-top:2px">$${Number(p[fk]||0).toLocaleString('es-CL')}</div>`
+        html += `</div>`
+      })
+      // Total cost chip
+      const cost = roleRows.reduce((a,[,fk,rk])=>a+(p[fk]||0)*(p[rk]||0),0)
+      if (cost>0) {
+        html += `<div style="background:var(--accent-l);border:1px solid #93c5fd;border-radius:8px;padding:8px 12px;min-width:90px;text-align:center">`
+        html += `<div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:3px">COSTO</div>`
+        html += `<div style="font-family:var(--mono);font-weight:800;font-size:13px;color:#1e40af">$${cost.toLocaleString('es-CL')}</div>`
+        html += `<div style="font-size:10px;color:#1e40af;margin-top:2px">por turno</div>`
+        html += `</div>`
+      }
+      html += `</div>` // end dotation row
+    }
+
+    // Workers strip + assign button
+    html += `<div style="border-top:1px solid var(--border);padding:12px 0;display:flex;align-items:center;justify-content:space-between;gap:12px">`
+    if (pw.length>0) {
+      html += `<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1">`
+      pw.forEach(w=>{
+        const wname = (w.full_name||'').split(' ').slice(0,2).join(' ')
+        const wrole = w.role_label ? w.role_label.split('/')[0] : ''
+        html += `<span style="font-size:11px;font-weight:600;background:var(--accent-l);color:#1e40af;border-radius:20px;padding:3px 10px">${wname}${wrole?' · '+wrole:''}</span>`
+      })
+      html += `</div>`
+    } else {
+      html += `<span style="font-size:12px;color:var(--text4);flex:1">Sin profesionales asignados</span>`
+    }
+    html += `<button class="btn btn-primary btn-sm" style="flex-shrink:0" onclick="showAssignModal('${p.id}','${p.name.replace(/'/g,'\\\')}',${escJ(workers||[])},${escJ(pw||[])})">👥 Asignar</button>`
+    html += `</div>` // end workers strip
+
+    html += `</div>` // end card padding
+    html += `</div>` // end card
+  })
+
+  body.innerHTML = html
 }
-window.saveRates = async (keysJson) => {
-  const keys=JSON.parse(keysJson)
-  const newRates={}; keys.forEach(k=>{ const id='rate-'+k.replace(/\//g,'_').replace(/ /g,'_'); const inp=el(id); if(inp)newRates[k]=Number(inp.value) })
+
+// Escape for inline JSON in onclick
+function escJ(obj) {
+  return "'" + JSON.stringify(obj).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"
+}
+
+window.toggleProjActive = async (id, active) => {
+  await db.from('projects').update({active:!active}).eq('id',id)
+  loadSettings()
+}
+
+window.deleteProj = async (id, name) => {
+  if (!confirm('¿Eliminar el proyecto "'+name+'"?')) return
+  await db.from('projects').delete().eq('id',id)
+  loadSettings()
+}
+
+// ─── RATES MODAL ───────────────────────────────
+window.showRatesModal = (ratesStr) => {
+  const rates = typeof ratesStr === 'string' ? JSON.parse(ratesStr) : ratesStr
+  const area = el('settings-modal-area')
+  if (!area) return
+  area.innerHTML = `<div class="modal-bg" id="rates-modal" onclick="if(event.target.id==='rates-modal')closeRatesModal()">
+    <div class="modal" style="max-width:480px">
+      <div class="modal-hdr">
+        <div><div class="modal-title">Editar tarifas globales</div><div class="modal-sub">Honorario base por turno según cargo</div></div>
+        <button class="btn btn-ghost btn-sm" onclick="closeRatesModal()">✕</button>
+      </div>
+      <div style="margin-bottom:16px">
+        ${Object.entries(rates).map(([role,fee])=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--slate);border-radius:var(--r);margin-bottom:8px;border:1px solid var(--border)">
+          <div style="font-weight:600;font-size:13px">${role}</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <input type="number" id="rate-${role.replace(/[^a-zA-Z]/g,'_')}" class="form-input" style="width:130px;margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right" value="${fee}" min="0"/>
+            <span style="font-size:12px;color:var(--text4)">CLP</span>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveRates(${escJ(Object.keys(rates))})">💾 Guardar tarifas</button>
+        <button class="btn" onclick="closeRatesModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>`
+}
+window.closeRatesModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
+window.saveRates = async (keysStr) => {
+  const keys = JSON.parse(keysStr)
+  const newRates = {}
+  keys.forEach(k => {
+    const safeId = 'rate-' + k.replace(/[^a-zA-Z]/g,'_')
+    const inp = el(safeId)
+    if (inp) newRates[k] = Number(inp.value) || 0
+  })
   await db.from('system_config').upsert([{key:'role_fees',value:newRates,updated_at:new Date().toISOString()}])
-  document.querySelector('.modal-bg')?.parentNode?.remove(); loadSettings()
+  closeRatesModal()
+  loadSettings()
 }
 
-window.showNewProject = () => showProjectForm(null)
-window.showEditProject = (pJson) => showProjectForm(JSON.parse(pJson))
+// ─── ASSIGN WORKERS MODAL ──────────────────────
+window.showAssignModal = (pid, pname, allWStr, pwStr) => {
+  const allW = JSON.parse(allWStr), pw = JSON.parse(pwStr)
+  const selIds = pw.map(w=>w.id)
+  const area = el('settings-modal-area')
+  if (!area) return
+  let listHTML = ''
+  allW.forEach(w => {
+    const sel = selIds.includes(w.id)
+    const wname = (w.full_name||'').split(' ').slice(0,2).join(' ')
+    const wrole = w.role_label || '—'
+    listHTML += `<label id="asgn-row-${w.id}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r);border:2px solid ${sel?'var(--accent)':'var(--border)'};background:${sel?'var(--accent-l)':'var(--surface)'};margin-bottom:8px;cursor:pointer;transition:all .15s">
+      <input type="checkbox" id="asgn-${w.id}" class="asgn-cb" value="${w.id}" ${sel?'checked':''} style="width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:var(--accent)"
+        onchange="document.getElementById('asgn-row-${w.id}').style.borderColor=this.checked?'var(--accent)':'var(--border)';document.getElementById('asgn-row-${w.id}').style.background=this.checked?'var(--accent-l)':'var(--surface)'"/>
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${wname}</div>
+        <div style="font-size:11px;color:var(--text4)">${wrole}</div>
+      </div>
+    </label>`
+  })
 
-function showProjectForm(p) {
-  const isEdit=!!p
-  const DEFAULT_SCHED={mon:{active:true,start:'08:00',end:'17:00'},tue:{active:true,start:'08:00',end:'17:00'},wed:{active:true,start:'08:00',end:'17:00'},thu:{active:true,start:'08:00',end:'17:00'},fri:{active:true,start:'08:00',end:'16:00'},sat:{active:false,start:'08:00',end:'14:00'},sun:{active:false,start:'08:00',end:'14:00'}}
-  const sched=p?.schedule||DEFAULT_SCHED
-  const DAY_LABELS={mon:'Lunes',tue:'Martes',wed:'Miércoles',thu:'Jueves',fri:'Viernes',sat:'Sábado',sun:'Domingo'}
-  const div=document.createElement('div')
-  div.innerHTML=`<div class="modal-bg" onclick="" style="align-items:flex-start;padding:16px;overflow-y:auto">
-    <div class="modal" style="max-width:640px;margin:0 auto">
-      <div class="modal-hdr"><div><div class="modal-title">${isEdit?'✏ Editar':'➕ Crear'} proyecto</div><div class="modal-sub">Configura dotación, honorarios y horario</div></div><button class="btn btn-ghost btn-sm" onclick="this.closest('.modal-bg').remove()">✕</button></div>
-      <div id="pf-err" class="auth-err" style="display:none"></div>
-      <form id="proj-form">
+  area.innerHTML = `<div class="modal-bg" id="asgn-modal" onclick="if(event.target.id==='asgn-modal')closeAssignModal()">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-hdr">
+        <div>
+          <div class="modal-title">Asignar profesionales</div>
+          <div class="modal-sub" style="color:var(--accent);font-weight:600">${pname}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeAssignModal()">✕</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-sm" onclick="document.querySelectorAll('.asgn-cb').forEach(c=>{c.checked=true;document.getElementById('asgn-row-'+c.value).style.borderColor='var(--accent)';document.getElementById('asgn-row-'+c.value).style.background='var(--accent-l)'})">✓ Todos</button>
+        <button class="btn btn-sm" onclick="document.querySelectorAll('.asgn-cb').forEach(c=>{c.checked=false;document.getElementById('asgn-row-'+c.value).style.borderColor='var(--border)';document.getElementById('asgn-row-'+c.value).style.background='var(--surface)'})">✕ Ninguno</button>
+      </div>
+      ${allW.length===0?'<div class="empty-state" style="padding:24px 0"><div class="empty-icon" style="font-size:32px">👥</div><div class="empty-title" style="font-size:14px">Sin profesionales</div><div class="empty-sub">Ve a Personal y agrega profesionales primero</div></div>':listHTML}
+      <div style="display:flex;gap:10px;margin-top:16px">
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveAssignWorkers('${pid}','${pname.replace(/'/g,'\\\')}',${escJ(allW)})">💾 Guardar asignación</button>
+        <button class="btn" onclick="closeAssignModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>`
+}
+window.closeAssignModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
+window.saveAssignWorkers = async (pid, pname, allWStr) => {
+  const allW = JSON.parse(allWStr)
+  const selected = [...document.querySelectorAll('.asgn-cb:checked')].map(c=>c.value)
+  for (const w of allW) {
+    if (selected.includes(w.id)) {
+      await db.from('profiles').update({project:pname}).eq('id',w.id)
+    } else if (w.project===pname) {
+      await db.from('profiles').update({project:null}).eq('id',w.id)
+    }
+  }
+  closeAssignModal()
+  loadSettings()
+}
+
+// ─── PROJECT MODAL (create + edit) ─────────────
+window.showProjectModal = (proj) => {
+  const isEdit = !!proj
+  const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+  const DAY_LABEL = {mon:'Lunes',tue:'Martes',wed:'Miércoles',thu:'Jueves',fri:'Viernes',sat:'Sábado',sun:'Domingo'}
+  const DEFAULT_SCHED = {
+    mon:{active:true,start:'08:00',end:'17:00'},
+    tue:{active:true,start:'08:00',end:'17:00'},
+    wed:{active:true,start:'08:00',end:'17:00'},
+    thu:{active:true,start:'08:00',end:'17:00'},
+    fri:{active:true,start:'08:00',end:'16:00'},
+    sat:{active:false,start:'08:00',end:'14:00'},
+    sun:{active:false,start:'08:00',end:'14:00'},
+  }
+  const sched = proj?.schedule || DEFAULT_SCHED
+  const area = el('settings-modal-area')
+  if (!area) return
+
+  // Build schedule rows
+  let schedHTML = ''
+  DAYS.forEach(day => {
+    const d = sched[day] || {active:false,start:'08:00',end:'17:00'}
+    schedHTML += `<div style="display:grid;grid-template-columns:100px 52px 1fr;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="font-weight:600;font-size:13px;color:${d.active?'var(--text1)':'var(--text4)'}" id="pm-dlabel-${day}">${DAY_LABEL[day]}</div>
+      <div id="pm-tog-${day}" onclick="pmToggleDay('${day}')"
+        style="width:44px;height:24px;border-radius:12px;background:${d.active?'var(--accent)':'#cbd5e1'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
+        <div id="pm-knob-${day}" style="position:absolute;top:3px;left:${d.active?22:3}px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>
+      </div>
+      <div id="pm-times-${day}" style="display:${d.active?'flex':'none'};align-items:center;gap:8px">
+        <input type="time" id="pm-start-${day}" value="${d.start}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>
+        <span style="color:var(--text4);font-size:13px">→</span>
+        <input type="time" id="pm-end-${day}" value="${d.end}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>
+      </div>
+      <div id="pm-noday-${day}" style="display:${d.active?'none':'block'};font-size:12px;color:var(--text4);font-style:italic">No operativo</div>
+    </div>`
+  })
+
+  // Build dotation rows
+  const ROLES = [
+    {label:'Enfermera/o',    fk:'fee_enfermera', rk:'required_enfermera',  def:35000},
+    {label:'TENS',           fk:'fee_tens',       rk:'required_tens',       def:28000},
+    {label:'Auxiliar de servicio',fk:'fee_auxiliar',rk:'required_auxiliar', def:22000},
+    {label:'Administrativo', fk:'fee_admin',      rk:'required_admin',      def:30000},
+  ]
+  let dotHTML = ''
+  ROLES.forEach(r => {
+    const fee = proj?.[r.fk] || r.def
+    const req = proj?.[r.rk] || 0
+    dotHTML += `<div style="display:grid;grid-template-columns:1fr 130px 150px;gap:12px;align-items:center;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px">
+      <div style="font-weight:700;font-size:13px">${r.label}</div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Dotación</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button type="button" class="btn btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot('pm-req-${r.rk}',-1)">−</button>
+          <span id="pm-req-${r.rk}" style="font-family:var(--mono);font-weight:800;font-size:18px;min-width:24px;text-align:center">${req}</span>
+          <button type="button" class="btn btn-primary btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot('pm-req-${r.rk}',1)">+</button>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Honor. / turno</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="pm-${r.fk}" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right;font-size:13px" min="0" value="${fee}" oninput="pmUpdateCost()"/>
+          <span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>
+        </div>
+      </div>
+    </div>`
+  })
+
+  area.innerHTML = `<div class="modal-bg" id="proj-modal" onclick="" style="align-items:flex-start;padding:20px;overflow-y:auto">
+    <div class="modal" style="max-width:640px;margin:0 auto 40px">
+      <div class="modal-hdr">
+        <div>
+          <div class="modal-title">${isEdit?'✏ Editar proyecto':'➕ Crear proyecto'}</div>
+          <div class="modal-sub">Configura horarios, dotación e instrucciones</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeProjModal()">✕</button>
+      </div>
+
+      <div id="pm-err" class="auth-err" style="display:none;margin-bottom:14px"></div>
+
+      <form id="pm-form" onsubmit="saveProjForm(event,${isEdit?("'"+proj.id+"'"):'null'})">
+
+        <!-- INFO SECTION -->
         <div style="background:var(--slate);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:12px">📋 Información</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:14px;color:var(--text2)">📋 Información del proyecto</div>
           <div class="g2">
-            <div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="pf-name" required placeholder="VACUNACION 2026 LO BARNECHEA" value="${p?.name||''}"/></div>
-            <div class="form-group"><label class="form-label">Hospital / CESFAM</label><input class="form-input" id="pf-hospital" placeholder="CESFAM Lo Barnechea" value="${p?.hospital||''}"/></div>
-            <div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="pf-location" placeholder="Av. Las Condes 14801" value="${p?.location||''}"/></div>
-            <div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="pf-desc" value="${p?.description||''}"/></div>
+            <div class="form-group">
+              <label class="form-label">Nombre *</label>
+              <input class="form-input" id="pm-name" required placeholder="VACUNACION 2026 LO BARNECHEA" value="${proj?.name||''}"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Hospital / CESFAM</label>
+              <input class="form-input" id="pm-hospital" placeholder="CESFAM Lo Barnechea" value="${proj?.hospital||''}"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Dirección</label>
+              <input class="form-input" id="pm-location" placeholder="Av. Las Condes 14801" value="${proj?.location||''}"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Descripción</label>
+              <input class="form-input" id="pm-description" placeholder="Descripción breve del proyecto..." value="${proj?.description||''}"/>
+            </div>
           </div>
         </div>
-        <div style="background:rgba(59,130,246,.04);border-radius:var(--r-md);padding:16px;margin-bottom:14px;border:1px solid rgba(59,130,246,.12)">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px">📅 Horario de operación</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Activa los días que opera este proyecto</div>
-          ${Object.entries(DAY_LABELS).map(([day,label])=>{
-            const d=sched[day]||{active:false,start:'08:00',end:'17:00'}
-            return `<div style="display:grid;grid-template-columns:110px 50px 1fr;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
-              <div style="font-weight:600;font-size:13px;color:${d.active?'var(--text1)':'var(--text4)'}" id="pf-daylabel-${day}">${label}</div>
-              <div id="pf-toggle-${day}" onclick="toggleScheduleDay('${day}')" style="width:42px;height:24px;border-radius:12px;background:${d.active?'var(--accent)':'#cbd5e1'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
-                <div id="pf-knob-${day}" style="position:absolute;top:3px;left:${d.active?21:3}px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div>
-              </div>
-              <div id="pf-times-${day}" style="display:${d.active?'flex':'none'};align-items:center;gap:8px">
-                <input type="time" id="pf-start-${day}" value="${d.start}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:100px"/>
-                <span style="font-size:12px;color:var(--text4)">→</span>
-                <input type="time" id="pf-end-${day}" value="${d.end}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:100px"/>
-              </div>
-              ${!d.active?`<span id="pf-noday-${day}" style="font-size:12px;color:var(--text4);font-style:italic">No operativo</span>`:`<span id="pf-noday-${day}" style="display:none"></span>`}
-            </div>`
-          }).join('')}
+
+        <!-- INSTRUCTIONS SECTION -->
+        <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📌 Instrucciones para el equipo</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:10px">Texto que verán los profesionales asignados a este proyecto</div>
+          <textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo. Traer credencial vigente. Estacionamiento disponible en el subterráneo...">${proj?.instructions||''}</textarea>
         </div>
-        <div style="background:var(--emerald-l);border-radius:var(--r-md);padding:16px;margin-bottom:14px;border:1px solid #6ee7b7">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px">👥 Dotación + Honorario por turno</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos necesitas de cada cargo y qué se les paga</div>
-          ${[['Enfermera/o','fee_enfermera','required_enfermera'],['TENS','fee_tens','required_tens'],['Auxiliar de servicio','fee_auxiliar','required_auxiliar'],['Administrativo','fee_admin','required_admin']].map(([label,fk,rk])=>`
-          <div style="display:grid;grid-template-columns:160px 1fr 1fr;gap:12px;align-items:center;padding:10px 12px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px">
-            <div style="font-weight:700;font-size:13px">${label}</div>
-            <div><div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:6px;text-transform:uppercase">Dotación</div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <button type="button" class="btn btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="adjDot('${rk}',-1)">−</button>
-                <span id="pf-req-${rk}" style="font-family:var(--mono);font-weight:800;font-size:18px;min-width:28px;text-align:center">${p?.[rk]||0}</span>
-                <button type="button" class="btn btn-primary btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="adjDot('${rk}',1)">+</button>
-              </div>
-            </div>
-            <div><div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:6px;text-transform:uppercase">Honorario / turno</div>
-              <div style="display:flex;align-items:center;gap:6px">
-                <input type="number" id="pf-${fk}" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right" min="0" value="${p?.[fk]||35000}" oninput="updateCost()"/>
-                <span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>
-              </div>
-            </div>
-          </div>`).join('')}
-          <div id="pf-total-cost" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado por turno</span>
-            <span id="pf-cost-val" style="font-weight:800;font-size:16px;color:#1e3a8a;font-family:var(--mono)">$0 CLP</span>
+
+        <!-- SCHEDULE SECTION -->
+        <div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📅 Horario de operación</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Define la hora de llegada y salida para cada día operativo</div>
+          ${schedHTML}
+        </div>
+
+        <!-- DOTATION SECTION -->
+        <div style="background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">👥 Dotación + Honorario por turno</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos necesitas de cada cargo y cuánto se paga por turno</div>
+          ${dotHTML}
+          <div id="pm-cost-row" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado turno completo</span>
+            <span id="pm-cost-val" style="font-weight:800;font-size:16px;color:#1e3a8a;font-family:var(--mono)">$0 CLP</span>
           </div>
         </div>
+
         <div style="display:flex;gap:10px">
-          <button class="btn btn-primary" type="submit" style="flex:1;justify-content:center;padding:13px">${isEdit?'💾 Guardar cambios':'➕ Crear proyecto'}</button>
-          <button type="button" class="btn" onclick="this.closest('.modal-bg').remove()">Cancelar</button>
+          <button class="btn btn-primary" type="submit" style="flex:1;justify-content:center;padding:13px;font-size:14px">
+            ${isEdit?'💾 Guardar cambios':'➕ Crear proyecto'}
+          </button>
+          <button type="button" class="btn" onclick="closeProjModal()">Cancelar</button>
         </div>
       </form>
     </div>
   </div>`
-  document.body.appendChild(div)
-  updateCost()
-  el('proj-form').onsubmit=async e=>{
-    e.preventDefault()
-    const name=el('pf-name').value.trim()
-    if(!name){const err=el('pf-err');err.style.display='block';err.textContent='El nombre es requerido';return}
-    // Build schedule
-    const finalSched={}
-    Object.keys(DAY_LABELS).forEach(day=>{
-      const tog=el(`pf-toggle-${day}`)
-      const isAct=tog?.style.background.includes('blue')||tog?.style.background.includes('#3b82f6')||tog?.style.background.includes('var(--accent)')
-      finalSched[day]={active:!!isAct,start:el(`pf-start-${day}`)?.value||'08:00',end:el(`pf-end-${day}`)?.value||'17:00'}
-    })
-    const rks=['required_enfermera','required_tens','required_auxiliar','required_admin']
-    const data={
-      name, description:el('pf-desc').value||null, hospital:el('pf-hospital').value||null, location:el('pf-location').value||null,
-      fee_enfermera:Number(el('pf-fee_enfermera')?.value)||0, fee_tens:Number(el('pf-fee_tens')?.value)||0, fee_auxiliar:Number(el('pf-fee_auxiliar')?.value)||0, fee_admin:Number(el('pf-fee_admin')?.value)||0,
-      required_enfermera:Number(el('pf-req-required_enfermera')?.textContent)||0, required_tens:Number(el('pf-req-required_tens')?.textContent)||0, required_auxiliar:Number(el('pf-req-required_auxiliar')?.textContent)||0, required_admin:Number(el('pf-req-required_admin')?.textContent)||0,
-      schedule:finalSched, active:true
-    }
-    const {error}=isEdit ? await db.from('projects').update(data).eq('id',p.id) : await db.from('projects').insert([data])
-    if(error){const err=el('pf-err');err.style.display='block';err.textContent=error.code==='23505'?'Ya existe un proyecto con ese nombre.':error.message;return}
-    div.remove(); loadSettings()
+
+  pmUpdateCost()
+}
+
+window.closeProjModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
+
+window.pmToggleDay = (day) => {
+  const tog  = el('pm-tog-'+day)
+  const knob = el('pm-knob-'+day)
+  const times= el('pm-times-'+day)
+  const noday= el('pm-noday-'+day)
+  const lbl  = el('pm-dlabel-'+day)
+  if (!tog) return
+  const isOn = tog.style.background.includes('#3b82f6') || tog.style.background.includes('var(--accent)')
+  if (isOn) {
+    tog.style.background='#cbd5e1'; knob.style.left='3px'
+    if(times)times.style.display='none'
+    if(noday)noday.style.display='block'
+    if(lbl)lbl.style.color='var(--text4)'
+  } else {
+    tog.style.background='var(--accent)'; knob.style.left='22px'
+    if(times)times.style.display='flex'
+    if(noday)noday.style.display='none'
+    if(lbl)lbl.style.color='var(--text1)'
   }
 }
 
-window.adjDot = (key,delta) => { const el2=el(`pf-req-${key}`); if(!el2)return; const cur=parseInt(el2.textContent)||0; el2.textContent=Math.max(0,cur+delta); updateCost() }
-window.updateCost = () => {
-  const fks=['fee_enfermera','fee_tens','fee_auxiliar','fee_admin'], rks=['required_enfermera','required_tens','required_auxiliar','required_admin']
-  let total=0; fks.forEach((fk,i)=>{ const f=Number(el('pf-'+fk)?.value)||0; const r=Number(el('pf-req-'+rks[i])?.textContent)||0; total+=f*r })
-  const cv=el('pf-cost-val'); if(cv)cv.textContent=fmtCLP(total)
+window.pmAdjDot = (id, delta) => {
+  const el2 = el(id)
+  if (!el2) return
+  el2.textContent = Math.max(0, (parseInt(el2.textContent)||0) + delta)
+  pmUpdateCost()
 }
-window.toggleScheduleDay = (day) => {
-  const tog=el(`pf-toggle-${day}`), knob=el(`pf-knob-${day}`), times=el(`pf-times-${day}`), noday=el(`pf-noday-${day}`), label=el(`pf-daylabel-${day}`)
-  const isNowActive=tog.style.background.includes('#3b82f6')||tog.style.background.includes('var(--accent)')
-  if(isNowActive){tog.style.background='#cbd5e1';knob.style.left='3px';if(times)times.style.display='none';if(noday){noday.style.display='';noday.textContent='No operativo'};if(label)label.style.color='var(--text4)'}
-  else{tog.style.background='var(--accent)';knob.style.left='21px';if(times)times.style.display='flex';if(noday)noday.style.display='none';if(label)label.style.color='var(--text1)'}
+
+window.pmUpdateCost = () => {
+  const ROLES = [
+    {fk:'pm-fee_enfermera',rk:'pm-req-required_enfermera'},
+    {fk:'pm-fee_tens',      rk:'pm-req-required_tens'},
+    {fk:'pm-fee_auxiliar',  rk:'pm-req-required_auxiliar'},
+    {fk:'pm-fee_admin',     rk:'pm-req-required_admin'},
+  ]
+  let total = 0
+  ROLES.forEach(r => {
+    const fee = Number(el(r.fk)?.value)||0
+    const req = Number(el(r.rk)?.textContent)||0
+    total += fee * req
+  })
+  const cv = el('pm-cost-val')
+  if (cv) cv.textContent = '$' + total.toLocaleString('es-CL') + ' CLP'
+}
+
+window.saveProjForm = async (e, projId) => {
+  e.preventDefault()
+  const name = el('pm-name')?.value?.trim()
+  if (!name) {
+    const errEl=el('pm-err'); if(errEl){errEl.style.display='block';errEl.textContent='El nombre es requerido'}
+    return
+  }
+
+  // Build schedule
+  const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+  const finalSched = {}
+  DAYS.forEach(day => {
+    const tog  = el('pm-tog-'+day)
+    const isOn = tog && (tog.style.background.includes('#3b82f6')||tog.style.background.includes('var(--accent)'))
+    finalSched[day] = {
+      active: !!isOn,
+      start:  el('pm-start-'+day)?.value || '08:00',
+      end:    el('pm-end-'+day)?.value   || '17:00',
+    }
+  })
+
+  const data = {
+    name,
+    hospital:     el('pm-hospital')?.value     || null,
+    location:     el('pm-location')?.value     || null,
+    description:  el('pm-description')?.value  || null,
+    instructions: el('pm-instructions')?.value || null,
+    schedule:     finalSched,
+    fee_enfermera:  Number(el('pm-fee_enfermera')?.value)  || 0,
+    fee_tens:       Number(el('pm-fee_tens')?.value)       || 0,
+    fee_auxiliar:   Number(el('pm-fee_auxiliar')?.value)   || 0,
+    fee_admin:      Number(el('pm-fee_admin')?.value)      || 0,
+    required_enfermera:  Number(el('pm-req-required_enfermera')?.textContent)  || 0,
+    required_tens:       Number(el('pm-req-required_tens')?.textContent)       || 0,
+    required_auxiliar:   Number(el('pm-req-required_auxiliar')?.textContent)   || 0,
+    required_admin:      Number(el('pm-req-required_admin')?.textContent)      || 0,
+    active: true,
+  }
+
+  const {error} = projId
+    ? await db.from('projects').update(data).eq('id', projId)
+    : await db.from('projects').insert([data])
+
+  if (error) {
+    const errEl=el('pm-err')
+    if(errEl){
+      errEl.style.display='block'
+      errEl.textContent = error.code==='23505' ? 'Ya existe un proyecto con ese nombre.' : error.message
+    }
+    return
+  }
+  closeProjModal()
+  loadSettings()
 }
 
 // ═══════════════════════════════════════════════
