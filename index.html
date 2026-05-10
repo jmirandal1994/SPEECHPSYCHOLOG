@@ -1949,7 +1949,7 @@ async function loadSettings() {
         <div class="card-title">💰 Tarifas globales por cargo</div>
         <div class="card-sub">Honorario base por turno · Se guarda en Supabase</div>
       </div>
-      <button class="btn btn-sm" onclick="showRatesModal(${escJ(rates)})">✏ Editar tarifas</button>
+      <button class="btn btn-sm" onclick="showRatesModal()">✏ Editar tarifas</button>
     </div>
     <div class="g2" style="gap:10px">
       ${Object.entries(rates).map(([role,fee])=>
@@ -2004,7 +2004,7 @@ async function loadSettings() {
     html += `</div>` // end name div
     // Action buttons
     html += `<div style="display:flex;gap:6px;flex-shrink:0">`
-    html += `<button class="btn btn-primary btn-sm" onclick="showProjectModal(${escJ(p)})">✏ Editar</button>`
+    html += '<button class="btn btn-primary btn-sm" onclick="pmEdit(this)" data-pid="' + p.id + '">✏ Editar</button>'
     html += `<button class="btn btn-sm" onclick="toggleProjActive('${p.id}',${p.active})">${p.active?'⏸ Pausar':'▶ Activar'}</button>`
     html += '<button class="btn btn-danger btn-sm" onclick="deleteProj(\'' + p.id + '\',\'' + p.name.replace(/'/g,'&apos;') + '\')">' + '🗑</button>'
     html += `</div>` // end buttons
@@ -2090,8 +2090,9 @@ window.deleteProj = async (id, name) => {
 }
 
 // ─── RATES MODAL ───────────────────────────────
-window.showRatesModal = (ratesStr) => {
-  const rates = typeof ratesStr === 'string' ? JSON.parse(ratesStr) : ratesStr
+window.showRatesModal = async () => {
+  const {data:cfg} = await db.from('system_config').select('value').eq('key','role_fees').maybeSingle()
+  const rates = cfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
   const area = el('settings-modal-area')
   if (!area) return
   area.innerHTML = `<div class="modal-bg" id="rates-modal" onclick="if(event.target.id==='rates-modal')closeRatesModal()">
@@ -2111,17 +2112,17 @@ window.showRatesModal = (ratesStr) => {
         </div>`).join('')}
       </div>
       <div style="display:flex;gap:10px">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveRates(${escJ(Object.keys(rates))})">💾 Guardar tarifas</button>
+        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="saveRates()">💾 Guardar tarifas</button>
         <button class="btn" onclick="closeRatesModal()">Cancelar</button>
       </div>
     </div>
   </div>`
 }
 window.closeRatesModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
-window.saveRates = async (keysStr) => {
-  const keys = JSON.parse(keysStr)
+window.saveRates = async () => {
+  const ROLES = ['Enfermera/o','TENS','Auxiliar de servicio','Administrativo']
   const newRates = {}
-  keys.forEach(k => {
+  ROLES.forEach(k => {
     const safeId = 'rate-' + k.replace(/[^a-zA-Z]/g,'_')
     const inp = el(safeId)
     if (inp) newRates[k] = Number(inp.value) || 0
@@ -2452,6 +2453,13 @@ window.pmSaveAssign = () => {
   const pname = modal.dataset.pname
   const allWStr = modal.dataset.allw
   saveAssignWorkers(pid, pname, allWStr)
+}
+
+
+window.pmEdit = async (btn) => {
+  const pid = btn.dataset.pid
+  const {data:p} = await db.from('projects').select('*').eq('id',pid).maybeSingle()
+  if (p) showProjectModal(p)
 }
 
 // ═══════════════════════════════════════════════
