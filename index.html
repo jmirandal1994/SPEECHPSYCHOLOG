@@ -314,6 +314,11 @@ const el      = id => document.getElementById(id)
 const ini     = name => (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
 const isAdmin = () => currentProfile?.role === 'admin'
 
+function escJ(obj) {
+  return "'" + JSON.stringify(obj).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"
+}
+
+
 function showLoading(container) {
   container.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;padding:60px;gap:12px"><div class="spinner"></div><span style="color:var(--text4);font-size:14px">Cargando...</span></div>`
 }
@@ -2072,9 +2077,6 @@ async function loadSettings() {
 }
 
 // Escape for inline JSON in onclick
-function escJ(obj) {
-  return "'" + JSON.stringify(obj).replace(/\\/g,'\\\\').replace(/'/g,"\\'") + "'"
-}
 
 window.toggleProjActive = async (id, active) => {
   await db.from('projects').update({active:!active}).eq('id',id)
