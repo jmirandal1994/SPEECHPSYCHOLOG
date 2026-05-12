@@ -3498,7 +3498,7 @@ window.abrirHistorial = async function(wid, encodedName) {
         +'<td style="padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:'+(isLate?'var(--amber)':'var(--emerald)')+'">&#8593;'+hIn+(isLate?' &#9888;':'')+'</td>'
         +'<td style="padding:8px 12px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:12px;color:#6366f1">&#8595;'+hOut+'</td>'
         +'<td style="padding:8px 12px;border-bottom:1px solid var(--border);text-align:center">'
-          +'<button class="btn btn-xs" onclick="flujoEditAtt(''+wid+'',''+dStr+'',''+encodedName+'','')">&#9998;</button>'
+          +'<button class="btn btn-xs" onclick="flujoEditAtt(\''+wid+'\',\''+dStr+'\',\''+encodedName+'\',\'\')">&#9998;</button>'
         +'</td>'
         +'</tr>'
     })
@@ -3527,12 +3527,12 @@ window.abrirHistorial = async function(wid, encodedName) {
     +'<div class="modal-title">&#128203; Historial de asistencia</div>'
     +'<div class="modal-sub">'+workerName+' &middot; Mes actual</div>'
     +'</div>'
-    +'<button class="btn btn-ghost btn-sm" onclick="document.getElementById('hist-modal').remove()">&#x2715;</button>'
+    +'<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'hist-modal\').remove()">&#x2715;</button>'
     +'</div>'
     + bodyHTML
     +'<div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end">'
-    +'<button class="btn btn-primary btn-sm" onclick="flujoEditAtt(''+wid+'',''+todayStr+'',''+encodedName+'','')">+ Registrar hoy</button>'
-    +'<button class="btn btn-sm" onclick="document.getElementById('hist-modal').remove()">Cerrar</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="flujoEditAtt(\''+wid+'\',\''+todayStr+'\',\''+encodedName+'\',\'\')">+ Registrar hoy</button>'
+    +'<button class="btn btn-sm" onclick="document.getElementById(\'hist-modal\').remove()">Cerrar</button>'
     +'</div></div>'
   modal.innerHTML = mHTML
   document.body.appendChild(modal)
