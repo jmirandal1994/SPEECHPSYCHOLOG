@@ -3143,8 +3143,28 @@ window.attEditGuardar = async function(wid, dateStr, attId) {
     if(e){e.style.display='block';e.textContent='La hora de entrada es obligatoria'} 
     return
   }
-  const inISO  = dateStr+'T'+inTime+':00'
-  const outISO = outTime ? dateStr+'T'+outTime+':00' : null
+
+  // Build ISO with local timezone offset so Supabase stores the correct time
+  function localISO(dateStr, timeStr) {
+    const [yyyy,mm,dd] = dateStr.split('-').map(Number)
+    const [hh,mi] = timeStr.split(':').map(Number)
+    const d = new Date(yyyy, mm-1, dd, hh, mi, 0)
+    // Get offset in ±HH:MM format
+    const off = -d.getTimezoneOffset()
+    const sign = off >= 0 ? '+' : '-'
+    const absOff = Math.abs(off)
+    const offH = String(Math.floor(absOff/60)).padStart(2,'0')
+    const offM = String(absOff%60).padStart(2,'0')
+    return d.getFullYear()+'-'
+      +String(d.getMonth()+1).padStart(2,'0')+'-'
+      +String(d.getDate()).padStart(2,'0')+'T'
+      +String(d.getHours()).padStart(2,'0')+':'
+      +String(d.getMinutes()).padStart(2,'0')+':00'
+      +sign+offH+':'+offM
+  }
+
+  const inISO  = localISO(dateStr, inTime)
+  const outISO = outTime ? localISO(dateStr, outTime) : null
 
   // Detect late: >5min after 08:00
   const [hh,mi] = inTime.split(':').map(Number)
@@ -3154,13 +3174,12 @@ window.attEditGuardar = async function(wid, dateStr, attId) {
 
   let error
   if (attId) {
-    const upd = {checked_in_at: inISO, status}
-    if (outISO) upd.checked_out_at = outISO
+    // Always set checked_out_at (null clears it if no exit time)
+    const upd = {checked_in_at: inISO, checked_out_at: outISO, status}
     const r = await db.from('attendances').update(upd).eq('id', attId)
     error = r.error
   } else {
-    const ins = {worker_id:wid, checked_in_at:inISO, status}
-    if (outISO) ins.checked_out_at = outISO
+    const ins = {worker_id:wid, checked_in_at:inISO, checked_out_at: outISO, status}
     const r = await db.from('attendances').insert([ins])
     error = r.error
   }
@@ -3267,7 +3286,10 @@ window.twGuardar = async function() {
     return
   }
 
+  // Generate a UUID for workers without auth account
+  const newId = crypto.randomUUID()
   const {data:newW, error} = await db.from('profiles').insert([{
+    id: newId,
     full_name: name, rut: document.getElementById('tw-rut')?.value||'',
     role_label: roleLabel, project: proj,
     role: 'worker', status: 'active'
