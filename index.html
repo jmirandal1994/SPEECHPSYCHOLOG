@@ -2475,221 +2475,281 @@ async function pageFlujo(pc) {
   pc.innerHTML = `
   <div class="topbar">
     <div class="topbar-left">
-      <div class="topbar-title">📊 Flujo de Caja</div>
-      <div class="topbar-sub">Proyecciones, sueldos y análisis financiero</div>
+      <div class="topbar-title">📊 Control de Turnos & Finanzas</div>
+      <div class="topbar-sub">Asistencia · Honorarios · Profit empresa</div>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-primary btn-sm" onclick="loadFlujoData()">↻ Actualizar</button>
+      <select id="flujo-proj-sel" class="form-input" style="margin-bottom:0;font-size:12px;padding:6px 10px;min-width:160px" onchange="loadFlujoData()">
+        <option value="">Cargando proyectos...</option>
+      </select>
+      <select id="flujo-month-sel" class="form-input" style="margin-bottom:0;font-size:12px;padding:6px 10px" onchange="loadFlujoData()"></select>
+      <button class="btn btn-primary btn-sm" onclick="loadFlujoData()">↻</button>
     </div>
   </div>
   <div class="content" id="flujo-content">
     <div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div>
   </div>`
+
+  // Populate project selector
+  const {data:projs} = await db.from('projects').select('id,name').eq('active',true).order('name')
+  const projSel = el('flujo-proj-sel')
+  if (projSel && projs?.length) {
+    projSel.innerHTML = projs.map(p=>'<option value="'+p.name+'">'+p.name+'</option>').join('')
+  }
+
+  // Populate month selector (last 6 months + next 2)
+  const now = new Date()
+  const monthSel = el('flujo-month-sel')
+  if (monthSel) {
+    const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+    let opts = ''
+    for (let i = -5; i <= 2; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth()+i, 1)
+      const val = d.getFullYear()+'-'+(d.getMonth()+1)
+      const sel = i===0 ? ' selected' : ''
+      opts += '<option value="'+val+'"'+sel+'>'+MONTHS[d.getMonth()]+' '+d.getFullYear()+'</option>'
+    }
+    monthSel.innerHTML = opts
+  }
+
   await loadFlujoData()
 }
 
 async function loadFlujoData() {
   const body = el('flujo-content')
   if (!body) return
-  const now = new Date()
-  const y = now.getFullYear(), m = now.getMonth()
-  const m1 = new Date(y,m,1).toISOString().slice(0,10)
-  const m1prev = new Date(y,m-1,1).toISOString().slice(0,10)
-  const m1end  = new Date(y,m-1+1,0).toISOString().slice(0,10)
+  body.innerHTML = '<div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div>'
 
-  const [{data:shifts},{data:payments},{data:workers},{data:projects}] = await Promise.all([
-    db.from('shifts').select('fee,status,shift_date,worker_id,project').in('status',['completed','late']),
-    db.from('payments').select('amount,status,period_month,period_year,paid_at'),
-    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active'),
-    db.from('projects').select('name,fee_enfermera,fee_tens,fee_auxiliar,fee_admin,required_enfermera,required_tens,required_auxiliar,required_admin').eq('active',true),
-  ])
+  const projName  = el('flujo-proj-sel')?.value || ''
+  const monthVal  = el('flujo-month-sel')?.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1))
+  const [yr, mo]  = monthVal.split('-').map(Number)
+  const mStart    = new Date(yr, mo-1, 1)
+  const mEnd      = new Date(yr, mo, 0)
+  const MONTHS    = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const DAYS_S    = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
-  const allShifts  = shifts||[]
-  const allPay     = payments||[]
-  const allWorkers = workers||[]
-  const allProj    = projects||[]
+  // Build list of workdays (Mon-Fri) in month
+  const workdays = []
+  for (let d = new Date(mStart); d <= mEnd; d.setDate(d.getDate()+1)) {
+    const dow = d.getDay()
+    if (dow>=1 && dow<=5) workdays.push(new Date(d))
+  }
 
-  // Monthly breakdown
-  const monthShifts = allShifts.filter(s=>s.shift_date>=m1)
-  const prevShifts  = allShifts.filter(s=>s.shift_date>=m1prev&&s.shift_date<=m1end)
-  const monthFee    = monthShifts.reduce((a,s)=>a+(s.fee||0),0)
-  const prevFee     = prevShifts.reduce((a,s)=>a+(s.fee||0),0)
-  const totalPaid   = allPay.filter(p=>p.status==='paid').reduce((a,p)=>a+(p.amount||0),0)
-  const totalPend   = allPay.filter(p=>p.status!=='paid').reduce((a,p)=>a+(p.amount||0),0)
-  const diff        = monthFee - prevFee
-  const MONTHS = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
-  const curMonthLabel = MONTHS[m+1]+' '+y
+  // Load project config for prices
+  const {data:proj}    = projName ? await db.from('projects').select('*').eq('name',projName).maybeSingle() : {data:null}
+  const {data:cfg}     = await db.from('system_config').select('value').eq('key','role_fees').maybeSingle()
+  const workerFees     = cfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
 
-  // Per-worker this month
-  const workerMap = {}
-  monthShifts.forEach(s=>{
-    if(!workerMap[s.worker_id]) workerMap[s.worker_id]={fee:0,shifts:0}
-    workerMap[s.worker_id].fee += s.fee||0
-    workerMap[s.worker_id].shifts++
+  // Precio empresa = sueldo * 1.35 por defecto (configurable en proyecto)
+  const empresaMultiplier = 1.35
+
+  // Load workers for this project
+  const workerQuery = db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')
+  if (projName) workerQuery.eq('project', projName)
+  const {data:workers} = await workerQuery
+
+  // Load attendances for this month
+  const mStartStr = mStart.toISOString().slice(0,10)
+  const mEndStr   = mEnd.toISOString().slice(0,10)
+  const {data:atts} = await db.from('attendances')
+    .select('worker_id,checked_in_at,checked_out_at,status')
+    .gte('checked_in_at', mStartStr+'T00:00:00')
+    .lte('checked_in_at', mEndStr+'T23:59:59')
+
+  // Also load shifts for fee data
+  const {data:shifts} = await db.from('shifts')
+    .select('worker_id,shift_date,fee,status')
+    .gte('shift_date', mStartStr)
+    .lte('shift_date', mEndStr)
+
+  // Index attendance by worker+date
+  const attMap = {}
+  ;(atts||[]).forEach(a => {
+    const d = a.checked_in_at?.slice(0,10)
+    if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
+    attMap[a.worker_id][d] = a
   })
 
-  // Per-project cost estimate
-  const projCosts = allProj.map(p=>{
-    const dailyCost =
-      (p.required_enfermera||0)*(p.fee_enfermera||0)+
-      (p.required_tens||0)*(p.fee_tens||0)+
-      (p.required_auxiliar||0)*(p.fee_auxiliar||0)+
-      (p.required_admin||0)*(p.fee_admin||0)
-    const workDays = 22
-    return {name:p.name, daily:dailyCost, monthly:dailyCost*workDays}
+  // Index shifts by worker+date
+  const shiftMap = {}
+  ;(shifts||[]).forEach(s => {
+    if (!shiftMap[s.worker_id]) shiftMap[s.worker_id] = {}
+    shiftMap[s.worker_id][s.shift_date] = s
   })
-  const totalMonthlyProj = projCosts.reduce((a,p)=>a+p.monthly,0)
 
-  // Salary calc state
-  const savedCalc = window._flujoCalc || {hrs:45,rate:0,workers:1,months:12}
+  const allWorkers = workers || []
+  if (!allWorkers.length) {
+    body.innerHTML = '<div class="empty-state" style="padding:80px 24px"><div class="empty-icon">👥</div><div class="empty-title">Sin profesionales'+(projName?' en '+projName:'')+' </div><div class="empty-sub">Asigna profesionales al proyecto en Configuración</div></div>'
+    return
+  }
 
-  body.innerHTML = `
-    <!-- KPI CARDS -->
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
-      <div class="stat-card">
-        <div class="stat-bar" style="background:var(--accent)"></div>
-        <div class="stat-icon" style="background:var(--accent-l);color:var(--accent)">📅</div>
-        <div class="stat-label">Devengado ${curMonthLabel}</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text1);margin-top:6px;font-family:var(--mono)">$${monthFee.toLocaleString('es-CL')}</div>
-        <div class="stat-delta ${diff>=0?'':'warn'}">${diff>=0?'▲':'▼'} $${Math.abs(diff).toLocaleString('es-CL')} vs mes anterior</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-bar" style="background:var(--emerald)"></div>
-        <div class="stat-icon" style="background:var(--emerald-l);color:var(--emerald)">✅</div>
-        <div class="stat-label">Total pagado histórico</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text1);margin-top:6px;font-family:var(--mono)">$${totalPaid.toLocaleString('es-CL')}</div>
-        <div class="stat-delta">CLP acumulado</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-bar" style="background:var(--amber)"></div>
-        <div class="stat-icon" style="background:var(--amber-l);color:var(--amber)">⏳</div>
-        <div class="stat-label">Por pagar</div>
-        <div style="font-size:17px;font-weight:800;color:var(--text1);margin-top:6px;font-family:var(--mono)">$${totalPend.toLocaleString('es-CL')}</div>
-        <div class="stat-delta warn">Pendiente de pago</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-bar" style="background:var(--teal)"></div>
-        <div class="stat-icon" style="background:var(--teal-l);color:var(--teal)">👥</div>
-        <div class="stat-label">Profesionales activos</div>
-        <div class="stat-val">${allWorkers.length}</div>
-        <div class="stat-delta">${monthShifts.length} turnos este mes</div>
-      </div>
-    </div>
+  // Calculate totals
+  let totalHonorarios = 0, totalIngreso = 0, totalProfit = 0, totalTurnos = 0
+  const workerTotals = {}
 
-    <div class="g2" style="gap:16px">
+  allWorkers.forEach(w => {
+    const workerFee     = workerFees[w.role_label] || 0
+    const empresaFee    = Math.round(workerFee * empresaMultiplier)
+    const profit        = empresaFee - workerFee
+    let   wTurnos = 0, wHonorario = 0, wIngreso = 0, wProfit = 0
 
-      <!-- SALARY CALCULATOR -->
-      <div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:4px">🧮 Calculadora de Sueldos</div>
-        <div class="card-sub" style="margin-bottom:16px">Define tarifa por hora y proyecta costos</div>
-
-        <div class="form-group">
-          <label class="form-label">Tarifa por hora (CLP)</label>
-          <input type="number" id="fc-rate" class="form-input" value="${savedCalc.rate||5000}" min="0" placeholder="5000" oninput="calcFlujo()"/>
-        </div>
-        <div class="g2" style="gap:10px">
-          <div class="form-group">
-            <label class="form-label">Horas semanales</label>
-            <input type="number" id="fc-hrs" class="form-input" value="${savedCalc.hrs}" min="1" max="60" oninput="calcFlujo()"/>
-          </div>
-          <div class="form-group">
-            <label class="form-label">N° de profesionales</label>
-            <input type="number" id="fc-workers" class="form-input" value="${savedCalc.workers}" min="1" oninput="calcFlujo()"/>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Meses a proyectar</label>
-          <input type="range" id="fc-months" min="1" max="24" value="${savedCalc.months}" oninput="calcFlujo();el('fc-months-val').textContent=this.value+' meses'" style="width:100%;margin:4px 0"/>
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text4)"><span>1 mes</span><span id="fc-months-val" style="font-weight:700;color:var(--accent)">${savedCalc.months} meses</span><span>24 meses</span></div>
-        </div>
-
-        <div style="background:linear-gradient(135deg,var(--navy),#162447);border-radius:var(--r-md);padding:16px;color:#fff;margin-top:4px">
-          <div style="font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">Proyección de costos</div>
-          <div class="g2" style="gap:10px;margin-bottom:10px">
-            <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
-              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px">MENSUAL (1 prof.)</div>
-              <div id="fc-r-monthly" style="font-family:var(--mono);font-weight:800;font-size:16px;color:#22c55e">$0</div>
-            </div>
-            <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:10px">
-              <div style="font-size:10px;color:rgba(255,255,255,.4);margin-bottom:4px">MENSUAL (total)</div>
-              <div id="fc-r-total-m" style="font-family:var(--mono);font-weight:800;font-size:16px;color:#f59e0b">$0</div>
-            </div>
-          </div>
-          <div style="background:rgba(255,255,255,.06);border-radius:8px;padding:12px;display:flex;justify-content:space-between;align-items:center">
-            <div style="font-size:11px;color:rgba(255,255,255,.5)">Proyección <span id="fc-r-months-lbl">${savedCalc.months}</span> meses</div>
-            <div id="fc-r-proyect" style="font-family:var(--mono);font-weight:800;font-size:20px;color:#60a5fa">$0</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- PROJECT COST BREAKDOWN -->
-      <div class="card" style="margin-bottom:0">
-        <div class="card-title" style="margin-bottom:4px">🏥 Costo por Proyecto</div>
-        <div class="card-sub" style="margin-bottom:14px">Estimado mensual según dotación configurada (22 días hábiles)</div>
-        ${projCosts.length===0
-          ? '<div class="empty-state" style="padding:24px 0"><div class="empty-icon" style="font-size:32px">🏥</div><div class="empty-title" style="font-size:13px">Sin proyectos activos</div></div>'
-          : projCosts.map(p=>`
-          <div style="padding:12px 0;border-bottom:1px solid var(--border)">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-              <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">${p.name}</div>
-              <div style="font-family:var(--mono);font-weight:800;font-size:13px;color:var(--emerald)">$${p.monthly.toLocaleString('es-CL')} CLP</div>
-            </div>
-            <div style="font-size:11px;color:var(--text4)">$${p.daily.toLocaleString('es-CL')} CLP / día · 22 días hábiles</div>
-          </div>`).join('')
-        }
-        ${projCosts.length>1?`<div style="padding:12px 0;display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:700;font-size:13px">Total proyectos</div>
-          <div style="font-family:var(--mono);font-weight:800;font-size:15px;color:var(--accent)">$${totalMonthlyProj.toLocaleString('es-CL')} CLP/mes</div>
-        </div>`:''}
-      </div>
-    </div>
-
-    <!-- WORKER BREAKDOWN THIS MONTH -->
-    <div class="card" style="margin-top:16px">
-      <div class="card-title" style="margin-bottom:14px">👥 Devengado por profesional — ${curMonthLabel}</div>
-      ${allWorkers.length===0
-        ? '<div class="empty-state" style="padding:20px 0"><div class="empty-icon" style="font-size:28px">👥</div><div class="empty-title" style="font-size:13px">Sin profesionales</div></div>'
-        : '<div class="table-wrap"><table><thead><tr><th>Profesional</th><th>Cargo</th><th>Proyecto</th><th>Turnos</th><th>Devengado</th></tr></thead><tbody>' +
-          allWorkers.map(w=>{
-            const wdata = workerMap[w.id]||{fee:0,shifts:0}
-            const pct = monthFee>0 ? Math.round(wdata.fee/monthFee*100) : 0
-            return '<tr>' +
-              '<td style="font-weight:600">'+(w.full_name||'—')+'</td>' +
-              '<td><span class="badge badge-gray" style="font-size:11px">'+(w.role_label||'—')+'</span></td>' +
-              '<td style="font-size:12px;color:var(--text3)">'+(w.project||'—')+'</td>' +
-              '<td style="font-family:var(--mono);font-weight:700;text-align:center">'+wdata.shifts+'</td>' +
-              '<td><div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="flex:1;height:6px;background:var(--slate);border-radius:3px;overflow:hidden">' +
-                  '<div style="height:100%;width:'+pct+'%;background:var(--emerald);border-radius:3px"></div>' +
-                '</div>' +
-                '<span style="font-family:var(--mono);font-weight:800;font-size:13px;color:var(--emerald);min-width:90px;text-align:right">$'+wdata.fee.toLocaleString('es-CL')+'</span>' +
-              '</div></td>' +
-            '</tr>'
-          }).join('') +
-          '</tbody></table></div>'
+    workdays.forEach(day => {
+      const dStr = day.toISOString().slice(0,10)
+      const att  = attMap[w.id]?.[dStr]
+      const shft = shiftMap[w.id]?.[dStr]
+      if (att?.checked_in_at) {
+        wTurnos++
+        const fee = shft?.fee || workerFee
+        wHonorario += fee
+        const empresa = Math.round(fee * empresaMultiplier)
+        wIngreso += empresa
+        wProfit  += empresa - fee
       }
-    </div>`
+    })
 
-  calcFlujo()
+    workerTotals[w.id] = { fee:workerFee, empresaFee, profit, turnos:wTurnos, honorario:wHonorario, ingreso:wIngreso, profitTotal:wProfit }
+    totalHonorarios += wHonorario
+    totalIngreso    += wIngreso
+    totalProfit     += wProfit
+    totalTurnos     += wTurnos
+  })
+
+  const margen = totalIngreso > 0 ? Math.round(totalProfit/totalIngreso*100) : 0
+
+  // Limit workdays shown (max 22 for readability)
+  const showDays = workdays.slice(0, 22)
+
+  // Build HTML
+  let html = ''
+
+  // ── KPI strip ──
+  html += '<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">'
+  html += kpiCard('📅','Turnos asistidos',totalTurnos,'este mes','var(--accent)','var(--accent-l)')
+  html += kpiCard('💰','Honorarios pagados','$'+totalHonorarios.toLocaleString('es-CL'),'costo profesionales','var(--amber)','var(--amber-l)')
+  html += kpiCard('🏢','Ingresos empresa','$'+totalIngreso.toLocaleString('es-CL'),'facturación total','var(--emerald)','var(--emerald-l)')
+  html += kpiCard('📈','Profit neto','$'+totalProfit.toLocaleString('es-CL'),margen+'% margen','var(--teal)','var(--teal-l)')
+  html += '</div>'
+
+  // ── Attendance grid ──
+  html += '<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">'
+  // Header
+  html += '<div style="padding:14px 20px;background:linear-gradient(135deg,var(--navy),#162447);display:flex;justify-content:space-between;align-items:center">'
+  html += '<div style="color:#fff"><div style="font-weight:700;font-size:14px">Control de Asistencia — '+MONTHS[mo]+' '+yr+'</div>'
+  html += '<div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">'+(projName||'Todos los proyectos')+' · '+workdays.length+' días hábiles</div></div>'
+  html += '<div style="display:flex;gap:12px;font-size:11px">'
+  html += '<span style="background:rgba(5,150,105,.2);border:1px solid rgba(5,150,105,.4);border-radius:4px;padding:2px 8px;color:#6ee7b7">✓ Asistió</span>'
+  html += '<span style="background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.4);border-radius:4px;padding:2px 8px;color:#fca5a5">✗ No asistió</span>'
+  html += '<span style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:2px 8px;color:rgba(255,255,255,.4)">~ Pendiente</span>'
+  html += '</div></div>'
+
+  // Scrollable grid
+  html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
+  html += '<table style="min-width:900px;border-collapse:collapse;font-size:12px">'
+
+  // thead
+  html += '<thead><tr style="background:#f8fafc">'
+  html += '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap;position:sticky;left:0;background:#f8fafc;z-index:2;min-width:200px">Profesional</th>'
+  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Cargo</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Sueldo/T</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Precio Emp.</th>'
+  showDays.forEach(day => {
+    const dow = DAYS_S[day.getDay()]
+    const dd  = String(day.getDate()).padStart(2,'0')
+    const mm  = String(day.getMonth()+1).padStart(2,'0')
+    html += '<th style="padding:8px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);min-width:42px;white-space:nowrap">'+dow+'<br><span style="font-weight:400;color:var(--text4)">'+dd+'/'+mm+'</span></th>'
+  })
+  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border)">T.</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--emerald);border-bottom:2px solid var(--border);white-space:nowrap">Honorario</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--border);white-space:nowrap">Ingreso Emp.</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--teal);border-bottom:2px solid var(--border);white-space:nowrap">Profit</th>'
+  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border)">%</th>'
+  html += '</tr></thead><tbody>'
+
+  // rows
+  allWorkers.forEach((w, i) => {
+    const t = workerTotals[w.id]
+    const pct = workdays.length > 0 ? Math.round(t.turnos/showDays.length*100) : 0
+    const bg = i%2===0 ? '#fff' : '#fafbfc'
+    html += '<tr style="background:'+bg+';transition:background .1s" onmouseover="this.style.background=\'#f0f7ff\'" onmouseout="this.style.background=\''+bg+'\'">'
+    // Name (sticky)
+    html += '<td style="padding:10px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--border);position:sticky;left:0;background:'+bg+';z-index:1;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis">'+( w.full_name||'—')+'</td>'
+    html += '<td style="padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)"><span class="badge badge-gray" style="font-size:10px">'+(w.role_label||'—')+'</span></td>'
+    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap">$'+t.fee.toLocaleString('es-CL')+'</td>'
+    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--accent);border-bottom:1px solid var(--border);white-space:nowrap">$'+t.empresaFee.toLocaleString('es-CL')+'</td>'
+
+    showDays.forEach(day => {
+      const dStr = day.toISOString().slice(0,10)
+      const att  = attMap[w.id]?.[dStr]
+      let cell = '', cellStyle = 'padding:6px 3px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid #f0f0f0;'
+      if (att?.checked_in_at && att?.checked_out_at) {
+        cell = '<span style="display:inline-block;background:#dcfce7;color:#166534;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:700">✓</span>'
+      } else if (att?.checked_in_at) {
+        cell = '<span style="display:inline-block;background:#fef9c3;color:#92400e;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:700">⏳</span>'
+      } else if (day > new Date()) {
+        cell = '<span style="color:#cbd5e1;font-size:11px">·</span>'
+      } else {
+        cell = '<span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:700">✗</span>'
+      }
+      html += '<td style="'+cellStyle+'">'+cell+'</td>'
+    })
+
+    // Totals
+    html += '<td style="padding:10px 8px;text-align:center;font-family:var(--mono);font-weight:800;font-size:13px;border-bottom:1px solid var(--border);color:var(--text1)">'+t.turnos+'</td>'
+    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--emerald);white-space:nowrap">$'+t.honorario.toLocaleString('es-CL')+'</td>'
+    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--accent);white-space:nowrap">$'+t.ingreso.toLocaleString('es-CL')+'</td>'
+    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--teal);white-space:nowrap">$'+t.profitTotal.toLocaleString('es-CL')+'</td>'
+    html += '<td style="padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)">'
+    html += '<div style="font-size:11px;font-weight:700;color:'+(pct>=80?'var(--emerald)':pct>=50?'var(--amber)':'var(--red)')+'">'+pct+'%</div>'
+    html += '</td></tr>'
+  })
+
+  // Totals row
+  html += '<tr style="background:linear-gradient(135deg,#f0f7ff,#e8f4f8);font-weight:700">'
+  html += '<td colspan="4" style="padding:12px 14px;font-size:12px;border-top:2px solid var(--border);position:sticky;left:0;background:#e8f4f8;z-index:1">TOTALES '+MONTHS[mo].toUpperCase()+' '+yr+'</td>'
+  showDays.forEach(day => {
+    const dStr = day.toISOString().slice(0,10)
+    const count = allWorkers.filter(w=>attMap[w.id]?.[dStr]?.checked_in_at).length
+    html += '<td style="padding:8px 4px;text-align:center;border-top:2px solid var(--border);font-size:11px;font-weight:800;color:var(--accent)">'+(count>0?count:'')+'</td>'
+  })
+  html += '<td style="padding:12px 8px;text-align:center;font-family:var(--mono);font-weight:800;font-size:14px;border-top:2px solid var(--border)">'+totalTurnos+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--emerald);white-space:nowrap">$'+totalHonorarios.toLocaleString('es-CL')+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--accent);white-space:nowrap">$'+totalIngreso.toLocaleString('es-CL')+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--teal);white-space:nowrap">$'+totalProfit.toLocaleString('es-CL')+'</td>'
+  html += '<td style="padding:12px 8px;text-align:center;border-top:2px solid var(--border);font-weight:800;color:var(--teal)">'+margen+'%</td>'
+  html += '</tr>'
+  html += '</tbody></table></div>'
+
+  // ── Financial summary ──
+  html += '<div style="padding:16px 20px;background:#fafbfc;border-top:2px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:0">'
+  const summaryItems = [
+    ['Total honorarios profesionales',totalHonorarios,'var(--amber)'],
+    ['Total ingresos empresa',totalIngreso,'var(--emerald)'],
+    ['Profit neto empresa',totalProfit,'var(--teal)'],
+    ['Margen de rentabilidad',margen+'%','var(--accent)'],
+  ]
+  summaryItems.forEach(([label,val,color],i) => {
+    html += '<div style="padding:12px 16px;'+(i<3?'border-right:1px solid var(--border)':'')+'">'
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">'+label+'</div>'
+    html += '<div style="font-family:var(--mono);font-weight:800;font-size:16px;color:'+color+'">$'+(typeof val==='string'?val:val.toLocaleString('es-CL'))+'</div>'
+    html += '</div>'
+  })
+  html += '</div>'
+  html += '</div>' // end card
+
+  body.innerHTML = html
 }
 
-window.calcFlujo = () => {
-  const rate    = Number(el('fc-rate')?.value)||0
-  const hrs     = Number(el('fc-hrs')?.value)||0
-  const workers = Number(el('fc-workers')?.value)||1
-  const months  = Number(el('fc-months')?.value)||12
-  window._flujoCalc = {rate,hrs,workers,months}
-  const weekly  = rate * hrs
-  const monthly1 = weekly * 4.33
-  const totalM  = monthly1 * workers
-  const proyect = totalM * months
-  const fmt = n => '$'+Math.round(n).toLocaleString('es-CL')+' CLP'
-  if(el('fc-r-monthly'))    el('fc-r-monthly').textContent    = fmt(monthly1)
-  if(el('fc-r-total-m'))    el('fc-r-total-m').textContent    = fmt(totalM)
-  if(el('fc-r-proyect'))    el('fc-r-proyect').textContent    = fmt(proyect)
-  if(el('fc-r-months-lbl')) el('fc-r-months-lbl').textContent = months
-  if(el('fc-months-val'))   el('fc-months-val').textContent   = months+' meses'
+function kpiCard(icon, label, value, delta, color, bg) {
+  return '<div class="stat-card">' +
+    '<div class="stat-bar" style="background:'+color+'"></div>' +
+    '<div class="stat-icon" style="background:'+bg+';color:'+color+'">'+icon+'</div>' +
+    '<div class="stat-label">'+label+'</div>' +
+    '<div style="font-size:16px;font-weight:800;color:var(--text1);margin-top:6px;font-family:var(--mono)">'+value+'</div>' +
+    '<div class="stat-delta">'+delta+'</div>' +
+  '</div>'
 }
+
+
 
 // ═══════════════════════════════════════════════
 // BOOT
