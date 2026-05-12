@@ -2598,18 +2598,32 @@ async function loadFlujoData() {
   // Precio empresa = sueldo * 1.35 por defecto (configurable en proyecto)
   const empresaMultiplier = 1.35
 
-  // Load workers for this project
+  // Load workers for this project (profiles DB + manual workers stored in system_config)
   const workerQuery = db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')
   if (projName) workerQuery.eq('project', projName)
-  const {data:workers} = await workerQuery
+  const [{data:workers}, {data:mwCfg2}] = await Promise.all([
+    workerQuery,
+    db.from('system_config').select('value').eq('key','manual_workers').maybeSingle()
+  ])
+  // Merge manual workers, filter by project if needed
+  const manualWorkers = (mwCfg2?.value || []).filter(w =>
+    w.status === 'active' && (!projName || w.project === projName)
+  )
+  const mergedWorkers = [...(workers||[]), ...manualWorkers]
 
   // Load attendances for this month
   const mStartStr = mStart.toISOString().slice(0,10)
   const mEndStr   = mEnd.toISOString().slice(0,10)
-  const {data:atts} = await db.from('attendances')
-    .select('id,worker_id,checked_in_at,checked_out_at,status')
-    .gte('checked_in_at', mStartStr+'T00:00:00')
-    .lte('checked_in_at', mEndStr+'T23:59:59')
+  const [{data:atts}, {data:maCfg3}] = await Promise.all([
+    db.from('attendances')
+      .select('id,worker_id,checked_in_at,checked_out_at,status')
+      .gte('checked_in_at', mStartStr+'T00:00:00')
+      .lte('checked_in_at', mEndStr+'T23:59:59'),
+    db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
+  ])
+  // Merge manual attendances for the selected month
+  const manualAtts = (maCfg3?.value || []).filter(a => a.date >= mStartStr && a.date <= mEndStr)
+  const allAtts = [...(atts||[]), ...manualAtts]
 
   // Also load shifts for fee data
   const {data:shifts} = await db.from('shifts')
@@ -2617,9 +2631,9 @@ async function loadFlujoData() {
     .gte('shift_date', mStartStr)
     .lte('shift_date', mEndStr)
 
-  // Index attendance by worker+date
+  // Index attendance by worker+date (DB + manual)
   const attMap = {}
-  ;(atts||[]).forEach(a => {
+  ;(allAtts||[]).forEach(a => {
     const d = a.checked_in_at?.slice(0,10)
     if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
     attMap[a.worker_id][d] = a
@@ -2632,7 +2646,7 @@ async function loadFlujoData() {
     shiftMap[s.worker_id][s.shift_date] = s
   })
 
-  const allWorkers = workers || []
+  const allWorkers = mergedWorkers
   if (!allWorkers.length) {
     body.innerHTML = '<div class="empty-state" style="padding:80px 24px"><div class="empty-icon">👥</div><div class="empty-title">Sin profesionales'+(projName?' en '+projName:'')+' </div><div class="empty-sub">Asigna profesionales al proyecto en Configuración</div></div>'
     return
@@ -3083,12 +3097,23 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
   if (old) old.remove()
 
   // Load existing attendance record
-  const {data:att} = await db.from('attendances')
-    .select('id,checked_in_at,checked_out_at,status')
-    .eq('worker_id', wid)
-    .gte('checked_in_at', dateStr+'T00:00:00')
-    .lte('checked_in_at', dateStr+'T23:59:59')
-    .maybeSingle()
+  let att = null
+  if (wid.startsWith('manual_')) {
+    // Manual worker: load attendance from system_config
+    const {data:maCfgE} = await db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
+    att = (maCfgE?.value || []).find(a => a.worker_id===wid && a.date===dateStr) || null
+  } else {
+    // Regular worker: query attendances table with wide date range for timezone safety
+    const dayStart = new Date(dateStr+'T00:00:00'); dayStart.setHours(dayStart.getHours()-12)
+    const dayEnd   = new Date(dateStr+'T23:59:59'); dayEnd.setHours(dayEnd.getHours()+12)
+    const {data:attDb} = await db.from('attendances')
+      .select('id,checked_in_at,checked_out_at,status')
+      .eq('worker_id', wid)
+      .gte('checked_in_at', dayStart.toISOString())
+      .lte('checked_in_at', dayEnd.toISOString())
+      .maybeSingle()
+    att = attDb
+  }
 
   const toTime = (iso) => {
     if (!iso) return ''
@@ -3173,7 +3198,18 @@ window.attEditGuardar = async function(wid, dateStr, attId) {
   const status = isLate ? 'late' : 'present'
 
   let error
-  if (attId) {
+  const isManual = wid.startsWith('manual_')
+
+  if (isManual) {
+    // Manual workers: store attendance in system_config → manual_attendances
+    const {data:maCfg} = await db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
+    const maList = maCfg?.value || []
+    // Remove existing record for this worker+date, then add updated
+    const filtered = maList.filter(a => !(a.worker_id===wid && a.checked_in_at?.startsWith(dateStr)))
+    filtered.push({ id: attId||('matt_'+Date.now()), worker_id:wid, checked_in_at:inISO, checked_out_at:outISO||null, status, date:dateStr })
+    const r = await db.from('system_config').upsert({key:'manual_attendances', value: filtered}, {onConflict:'key'})
+    error = r.error
+  } else if (attId) {
     // Always set checked_out_at (null clears it if no exit time)
     const upd = {checked_in_at: inISO, checked_out_at: outISO, status}
     const r = await db.from('attendances').update(upd).eq('id', attId)
@@ -3279,6 +3315,7 @@ window.twGuardar = async function() {
   const proj = document.getElementById('tw-proj')?.value || ''
   const fee  = Number(document.getElementById('tw-fee')?.value) || 0
   const emp  = Number(document.getElementById('tw-emp')?.value) || 0
+  const rut  = document.getElementById('tw-rut')?.value || ''
 
   if (!name || !roleLabel) {
     const e = document.getElementById('tw-err')
@@ -3286,14 +3323,13 @@ window.twGuardar = async function() {
     return
   }
 
-  // Generate a UUID for workers without auth account
-  const newId = crypto.randomUUID()
-  const {data:newW, error} = await db.from('profiles').insert([{
-    id: newId,
-    full_name: name, rut: document.getElementById('tw-rut')?.value||'',
-    role_label: roleLabel, project: proj,
-    role: 'worker', status: 'active'
-  }]).select('id').single()
+  // Profiles table has FK to auth.users — cannot insert arbitrary UUIDs.
+  // Store manual workers in system_config as a JSON list instead.
+  const newId = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2,7)
+  const {data:mwCfg} = await db.from('system_config').select('value').eq('key','manual_workers').maybeSingle()
+  const manualList = mwCfg?.value || []
+  manualList.push({ id: newId, full_name: name, rut, role_label: roleLabel, project: proj, role: 'worker', status: 'active' })
+  const {error} = await db.from('system_config').upsert({key:'manual_workers', value: manualList}, {onConflict:'key'})
 
   if (error) {
     const e = document.getElementById('tw-err')
@@ -3301,11 +3337,11 @@ window.twGuardar = async function() {
     return
   }
 
-  // Save fee overrides if provided
+  // Save fee overrides
   if (fee > 0 || emp > 0) {
     const {data:ovCfg} = await db.from('system_config').select('value').eq('key','worker_fees').maybeSingle()
     const ovr = ovCfg?.value || {}
-    ovr[newW.id] = { fee, empresa: emp }
+    ovr[newId] = { fee, empresa: emp }
     await db.from('system_config').upsert({key:'worker_fees', value: ovr}, {onConflict:'key'})
   }
 
@@ -3353,10 +3389,15 @@ async function loadAsistencias() {
   const todayStr = new Date().toISOString().slice(0,10)
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10)
 
-  // Load workers
+  // Load workers (profiles + manual workers)
   const wq = db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('project').order('full_name')
   if (projFilter) wq.eq('project', projFilter)
-  const {data:workers} = await wq
+  const [{data:dbWorkers}, {data:mwCfgA}] = await Promise.all([
+    wq,
+    db.from('system_config').select('value').eq('key','manual_workers').maybeSingle()
+  ])
+  const manualW = (mwCfgA?.value || []).filter(w => w.status==='active' && (!projFilter || w.project===projFilter))
+  const workers = [...(dbWorkers||[]), ...manualW]
 
   // Load today attendances
   const {data:todayAtts} = await db.from('attendances')
