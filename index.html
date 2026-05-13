@@ -374,6 +374,10 @@ async function init() {
 
 function render() {
   const app = el('app')
+  // Allow register page without auth
+  if (currentRoute === '/register') {
+    renderRegisterPage(app); setTimeout(_fixLogos,50); return
+  }
   if (!currentUser || !currentProfile) {
     renderLogin(app); setTimeout(_fixLogos,50); return
   }
@@ -459,6 +463,7 @@ function renderRegisterPage(app) {
           <option value="">Seleccionar cargo...</option>
           <option>Enfermera/o</option><option>TENS</option>
           <option>Auxiliar de servicio</option><option>Administrativo</option>
+          <option>Kinesióloga/o</option><option>Psicóloga/o</option><option>Fonoaudióloga/o</option>
         </select>
         <label class="auth-label">Correo electrónico *</label>
         <input id="r-email" class="auth-input" type="email" placeholder="tu@correo.cl" required/>
@@ -471,6 +476,16 @@ function renderRegisterPage(app) {
       <div class="auth-link" onclick="navigate('/login')">← Ya tengo cuenta</div>
     </div>
   </div>`
+  // Load roles from system_config dynamically
+  db.from('system_config').select('value').eq('key','role_fees').maybeSingle().then(({data:rCfg}) => {
+    const sel = el('r-role')
+    if (!sel || !rCfg?.value) return
+    const existing = Array.from(sel.options).map(o=>o.value)
+    Object.keys(rCfg.value).forEach(r => {
+      if (!existing.includes(r)) { const o=document.createElement('option'); o.value=r; o.textContent=r; sel.appendChild(o) }
+    })
+  })
+
   el('reg-form').onsubmit = async e => {
     e.preventDefault()
     const btn=el('reg-btn'); btn.disabled=true; btn.textContent='Enviando...'
@@ -2381,15 +2396,15 @@ window.showProjectModal = (proj) => {
             </div>
             <div class="form-group">
               <label class="form-label">Hospital / CESFAM</label>
-              <input class="form-input" id="pm-hospital" placeholder="CESFAM Lo Barnechea" value="${proj?.hospital||''}"/>
+              <input class="form-input" id="pm-hospital" placeholder="CESFAM Lo Barnechea" value="${proj?.schedule?._hospital||proj?.hospital||''}"/>
             </div>
             <div class="form-group">
               <label class="form-label">Dirección</label>
-              <input class="form-input" id="pm-location" placeholder="Av. Las Condes 14801" value="${proj?.location||''}"/>
+              <input class="form-input" id="pm-location" placeholder="Av. Las Condes 14801" value="${proj?.schedule?._location||proj?.location||''}"/>
             </div>
             <div class="form-group">
               <label class="form-label">Descripción</label>
-              <input class="form-input" id="pm-description" placeholder="Descripción breve del proyecto..." value="${proj?.description||''}"/>
+              <input class="form-input" id="pm-description" placeholder="Descripción breve del proyecto..." value="${proj?.schedule?._description||proj?.description||''}"/>
             </div>
           </div>
         </div>
@@ -2398,7 +2413,7 @@ window.showProjectModal = (proj) => {
         <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
           <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📌 Instrucciones para el equipo</div>
           <div style="font-size:12px;color:var(--text4);margin-bottom:10px">Texto que verán los profesionales asignados a este proyecto</div>
-          <textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo. Traer credencial vigente. Estacionamiento disponible en el subterráneo...">${proj?.instructions||''}</textarea>
+          <textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo. Traer credencial vigente. Estacionamiento disponible en el subterráneo...">${proj?.schedule?._instructions||''}</textarea>
         </div>
 
         <!-- SCHEDULE SECTION -->
@@ -2500,13 +2515,15 @@ window.saveProjForm = async (e, projId) => {
     }
   })
 
+  // Store instructions inside schedule JSONB to avoid missing column errors
+  finalSched._instructions = el('pm-instructions')?.value || null
+  finalSched._hospital     = el('pm-hospital')?.value     || null
+  finalSched._location     = el('pm-location')?.value     || null
+  finalSched._description  = el('pm-description')?.value  || null
+
   const data = {
     name,
-    hospital:     el('pm-hospital')?.value     || null,
-    location:     el('pm-location')?.value     || null,
-    description:  el('pm-description')?.value  || null,
-    instructions: el('pm-instructions')?.value || null,
-    schedule:     finalSched,
+    schedule: finalSched,
     fee_enfermera:  Number(el('pm-fee_enfermera')?.value)  || 0,
     fee_tens:       Number(el('pm-fee_tens')?.value)       || 0,
     fee_auxiliar:   Number(el('pm-fee_auxiliar')?.value)   || 0,
