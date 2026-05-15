@@ -489,6 +489,7 @@ function renderRegisterPage(app) {
   el('reg-form').onsubmit = async e => {
     e.preventDefault()
     const btn=el('reg-btn'); btn.disabled=true; btn.textContent='Enviando...'
+    const errEl = el('reg-err')
     const email    = el('r-email').value.trim()
     const password = el('r-pwd').value
     const fullName = el('r-name').value.trim()
@@ -496,44 +497,61 @@ function renderRegisterPage(app) {
     const roleLabel= el('r-role').value
     const phone    = el('r-phone').value.trim()
 
+    if (!email || !password || !fullName || !roleLabel) {
+      errEl.style.display='block'; errEl.textContent='Completa todos los campos obligatorios'
+      btn.disabled=false; btn.textContent='Solicitar acceso'; return
+    }
+    if (password.length < 6) {
+      errEl.style.display='block'; errEl.textContent='La contraseña debe tener al menos 6 caracteres'
+      btn.disabled=false; btn.textContent='Solicitar acceso'; return
+    }
+
     // Step 1: Create auth account
     const {data:authData, error:authErr} = await db.auth.signUp({
       email, password,
       options: { data: { full_name: fullName } }
     })
+
     if (authErr) {
-      const e2=el('reg-err'); e2.style.display='block'
-      e2.textContent = authErr.message === 'User already registered'
+      errEl.style.display='block'
+      errEl.textContent = authErr.message === 'User already registered'
         ? 'Este correo ya tiene una cuenta. Ve al login.'
         : authErr.message
       btn.disabled=false; btn.textContent='Solicitar acceso'
       return
     }
 
-    // Step 2: Create profile with status=pending (admin must approve)
-    const uid = authData.user?.id
-    if (uid) {
-      await db.from('profiles').upsert({
-        id: uid, full_name: fullName, rut, role_label: roleLabel,
-        phone, email, role: 'worker', status: 'pending'
-      }, {onConflict:'id'})
-      // Save to account_requests so admin sees pending approval
-      try {
-        await db.from('account_requests').insert([{
-          full_name: fullName, rut, email, phone,
-          role_label: roleLabel, status: 'pending', user_id: uid
-        }])
-      } catch(insertErr) {
-        // If user_id column doesn't exist, try without it
-        try {
-          await db.from('account_requests').insert([{
-            full_name: fullName, rut, email, phone,
-            role_label: roleLabel, status: 'pending'
-          }])
-        } catch(e2) { console.warn('account_requests insert failed:', e2) }
+    // uid puede ser null si Supabase requiere confirmación de email
+    // En ese caso igual guardamos en account_requests con email como clave
+    const uid = authData?.user?.id || authData?.session?.user?.id || null
+
+    // Step 2: Guardar en account_requests PRIMERO (no depende del uid)
+    const reqPayload = { full_name:fullName, rut, email, phone, role_label:roleLabel, status:'pending' }
+    if (uid) reqPayload.user_id = uid
+
+    const {error:reqErr} = await db.from('account_requests').insert([reqPayload])
+    if (reqErr) {
+      // Reintentar sin user_id si falla por esa columna
+      const {error:reqErr2} = await db.from('account_requests').insert([{
+        full_name:fullName, rut, email, phone, role_label:roleLabel, status:'pending'
+      }])
+      if (reqErr2) {
+        errEl.style.display='block'
+        errEl.textContent='Error guardando solicitud: '+reqErr2.message
+        btn.disabled=false; btn.textContent='Solicitar acceso'
+        return
       }
     }
 
+    // Step 3: Si tenemos uid, también crear perfil en profiles
+    if (uid) {
+      await db.from('profiles').upsert({
+        id:uid, full_name:fullName, rut, role_label:roleLabel,
+        phone, email, role:'worker', status:'pending'
+      }, {onConflict:'id'})
+    }
+
+    // Éxito — la solicitud quedó guardada
     el('reg-form').style.display='none'
     el('reg-success').style.display='block'
   }
