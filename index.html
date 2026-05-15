@@ -10,9 +10,51 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// Error global — captura "Script error. Línea 0" de scripts externos
+window.addEventListener('error', function(e) {
+  if (e.lineno === 0 || !e.filename || e.filename === window.location.href) return
+  // Un script externo falló — mostrar pantalla de error amigable
+  var app = document.getElementById('app')
+  if (app && !document.getElementById('net-error')) {
+    app.innerHTML = '<div id="net-error" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0a1628;color:#fff;text-align:center;padding:32px">'
+      + '<div style="font-size:48px;margin-bottom:16px">📡</div>'
+      + '<div style="font-size:20px;font-weight:700;margin-bottom:8px">Error de conexión</div>'
+      + '<div style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:24px;max-width:320px">No se pudo cargar un recurso externo. Verifica tu conexión a internet.</div>'
+      + '<button onclick="location.reload()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer">↻ Reintentar</button>'
+      + '<div style="margin-top:16px;font-size:11px;color:rgba(255,255,255,.3)">'+e.filename.split('/').pop()+'</div>'
+      + '</div>'
+  }
+}, true)
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+  onerror="this._failed=true"
+  crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"
+  onerror="loadSupabaseFallback()"
+  crossorigin="anonymous"></script>
+<script>
+// Fallback CDN para Supabase si jsdelivr falla
+function loadSupabaseFallback() {
+  console.warn('jsdelivr falló — intentando unpkg...')
+  var s = document.createElement('script')
+  s.src = 'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js'
+  s.onerror = function() {
+    // Ambos CDN fallaron — mostrar error con retry
+    var app = document.getElementById('app')
+    if (app) {
+      app.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#0a1628;color:#fff;text-align:center;padding:32px">'
+        + '<div style="font-size:48px;margin-bottom:16px">📡</div>'
+        + '<div style="font-size:20px;font-weight:700;margin-bottom:8px">Sin conexión</div>'
+        + '<div style="font-size:14px;color:rgba(255,255,255,.6);margin-bottom:24px;max-width:320px">No se pudo conectar con el servidor. Verifica tu internet e intenta nuevamente.</div>'
+        + '<button onclick="location.reload()" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer">↻ Reintentar</button>'
+        + '</div>'
+    }
+  }
+  document.head.appendChild(s)
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -847,7 +889,7 @@ async function loadWorkersList() {
         <option value="">Sin proyecto</option>
         ${projOpts}
         ${w.project&&!(projects||[]).find(p=>p.name===w.project)?`<option value="${w.project}" selected>${w.project}</option>`:''}
-      </select>${w.project&&(projects||[]).find(p=>p.name===w.project)?`<script>document.querySelector('select[onchange*="${w.id}"]').value='${w.project}'<\/script>`:''}</td>
+      </select></td>
       <td style="font-family:var(--mono);font-size:11px;color:var(--text3)">${w.phone||w.email||'—'}</td>
       <td><span class="badge ${w.status==='active'?'badge-green':'badge-red'}">${w.status==='active'?'● Activo':'○ Inactivo'}</span></td>
       <td><div style="display:flex;gap:5px">
