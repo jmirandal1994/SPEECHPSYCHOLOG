@@ -1964,7 +1964,7 @@ window.autoCalcPay = (shiftsJson) => {
 }
 
 async function pageAccounts(pc) {
-  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">📬 Solicitudes de acceso</div><div class="topbar-sub">Aprueba o rechaza solicitudes de nuevos profesionales</div></div><div class="topbar-right"><button class="btn btn-sm" onclick="pageAccounts(el('page-content'))">↻ Actualizar</button></div></div><div class="content" id="acc-c"><div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div></div>`
+  pc.innerHTML=`<div class="topbar"><div class="topbar-left"><div class="topbar-title">📬 Solicitudes de acceso</div><div class="topbar-sub">Aprueba o rechaza solicitudes de nuevos profesionales</div></div><div class="topbar-right"><select id="acc-filter" class="form-input" style="margin-bottom:0;font-size:12px;padding:6px 10px" onchange="pageAccounts(el('page-content'))"><option value="all">Todas</option><option value="pending">Pendientes</option><option value="approved">Aprobadas</option><option value="rejected">Rechazadas</option></select><button class="btn btn-sm" onclick="pageAccounts(el('page-content'))">↻ Actualizar</button></div></div><div class="content" id="acc-c"><div style="display:flex;justify-content:center;padding:40px"><div class="spinner"></div></div></div>`
 
   // Read from BOTH: profiles(pending) = new register flow; account_requests = legacy
   const [res1, res2] = await Promise.all([
@@ -1974,20 +1974,7 @@ async function pageAccounts(pc) {
   const reqData      = res1.data || []
   const pendProfiles = res2.data || []
 
-  // DEBUG — mostrar en pantalla qué devuelve Supabase
-  const debugInfo = [
-    'account_requests: '+reqData.length+' filas | error: '+(res1.error?.message||'ninguno'),
-    'profiles pending: '+pendProfiles.length+' filas | error: '+(res2.error?.message||'ninguno'),
-    'Todos los status en account_requests: '+[...new Set(reqData.map(r=>r.status))].join(', '),
-    'Emails en profiles pending: '+pendProfiles.map(p=>p.email).join(', '),
-    'Emails en account_requests: '+reqData.map(r=>r.email+' ('+r.status+')').join(' | '),
-  ]
-  el('acc-c').innerHTML = '<div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:16px;font-family:monospace;font-size:11px;color:#94a3b8">'
-    +'<div style="color:#f59e0b;font-weight:700;margin-bottom:8px">🔍 DEBUG — Datos recibidos de Supabase</div>'
-    +debugInfo.map(d=>'<div style="margin-bottom:4px;color:#e2e8f0">'+d+'</div>').join('')
-    +'<div style="margin-top:10px;color:#64748b;font-size:10px">Si ves 0 filas en profiles pending con datos en Supabase → problema de RLS</div>'
-    +'</div><div id="acc-real"></div>'
-  // Continue rendering in acc-real
+
 
   // Normalize profiles into same shape
   const fromProfiles = pendProfiles.map(function(p) {
@@ -2006,6 +1993,7 @@ async function pageAccounts(pc) {
                status:r.status, created_at:r.created_at, _src:'req' }
     })
 
+
   const allRows = fromProfiles.concat(fromReqs)
     .sort(function(a,b){ return new Date(b.created_at)-new Date(a.created_at) })
 
@@ -2020,22 +2008,29 @@ async function pageAccounts(pc) {
       +'<div style="font-size:12px;color:#92400e">Aprueba para que el profesional pueda ingresar</div></div></div>'
     : '<div class="alert alert-success" style="margin-bottom:14px"><span class="alert-icon">✅</span><div class="alert-msg">Sin solicitudes pendientes</div></div>'
 
-  var rowsHtml = allRows.length === 0
+  var filterStatus = el('acc-filter')?.value || 'all'
+  var visibleRows = filterStatus==='all' ? allRows : allRows.filter(function(r){ return r.status===filterStatus })
+
+  var rowsHtml = visibleRows.length === 0
     ? '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text4)">Sin registros</td></tr>'
-    : allRows.map(function(r) {
+    : visibleRows.map(function(r) {
         var badge   = '<span class="badge '+(SB[r.status]||'badge-gray')+'">'+(SL[r.status]||r.status)+'</span>'
         var srcNote = r._src==='profile' ? '<div style="font-size:9px;color:var(--text4)">registro web</div>' : ''
-        var btns    = ''
+        var p0=encodeURIComponent(r._id||'')
+        var p1=encodeURIComponent(r._uid||'')
+        var p2=encodeURIComponent(r.full_name||'')
+        var p3=encodeURIComponent(r.role_label||'')
+        var p4=encodeURIComponent(r.rut||'')
+        var p5=encodeURIComponent(r.phone||'')
+        var p6=encodeURIComponent(r.email||'')
+        var btns = ''
         if (r.status==='pending') {
-          var p0=encodeURIComponent(r._id||'')
-          var p1=encodeURIComponent(r._uid||'')
-          var p2=encodeURIComponent(r.full_name||'')
-          var p3=encodeURIComponent(r.role_label||'')
-          var p4=encodeURIComponent(r.rut||'')
-          var p5=encodeURIComponent(r.phone||'')
-          var p6=encodeURIComponent(r.email||'')
           btns = '<button class="btn btn-success btn-xs" onclick="doApprove(\''+p0+'\',\''+p1+'\',\''+p2+'\',\''+p3+'\',\''+p4+'\',\''+p5+'\',\''+p6+'\')">✓ Aprobar</button>'
                + ' <button class="btn btn-danger btn-xs" onclick="doReject(\''+p0+'\',\''+p1+'\')">✗ Rechazar</button>'
+        } else if (r.status==='rejected') {
+          btns = '<button class="btn btn-primary btn-xs" onclick="doReactivate(\''+p0+'\',\''+p1+'\',\''+p2+'\',\''+p3+'\',\''+p4+'\',\''+p5+'\',\''+p6+'\')">↺ Reactivar</button>'
+        } else if (r.status==='approved') {
+          btns = '<span style="font-size:11px;color:var(--emerald)">✓ Activo</span>'
         }
         return '<tr>'
           +'<td style="font-weight:600;font-size:13px">'+(r.full_name||'—')+srcNote+'</td>'
@@ -2048,7 +2043,7 @@ async function pageAccounts(pc) {
           +'</tr>'
       }).join('')
 
-  el('acc-real').innerHTML = alertHtml
+  el('acc-c').innerHTML = alertHtml
     +'<div class="card"><div class="table-wrap"><table>'
     +'<thead><tr><th>Nombre</th><th>Cargo</th><th>Correo</th><th>RUT</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>'
     +'<tbody>'+rowsHtml+'</tbody>'
@@ -2079,6 +2074,28 @@ window.doApprove = async function(eid, euid, ename, erole, erut, ephone, eemail)
     await db.from('account_requests').update({status:'approved'}).eq('id',id.slice(4))
   }
   alert(activated ? '✅ '+name+' aprobado/a — ya puede ingresar.' : '⚠ Perfil no encontrado. Verifica en Supabase > Auth > Users.')
+  pageAccounts(el('page-content'))
+}
+
+window.doReactivate = async function(eid, euid, ename, erole, erut, ephone, eemail) {
+  // Move rejected → pending so admin can then approve properly
+  var id    = decodeURIComponent(eid)
+  var uid   = decodeURIComponent(euid)
+  var name  = decodeURIComponent(ename)
+  var role  = decodeURIComponent(erole)
+  var rut   = decodeURIComponent(erut)
+  var phone = decodeURIComponent(ephone)
+  var email = decodeURIComponent(eemail)
+  if (id.startsWith('REQ:')) {
+    await db.from('account_requests').update({status:'pending'}).eq('id',id.slice(4))
+  }
+  // If profile exists, set pending
+  if (uid) {
+    await db.from('profiles').update({status:'pending'}).eq('id',uid)
+  } else if (email) {
+    var found = await db.from('profiles').select('id').eq('email',email).maybeSingle()
+    if (found.data?.id) await db.from('profiles').update({status:'pending'}).eq('id',found.data.id)
+  }
   pageAccounts(el('page-content'))
 }
 
