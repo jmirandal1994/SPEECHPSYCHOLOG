@@ -1471,7 +1471,7 @@ async function pageWorkerHome(pc) {
     db.from('attendances').select('*').eq('worker_id',uid).gte('checked_in_at',todayStr+'T00:00:00').lte('checked_in_at',todayStr+'T23:59:59').maybeSingle(),
     db.from('payments').select('amount').eq('worker_id',uid).neq('status','paid'),
     db.from('attendances').select('status').eq('worker_id',uid).eq('status','late').gte('checked_in_at',month1+'T00:00:00'),
-    db.from('attendances').select('id,checked_in_at').eq('worker_id',uid).gte('checked_in_at',month1+'T00:00:00'),
+    db.from('attendances').select('id,checked_in_at,checked_out_at').eq('worker_id',uid).gte('checked_in_at',month1+'T00:00:00').order('checked_in_at',{ascending:true}),
     db.from('system_config').select('value').eq('key','role_fees').maybeSingle(),
     db.from('system_config').select('value').eq('key','worker_fees').maybeSingle(),
   ])
@@ -1481,7 +1481,14 @@ async function pageWorkerHome(pc) {
   const myOvr      = workerOvrs[uid]
   const myRoleFee  = roleFees[currentProfile?.role_label] || 37500
   const myFeePerTurn = myOvr?.fee !== undefined ? myOvr.fee : myRoleFee
-  const monthCount   = (allMonthAtts||[]).length
+  // Deduplicate by date — keep one per day (last record wins, same as flujo)
+  const seenDates = new Set()
+  const uniqueAtts = []
+  ;(allMonthAtts||[]).slice().reverse().forEach(a => {
+    const d = a.checked_in_at?.slice(0,10)
+    if (d && !seenDates.has(d)) { seenDates.add(d); uniqueAtts.push(a) }
+  })
+  const monthCount   = uniqueAtts.length
   const totalFees    = monthCount * myFeePerTurn   // asistencias reales × tarifa
   const totalPend    = (pendingPay||[]).reduce((a,p)=>a+(p.amount||0),0)
   const lateCount    = (lateRecs||[]).length
@@ -2837,12 +2844,24 @@ async function loadFlujoData() {
     .gte('shift_date', mStartStr)
     .lte('shift_date', mEndStr)
 
-  // Index attendance by worker+date (DB + manual)
+  // Index attendance by worker+date — keep most complete record (with checkout preferred)
   const attMap = {}
   ;(allAtts||[]).forEach(a => {
     const d = a.checked_in_at?.slice(0,10)
+    if (!d) return
     if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
-    attMap[a.worker_id][d] = a
+    const existing = attMap[a.worker_id][d]
+    // Prefer: has checkout > no checkout; then latest checked_in_at
+    if (!existing) {
+      attMap[a.worker_id][d] = a
+    } else if (!existing.checked_out_at && a.checked_out_at) {
+      attMap[a.worker_id][d] = a  // new one has checkout, old doesn't
+    } else if (existing.checked_out_at && !a.checked_out_at) {
+      // keep existing (has checkout)
+    } else {
+      // both have or both don't have checkout — keep latest
+      if (a.checked_in_at > existing.checked_in_at) attMap[a.worker_id][d] = a
+    }
   })
 
   // Index shifts by worker+date
