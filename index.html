@@ -1974,6 +1974,21 @@ async function pageAccounts(pc) {
   const reqData      = res1.data || []
   const pendProfiles = res2.data || []
 
+  // DEBUG — mostrar en pantalla qué devuelve Supabase
+  const debugInfo = [
+    'account_requests: '+reqData.length+' filas | error: '+(res1.error?.message||'ninguno'),
+    'profiles pending: '+pendProfiles.length+' filas | error: '+(res2.error?.message||'ninguno'),
+    'Todos los status en account_requests: '+[...new Set(reqData.map(r=>r.status))].join(', '),
+    'Emails en profiles pending: '+pendProfiles.map(p=>p.email).join(', '),
+    'Emails en account_requests: '+reqData.map(r=>r.email+' ('+r.status+')').join(' | '),
+  ]
+  el('acc-c').innerHTML = '<div style="background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-bottom:16px;font-family:monospace;font-size:11px;color:#94a3b8">'
+    +'<div style="color:#f59e0b;font-weight:700;margin-bottom:8px">🔍 DEBUG — Datos recibidos de Supabase</div>'
+    +debugInfo.map(d=>'<div style="margin-bottom:4px;color:#e2e8f0">'+d+'</div>').join('')
+    +'<div style="margin-top:10px;color:#64748b;font-size:10px">Si ves 0 filas en profiles pending con datos en Supabase → problema de RLS</div>'
+    +'</div><div id="acc-real"></div>'
+  // Continue rendering in acc-real
+
   // Normalize profiles into same shape
   const fromProfiles = pendProfiles.map(function(p) {
     return { _id:'PROF:'+p.id, _uid:p.id, full_name:p.full_name, email:p.email,
@@ -2033,7 +2048,7 @@ async function pageAccounts(pc) {
           +'</tr>'
       }).join('')
 
-  el('acc-c').innerHTML = alertHtml
+  el('acc-real').innerHTML = alertHtml
     +'<div class="card"><div class="table-wrap"><table>'
     +'<thead><tr><th>Nombre</th><th>Cargo</th><th>Correo</th><th>RUT</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr></thead>'
     +'<tbody>'+rowsHtml+'</tbody>'
