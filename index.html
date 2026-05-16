@@ -2495,6 +2495,72 @@ window.saveAssignWorkers = async (pid, pname, allWStr) => {
   loadSettings()
 }
 
+// ── Construir filas de tipos de turno ──
+function pmBuildShiftRows(shiftTypes) {
+  const defaults = [
+    {name:'Turno largo semana (L-V)',   start:'08:00', end:'20:00', horas:12},
+    {name:'Turno noche semana (L-J)',   start:'20:00', end:'08:00', horas:12},
+    {name:'Turno largo finde/festivo',  start:'09:00', end:'20:00', horas:11},
+    {name:'Turno noche viernes/sáb',    start:'20:00', end:'09:00', horas:13},
+    {name:'Turno noche domingo',        start:'20:00', end:'08:00', horas:12},
+  ]
+  const types = (shiftTypes && shiftTypes.length > 0) ? shiftTypes : defaults
+  return types.map(function(t, i) {
+    var sh = parseInt(t.start), sm = parseInt(t.start.split(':')[1]||0)
+    var eh = parseInt(t.end),   em = parseInt(t.end.split(':')[1]||0)
+    var startMin = sh*60+sm, endMin = eh*60+em
+    if (endMin <= startMin) endMin += 24*60
+    var h = Math.round((endMin-startMin)/60*10)/10
+    var isNight = sh >= 18 || sh <= 6
+    var color = isNight ? '#6366f1' : 'var(--emerald)'
+    return '<div class="pm-shift-row" id="pm-shift-'+i+'" style="display:grid;grid-template-columns:1fr 90px 90px 60px 32px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<input class="form-input" style="margin-bottom:0;font-size:12px" placeholder="Nombre del turno" value="'+t.name+'" id="pm-sname-'+i+'"/>'
+      +'<div><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">ENTRADA</div>'
+      +'<input type="time" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px" value="'+t.start+'" id="pm-sstart-'+i+'" oninput="pmCalcShiftHours('+i+')"/></div>'
+      +'<div><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">SALIDA</div>'
+      +'<input type="time" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px" value="'+t.end+'" id="pm-send-'+i+'" oninput="pmCalcShiftHours('+i+')"/></div>'
+      +'<div style="text-align:center"><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">HRS</div>'
+      +'<div id="pm-shours-'+i+'" style="font-family:var(--mono);font-weight:800;font-size:14px;color:'+color+'">'+h+'h</div></div>'
+      +'<button type="button" onclick="pmRemShift(this)" style="background:var(--red-l);border:1px solid #fca5a5;border-radius:6px;cursor:pointer;padding:5px 7px;margin-top:14px;color:var(--red);font-weight:700;font-size:12px">✕</button>'
+      +'</div>'
+  }).join('')
+}
+
+window.pmRemShift = function(btn) { btn.closest(".pm-shift-row").remove() }
+
+window.pmAddShiftRow = function() {
+  var list = document.getElementById('pm-shifts-list')
+  if (!list) return
+  var i = list.querySelectorAll('.pm-shift-row').length
+  var div = document.createElement('div')
+  div.className = 'pm-shift-row'
+  div.id = 'pm-shift-'+i
+  div.style.cssText = 'display:grid;grid-template-columns:1fr 90px 90px 60px 32px;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)'
+  div.innerHTML = '<input class="form-input" style="margin-bottom:0;font-size:12px" placeholder="Nombre del turno" id="pm-sname-'+i+'"/>'
+    +'<div><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">ENTRADA</div>'
+    +'<input type="time" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px" value="08:00" id="pm-sstart-'+i+'" oninput="pmCalcShiftHours('+i+')"/></div>'
+    +'<div><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">SALIDA</div>'
+    +'<input type="time" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px" value="20:00" id="pm-send-'+i+'" oninput="pmCalcShiftHours('+i+')"/></div>'
+    +'<div style="text-align:center"><div style="font-size:9px;font-weight:700;color:var(--text4);margin-bottom:3px">HRS</div>'
+    +'<div id="pm-shours-'+i+'" style="font-family:var(--mono);font-weight:800;font-size:14px;color:var(--emerald)">12h</div></div>'
+    +'<button type="button" onclick="pmRemShift(this)" style="background:var(--red-l);border:1px solid #fca5a5;border-radius:6px;cursor:pointer;padding:5px 7px;margin-top:14px;color:var(--red);font-weight:700;font-size:12px">✕</button>'
+  list.appendChild(div)
+}
+
+window.pmCalcShiftHours = function(i) {
+  var s = document.getElementById('pm-sstart-'+i)?.value
+  var e = document.getElementById('pm-send-'+i)?.value
+  var h = document.getElementById('pm-shours-'+i)
+  if (!s || !e || !h) return
+  var [sh,sm] = s.split(':').map(Number)
+  var [eh,em] = e.split(':').map(Number)
+  var start = sh*60+sm, end = eh*60+em
+  if (end <= start) end += 24*60
+  var hrs = Math.round((end-start)/60*10)/10
+  h.textContent = hrs+'h'
+  h.style.color = (sh>=18||sh<=6) ? '#6366f1' : 'var(--emerald)'
+}
+
 // ─── PROJECT MODAL (create + edit) ─────────────
 window.showProjectModal = (proj) => {
   const isEdit  = !!proj
