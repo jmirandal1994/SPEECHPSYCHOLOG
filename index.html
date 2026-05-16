@@ -2554,7 +2554,7 @@ window.showProjectModal = (proj) => {
         </div>
       </div>
       <div>
-        <div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Honor. / turno</div>
+        <div class="pm-fee-label" style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Honor. / turno</div>
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" id="pm-${r.fk}" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right;font-size:13px" min="0" value="${fee}" oninput="pmUpdateCost()"/>
           <span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>
@@ -2607,6 +2607,34 @@ window.showProjectModal = (proj) => {
           <textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo. Traer credencial vigente. Estacionamiento disponible en el subterráneo...">${proj?.schedule?._instructions||''}</textarea>
         </div>
 
+        <!-- PAYMENT MODE SECTION -->
+        <div style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.25);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">💳 Modalidad de pago</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:12px">Define cómo cobra el hospital y los honorarios de cada profesional</div>
+          <div class="g2" style="gap:12px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Modo de pago</label>
+              <select class="form-input" id="pm-payment-mode" onchange="pmUpdatePayMode()">
+                <option value="per_shift" ${(proj?.schedule?._payment_mode||'per_shift')==='per_shift'?'selected':''}>Por turno (ej: Lo Barnechea)</option>
+                <option value="per_hour"  ${proj?.schedule?._payment_mode==='per_hour'?'selected':''}>Por hora cumplida (ej: Félix Bulnes)</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Precio hospital / hora (CLP)</label>
+              <input class="form-input" id="pm-empresa-hora" type="number" min="0" value="${proj?.schedule?._empresa_hora||10000}" style="font-family:var(--mono)" placeholder="10000"/>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <div class="form-group" style="margin-bottom:0;max-width:200px">
+              <label class="form-label">Tope horas/mes <span style="color:var(--text4);font-weight:400">(0 = sin tope)</span></label>
+              <input class="form-input" id="pm-tope-horas" type="number" min="0" value="${proj?.schedule?._tope_horas||0}" style="font-family:var(--mono)"/>
+            </div>
+            <div style="font-size:11px;color:var(--text4);margin-top:8px">
+              ⓘ Modo hora: activa Sabado y Domingo en el horario si el hospital opera esos dias.
+            </div>
+          </div>
+        </div>
+
         <!-- SCHEDULE SECTION -->
         <div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
           <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📅 Horario de operación</div>
@@ -2616,8 +2644,8 @@ window.showProjectModal = (proj) => {
 
         <!-- DOTATION SECTION -->
         <div style="background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">👥 Dotación + Honorario por turno</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos necesitas de cada cargo y cuánto se paga por turno</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">👥 Dotación + Honorario</div>
+          <div class="pm-fee-label" style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos de cada cargo y cuánto se paga por turno</div>
           ${dotHTML}
           <div id="pm-cost-row" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">
             <span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado turno completo</span>
@@ -2639,6 +2667,15 @@ window.showProjectModal = (proj) => {
 }
 
 window.closeProjModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
+
+window.pmUpdatePayMode = function() {
+  var mode = (el('pm-payment-mode') && el('pm-payment-mode').value) || 'per_shift'
+  var isHour = mode === 'per_hour'
+  var sub = el('pm-dot-sub') || document.querySelector('.pm-fee-label')
+  if (sub) sub.textContent = isHour ? 'Cuantos de cada cargo y su tarifa por hora' : 'Cuantos de cada cargo y cuanto se paga por turno'
+  var dotTitle = el('pm-dot-title')
+  if (dotTitle) dotTitle.textContent = isHour ? 'Dotacion + Honorario por HORA' : 'Dotacion + Honorario por turno'
+}
 
 window.pmToggleDay = (day) => {
   const tog  = el('pm-tog-'+day)
@@ -2837,15 +2874,34 @@ async function loadFlujoData() {
   const MONTHS    = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
   const DAYS_S    = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
-  // Build list of workdays (Mon-Fri) in month
+  // Load project config first (needed to know which days are active)
+  const {data:proj}    = projName ? await db.from('projects').select('*').eq('name',projName).maybeSingle() : {data:null}
+
+  // Determine active days from project schedule, or default Mon-Fri
+  const projSched = proj?.schedule || {}
+  // Map JS getDay() (0=Sun..6=Sat) to form keys (sun/mon..sat)
+  const DOW_TO_KEY = ['sun','mon','tue','wed','thu','fri','sat']
+  // If project uses per_hour billing OR has sat/sun active → show all days
+  const payMode    = projSched._payment_mode || 'per_shift'
+  const hasWeekend = projSched.sat?.active || projSched.sun?.active || payMode === 'per_hour'
+
   const workdays = []
   for (let d = new Date(mStart); d <= mEnd; d.setDate(d.getDate()+1)) {
-    const dow = d.getDay()
-    if (dow>=1 && dow<=5) workdays.push(new Date(d))
+    const dow    = d.getDay()
+    const dayKey = DOW_TO_KEY[dow]
+    let include  = false
+    if (projName && projSched[dayKey] !== undefined) {
+      // Project has explicit schedule — use it
+      include = !!projSched[dayKey]?.active
+    } else if (projName && hasWeekend) {
+      // per_hour project with no explicit schedule → all days
+      include = true
+    } else {
+      // No project or default → Mon-Fri only
+      include = dow >= 1 && dow <= 5
+    }
+    if (include) workdays.push(new Date(d))
   }
-
-  // Load project config for prices
-  const {data:proj}    = projName ? await db.from('projects').select('*').eq('name',projName).maybeSingle() : {data:null}
   const {data:cfg}     = await db.from('system_config').select('value').eq('key','role_fees').maybeSingle()
   const workerFees     = cfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
 
@@ -2928,7 +2984,7 @@ async function loadFlujoData() {
   const workerTotals = {}
 
   // ¿El proyecto paga por hora? (Felix Bulnes = per_hour, Lo Barnechea = per_shift)
-  const payPerHour  = proj?.schedule?._payment_mode === 'per_hour'
+  const payPerHour  = payMode === 'per_hour'
   const topeHorasMes = proj?.schedule?._tope_horas || 0  // 0 = sin tope
 
   allWorkers.forEach(w => {
@@ -2986,7 +3042,7 @@ async function loadFlujoData() {
   const margen = totalIngreso > 0 ? Math.round(totalProfit/totalIngreso*100) : 0
 
   // Limit workdays shown (max 22 for readability)
-  const showDays = workdays.slice(0, 22)
+  const showDays = workdays  // mostrar todos los días activos del mes
 
   // Build HTML
   let html = ''
@@ -3162,6 +3218,15 @@ function kpiCard(icon, label, value, delta, color, bg) {
 
 // ── Flujo: editar cargo + tarifas individuales de un profesional ──
 window.flujoEditFee = async function(wid, roleLabelCurrent, currentFee, currentEmp) {
+  // Detect if current project is per_hour
+  const projSel = document.getElementById('flujo-proj-sel')
+  const projN   = projSel?.value || ''
+  let isPerHour = false
+  if (projN) {
+    const {data:pj} = await db.from('projects').select('schedule').eq('name',projN).maybeSingle()
+    isPerHour = pj?.schedule?._payment_mode === 'per_hour'
+  }
+  const feeUnit = isPerHour ? 'CLP/hora' : 'CLP/turno'
   const old = document.getElementById('flujo-fee-modal')
   if (old) old.remove()
 
