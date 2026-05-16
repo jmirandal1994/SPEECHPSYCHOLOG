@@ -2497,181 +2497,166 @@ window.saveAssignWorkers = async (pid, pname, allWStr) => {
 
 // ─── PROJECT MODAL (create + edit) ─────────────
 window.showProjectModal = (proj) => {
-  const isEdit = !!proj
-  const DAYS = ['mon','tue','wed','thu','fri','sat','sun']
+  const isEdit  = !!proj
+  const projId  = proj ? proj.id : null
+  const DAYS    = ['mon','tue','wed','thu','fri','sat','sun']
   const DAY_LABEL = {mon:'Lunes',tue:'Martes',wed:'Miércoles',thu:'Jueves',fri:'Viernes',sat:'Sábado',sun:'Domingo'}
   const DEFAULT_SCHED = {
-    mon:{active:true,start:'08:00',end:'17:00'},
-    tue:{active:true,start:'08:00',end:'17:00'},
-    wed:{active:true,start:'08:00',end:'17:00'},
-    thu:{active:true,start:'08:00',end:'17:00'},
-    fri:{active:true,start:'08:00',end:'16:00'},
+    mon:{active:true, start:'08:00',end:'17:00'},
+    tue:{active:true, start:'08:00',end:'17:00'},
+    wed:{active:true, start:'08:00',end:'17:00'},
+    thu:{active:true, start:'08:00',end:'17:00'},
+    fri:{active:true, start:'08:00',end:'16:00'},
     sat:{active:false,start:'08:00',end:'14:00'},
     sun:{active:false,start:'08:00',end:'14:00'},
   }
   const sched = proj?.schedule || DEFAULT_SCHED
-  const area = el('settings-modal-area')
+  const area  = el('settings-modal-area')
   if (!area) return
 
-  // Build schedule rows
+  // Build schedule day toggles
   let schedHTML = ''
   DAYS.forEach(day => {
     const d = sched[day] || {active:false,start:'08:00',end:'17:00'}
-    schedHTML += `<div style="display:grid;grid-template-columns:100px 52px 1fr;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
-      <div style="font-weight:600;font-size:13px;color:${d.active?'var(--text1)':'var(--text4)'}" id="pm-dlabel-${day}">${DAY_LABEL[day]}</div>
-      <div id="pm-tog-${day}" onclick="pmToggleDay('${day}')"
-        style="width:44px;height:24px;border-radius:12px;background:${d.active?'var(--accent)':'#cbd5e1'};cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">
-        <div id="pm-knob-${day}" style="position:absolute;top:3px;left:${d.active?22:3}px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div>
-      </div>
-      <div id="pm-times-${day}" style="display:${d.active?'flex':'none'};align-items:center;gap:8px">
-        <input type="time" id="pm-start-${day}" value="${d.start}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>
-        <span style="color:var(--text4);font-size:13px">→</span>
-        <input type="time" id="pm-end-${day}" value="${d.end}" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>
-      </div>
-      <div id="pm-noday-${day}" style="display:${d.active?'none':'block'};font-size:12px;color:var(--text4);font-style:italic">No operativo</div>
-    </div>`
+    const bg  = d.active ? 'var(--accent)' : '#cbd5e1'
+    const lft = d.active ? '22' : '3'
+    const clr = d.active ? 'var(--text1)' : 'var(--text4)'
+    schedHTML += '<div style="display:grid;grid-template-columns:100px 52px 1fr;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="font-weight:600;font-size:13px;color:'+clr+'" id="pm-dlabel-'+day+'">'+DAY_LABEL[day]+'</div>'
+      + '<div id="pm-tog-'+day+'" onclick="pmToggleDay(\'' + day + '\')" style="width:44px;height:24px;border-radius:12px;background:'+bg+';cursor:pointer;position:relative;transition:background .2s;flex-shrink:0">'
+      + '<div id="pm-knob-'+day+'" style="position:absolute;top:3px;left:'+lft+'px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></div></div>'
+      + '<div id="pm-times-'+day+'" style="display:'+(d.active?'flex':'none')+';align-items:center;gap:8px">'
+      + '<input type="time" id="pm-start-'+day+'" value="'+d.start+'" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>'
+      + '<span style="color:var(--text4);font-size:13px">→</span>'
+      + '<input type="time" id="pm-end-'+day+'" value="'+d.end+'" class="form-input" style="margin-bottom:0;font-size:12px;padding:5px 8px;width:106px"/>'
+      + '</div>'
+      + '<div id="pm-noday-'+day+'" style="display:'+(d.active?'none':'block')+';font-size:12px;color:var(--text4);font-style:italic">No operativo</div>'
+      + '</div>'
   })
 
   // Build dotation rows
   const ROLES = [
-    {label:'Enfermera/o',    fk:'fee_enfermera', rk:'required_enfermera',  def:35000},
-    {label:'TENS',           fk:'fee_tens',       rk:'required_tens',       def:28000},
-    {label:'Auxiliar de servicio',fk:'fee_auxiliar',rk:'required_auxiliar', def:22000},
-    {label:'Administrativo', fk:'fee_admin',      rk:'required_admin',      def:30000},
+    {label:'Enfermera/o',         fk:'fee_enfermera', rk:'required_enfermera',  def:35000},
+    {label:'TENS',                fk:'fee_tens',       rk:'required_tens',       def:28000},
+    {label:'Auxiliar de servicio',fk:'fee_auxiliar',  rk:'required_auxiliar',   def:22000},
+    {label:'Administrativo',      fk:'fee_admin',      rk:'required_admin',      def:30000},
   ]
   let dotHTML = ''
-  ROLES.forEach(r => {
-    const fee = proj?.[r.fk] || r.def
-    const req = proj?.[r.rk] || 0
-    dotHTML += `<div style="display:grid;grid-template-columns:1fr 130px 150px;gap:12px;align-items:center;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px">
-      <div style="font-weight:700;font-size:13px">${r.label}</div>
-      <div>
-        <div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Dotación</div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button type="button" class="btn btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot('pm-req-${r.rk}',-1)">−</button>
-          <span id="pm-req-${r.rk}" style="font-family:var(--mono);font-weight:800;font-size:18px;min-width:24px;text-align:center">${req}</span>
-          <button type="button" class="btn btn-primary btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot('pm-req-${r.rk}',1)">+</button>
-        </div>
-      </div>
-      <div>
-        <div class="pm-fee-label" style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Honor. / turno</div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <input type="number" id="pm-${r.fk}" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right;font-size:13px" min="0" value="${fee}" oninput="pmUpdateCost()"/>
-          <span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>
-        </div>
-      </div>
-    </div>`
+  ROLES.forEach(function(r) {
+    const fee = proj && proj[r.fk] ? proj[r.fk] : r.def
+    const req = proj && proj[r.rk] ? proj[r.rk] : 0
+    dotHTML += '<div style="display:grid;grid-template-columns:1fr 130px 150px;gap:12px;align-items:center;padding:10px 14px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);margin-bottom:8px">'
+      +'<div style="font-weight:700;font-size:13px">'+r.label+'</div>'
+      +'<div><div style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Dotación</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<button type="button" class="btn btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot(\'pm-req-'+r.rk+'\', -1)">−</button>'
+      +'<span id="pm-req-'+r.rk+'" style="font-family:var(--mono);font-weight:800;font-size:18px;min-width:24px;text-align:center">'+req+'</span>'
+      +'<button type="button" class="btn btn-primary btn-xs" style="width:28px;justify-content:center;flex-shrink:0" onclick="pmAdjDot(\'pm-req-'+r.rk+'\', 1)">+</button>'
+      +'</div></div>'
+      +'<div><div class="pm-fee-label" style="font-size:10px;font-weight:700;color:var(--text4);margin-bottom:5px;text-transform:uppercase">Honor. / turno</div>'
+      +'<div style="display:flex;align-items:center;gap:6px">'
+      +'<input type="number" id="pm-'+r.fk+'" class="form-input" style="margin-bottom:0;font-family:var(--mono);font-weight:700;text-align:right;font-size:13px" min="0" value="'+fee+'" oninput="pmUpdateCost()"/>'
+      +'<span style="font-size:11px;color:var(--text4);flex-shrink:0">CLP</span>'
+      +'</div></div></div>'
   })
 
-  area.innerHTML = `<div class="modal-bg" id="proj-modal" onclick="" style="align-items:flex-start;padding:20px;overflow-y:auto">
-    <div class="modal" style="max-width:640px;margin:0 auto 40px">
-      <div class="modal-hdr">
-        <div>
-          <div class="modal-title">${isEdit?'✏ Editar proyecto':'➕ Crear proyecto'}</div>
-          <div class="modal-sub">Configura horarios, dotación e instrucciones</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="closeProjModal()">✕</button>
-      </div>
+  // Build shift types rows
+  const shiftTypesHTML = pmBuildShiftRows(sched._shift_types)
 
-      <div id="pm-err" class="auth-err" style="display:none;margin-bottom:14px"></div>
+  // Payment mode values
+  const payMode    = sched._payment_mode || 'per_shift'
+  const empHora    = sched._empresa_hora || 10000
+  const topeHoras  = sched._tope_horas  || 0
+  const instrText  = sched._instructions || ''
+  const hospitalVal= sched._hospital || proj?.hospital || ''
+  const locationVal= sched._location || proj?.location || ''
+  const descVal    = sched._description || proj?.description || ''
+  const projNameVal= proj?.name || ''
+  const selPer     = payMode === 'per_shift' ? 'selected' : ''
+  const selHour    = payMode === 'per_hour'  ? 'selected' : ''
 
-      <form id="pm-form" onsubmit="saveProjForm(event,${isEdit?("'"+proj.id+"'"):'null'})">
+  const submitAttr = projId ? 'onsubmit="saveProjForm(event,\''+projId+'\')"' : 'onsubmit="saveProjForm(event,null)"'
+  const titleText  = isEdit ? '✏ Editar proyecto' : '➕ Crear proyecto'
+  const btnText    = isEdit ? '💾 Guardar cambios' : '➕ Crear proyecto'
 
-        <!-- INFO SECTION -->
-        <div style="background:var(--slate);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:14px;color:var(--text2)">📋 Información del proyecto</div>
-          <div class="g2">
-            <div class="form-group">
-              <label class="form-label">Nombre *</label>
-              <input class="form-input" id="pm-name" required placeholder="VACUNACION 2026 LO BARNECHEA" value="${proj?.name||''}"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Hospital / CESFAM</label>
-              <input class="form-input" id="pm-hospital" placeholder="CESFAM Lo Barnechea" value="${proj?.schedule?._hospital||proj?.hospital||''}"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Dirección</label>
-              <input class="form-input" id="pm-location" placeholder="Av. Las Condes 14801" value="${proj?.schedule?._location||proj?.location||''}"/>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Descripción</label>
-              <input class="form-input" id="pm-description" placeholder="Descripción breve del proyecto..." value="${proj?.schedule?._description||proj?.description||''}"/>
-            </div>
-          </div>
-        </div>
+  area.innerHTML = '<div class="modal-bg" id="proj-modal" style="align-items:flex-start;padding:20px;overflow-y:auto">'
+    +'<div class="modal" style="max-width:640px;margin:0 auto 40px">'
+    +'<div class="modal-hdr"><div>'
+    +'<div class="modal-title">'+titleText+'</div>'
+    +'<div class="modal-sub">Configura turnos, dotación e instrucciones</div>'
+    +'</div><button class="btn btn-ghost btn-sm" onclick="closeProjModal()">✕</button></div>'
+    +'<div id="pm-err" class="auth-err" style="display:none;margin-bottom:14px"></div>'
+    +'<form id="pm-form" '+submitAttr+'>'
 
-        <!-- INSTRUCTIONS SECTION -->
-        <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📌 Instrucciones para el equipo</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:10px">Texto que verán los profesionales asignados a este proyecto</div>
-          <textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo. Traer credencial vigente. Estacionamiento disponible en el subterráneo...">${proj?.schedule?._instructions||''}</textarea>
-        </div>
+    // ── INFO ──
+    +'<div style="background:var(--slate);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:14px;color:var(--text2)">📋 Información del proyecto</div>'
+    +'<div class="g2">'
+    +'<div class="form-group"><label class="form-label">Nombre *</label><input class="form-input" id="pm-name" required placeholder="HOSPITAL FELIX BULNES" value="'+projNameVal+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Hospital / CESFAM</label><input class="form-input" id="pm-hospital" value="'+hospitalVal+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Dirección</label><input class="form-input" id="pm-location" value="'+locationVal+'"/></div>'
+    +'<div class="form-group"><label class="form-label">Descripción</label><input class="form-input" id="pm-description" value="'+descVal+'"/></div>'
+    +'</div></div>'
 
-        <!-- PAYMENT MODE SECTION -->
-        <div style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.25);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">💳 Modalidad de pago</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:12px">Define cómo cobra el hospital y los honorarios de cada profesional</div>
-          <div class="g2" style="gap:12px">
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Modo de pago</label>
-              <select class="form-input" id="pm-payment-mode" onchange="pmUpdatePayMode()">
-                <option value="per_shift" ${(proj?.schedule?._payment_mode||'per_shift')==='per_shift'?'selected':''}>Por turno (ej: Lo Barnechea)</option>
-                <option value="per_hour"  ${proj?.schedule?._payment_mode==='per_hour'?'selected':''}>Por hora cumplida (ej: Félix Bulnes)</option>
-              </select>
-            </div>
-            <div class="form-group" style="margin-bottom:0">
-              <label class="form-label">Precio hospital / hora (CLP)</label>
-              <input class="form-input" id="pm-empresa-hora" type="number" min="0" value="${proj?.schedule?._empresa_hora||10000}" style="font-family:var(--mono)" placeholder="10000"/>
-            </div>
-          </div>
-          <div style="margin-top:12px">
-            <div class="form-group" style="margin-bottom:0;max-width:200px">
-              <label class="form-label">Tope horas/mes <span style="color:var(--text4);font-weight:400">(0 = sin tope)</span></label>
-              <input class="form-input" id="pm-tope-horas" type="number" min="0" value="${proj?.schedule?._tope_horas||0}" style="font-family:var(--mono)"/>
-            </div>
-            <div style="font-size:11px;color:var(--text4);margin-top:8px">
-              ⓘ Modo hora: activa Sabado y Domingo en el horario si el hospital opera esos dias.
-            </div>
-          </div>
-        </div>
+    // ── INSTRUCCIONES ──
+    +'<div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📌 Instrucciones para el equipo</div>'
+    +'<div style="font-size:12px;color:var(--text4);margin-bottom:10px">Texto que verán los profesionales asignados</div>'
+    +'<textarea class="form-input" id="pm-instructions" rows="3" placeholder="Ej: Presentarse con uniforme completo...">'+instrText+'</textarea>'
+    +'</div>'
 
-        <!-- SHIFT TYPES SECTION -->
-        <div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:2px;color:var(--text2)">📅 Tipos de turno</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Define cada tipo de turno con sus horas. Los turnos nocturnos que cruzan medianoche se detectan automáticamente.</div>
-          <div id="pm-shifts-list">
-            ${pmBuildShiftRows(proj?.schedule?._shift_types)}
-          </div>
-          <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="pmAddShiftRow()">+ Agregar turno</button>
-          <div style="margin-top:12px;padding:10px 12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--r);font-size:11px;color:#6366f1">
-            💡 Turno nocturno: si la hora de salida es menor a la entrada (ej: entrada 20:00, salida 08:00) el sistema entiende que termina el día siguiente.
-          </div>
-        </div>
+    // ── PAGO ──
+    +'<div style="background:rgba(217,119,6,.06);border:1px solid rgba(217,119,6,.25);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:12px;color:var(--text2)">💳 Modalidad de pago</div>'
+    +'<div class="g2" style="gap:12px">'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label">Modo de pago</label>'
+    +'<select class="form-input" id="pm-payment-mode" onchange="pmUpdatePayMode()">'
+    +'<option value="per_shift" '+selPer+'>Por turno (ej: Lo Barnechea)</option>'
+    +'<option value="per_hour" '+selHour+'>Por hora cumplida (ej: Félix Bulnes)</option>'
+    +'</select></div>'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label">Precio hospital / hora (CLP)</label>'
+    +'<input class="form-input" id="pm-empresa-hora" type="number" min="0" value="'+empHora+'" style="font-family:var(--mono)"/></div>'
+    +'</div>'
+    +'<div style="margin-top:12px"><div class="form-group" style="margin-bottom:0;max-width:200px">'
+    +'<label class="form-label">Tope horas/mes <span style="font-weight:400;color:var(--text4)">(0 = sin tope)</span></label>'
+    +'<input class="form-input" id="pm-tope-horas" type="number" min="0" value="'+topeHoras+'" style="font-family:var(--mono)"/>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text4);margin-top:8px">ⓘ Modo hora: activa Sábado y Domingo abajo si el hospital opera esos días.</div>'
+    +'</div></div>'
 
-        <!-- DOTATION SECTION -->
-        <div style="background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">👥 Dotación + Honorario</div>
-          <div class="pm-fee-label" style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos de cada cargo y cuánto se paga por turno</div>
-          ${dotHTML}
-          <div id="pm-cost-row" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">
-            <span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado turno completo</span>
-            <span id="pm-cost-val" style="font-weight:800;font-size:16px;color:#1e3a8a;font-family:var(--mono)">$0 CLP</span>
-          </div>
-        </div>
+    // ── TIPOS DE TURNO ──
+    +'<div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📅 Tipos de turno</div>'
+    +'<div style="font-size:12px;color:var(--text4);margin-bottom:12px">Define cada turno. Salida menor que entrada = turno nocturno (día siguiente).</div>'
+    +'<div id="pm-shifts-list">'+shiftTypesHTML+'</div>'
+    +'<button type="button" class="btn btn-sm" style="margin-top:10px" onclick="pmAddShiftRow()">+ Agregar turno</button>'
+    +'</div>'
 
-        <div style="display:flex;gap:10px">
-          <button class="btn btn-primary" type="submit" style="flex:1;justify-content:center;padding:13px;font-size:14px">
-            ${isEdit?'💾 Guardar cambios':'➕ Crear proyecto'}
-          </button>
-          <button type="button" class="btn" onclick="closeProjModal()">Cancelar</button>
-        </div>
-      </form>
-    </div>
-  </div>`
+    // ── HORARIO POR DÍA ──
+    +'<div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📆 Días operativos</div>'
+    +'<div style="font-size:12px;color:var(--text4);margin-bottom:12px">Activa los días en que opera el proyecto (afecta qué días aparecen en el flujo)</div>'
+    +schedHTML
+    +'</div>'
+
+    // ── DOTACIÓN ──
+    +'<div style="background:rgba(5,150,105,.05);border:1px solid rgba(5,150,105,.15);border-radius:var(--r-md);padding:16px;margin-bottom:14px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">👥 Dotación + Honorario</div>'
+    +'<div class="pm-fee-label" style="font-size:12px;color:var(--text4);margin-bottom:14px">Cuántos de cada cargo y cuánto se paga</div>'
+    +dotHTML
+    +'<div id="pm-cost-row" style="margin-top:10px;padding:12px 14px;background:var(--accent-l);border-radius:var(--r);border:1px solid #93c5fd;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Costo estimado</span>'
+    +'<span id="pm-cost-val" style="font-weight:800;font-size:16px;color:#1e3a8a;font-family:var(--mono)">$0 CLP</span>'
+    +'</div></div>'
+
+    +'<div style="display:flex;gap:10px">'
+    +'<button class="btn btn-primary" type="submit" style="flex:1;justify-content:center;padding:13px;font-size:14px">'+btnText+'</button>'
+    +'<button type="button" class="btn" onclick="closeProjModal()">Cancelar</button>'
+    +'</div>'
+    +'</form></div></div>'
 
   pmUpdateCost()
 }
-
 window.closeProjModal = () => { const a=el('settings-modal-area'); if(a)a.innerHTML='' }
 
 window.pmUpdatePayMode = function() {
