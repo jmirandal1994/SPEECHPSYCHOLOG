@@ -2635,11 +2635,17 @@ window.showProjectModal = (proj) => {
           </div>
         </div>
 
-        <!-- SCHEDULE SECTION -->
+        <!-- SHIFT TYPES SECTION -->
         <div style="background:rgba(59,130,246,.04);border:1px solid rgba(59,130,246,.12);border-radius:var(--r-md);padding:16px;margin-bottom:14px">
-          <div style="font-weight:700;font-size:13px;margin-bottom:4px;color:var(--text2)">📅 Horario de operación</div>
-          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Define la hora de llegada y salida para cada día operativo</div>
-          ${schedHTML}
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px;color:var(--text2)">📅 Tipos de turno</div>
+          <div style="font-size:12px;color:var(--text4);margin-bottom:14px">Define cada tipo de turno con sus horas. Los turnos nocturnos que cruzan medianoche se detectan automáticamente.</div>
+          <div id="pm-shifts-list">
+            ${pmBuildShiftRows(proj?.schedule?._shift_types)}
+          </div>
+          <button type="button" class="btn btn-sm" style="margin-top:8px" onclick="pmAddShiftRow()">+ Agregar turno</button>
+          <div style="margin-top:12px;padding:10px 12px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:var(--r);font-size:11px;color:#6366f1">
+            💡 Turno nocturno: si la hora de salida es menor a la entrada (ej: entrada 20:00, salida 08:00) el sistema entiende que termina el día siguiente.
+          </div>
         </div>
 
         <!-- DOTATION SECTION -->
@@ -2742,12 +2748,35 @@ window.saveProjForm = async (e, projId) => {
       end:    el('pm-end-'+day)?.value   || '17:00',
     }
   })
+  // Si tiene shift_types → todos los días activos automáticamente (hospital 7x24)
+  const hasShiftTypesForm = document.querySelectorAll('#pm-shifts-list .pm-shift-row').length > 0
+  if (hasShiftTypesForm) {
+    DAYS.forEach(day => { finalSched[day].active = true })
+  }
 
   // Store metadata inside schedule JSONB
   finalSched._instructions  = el('pm-instructions')?.value  || null
   finalSched._hospital      = el('pm-hospital')?.value      || null
   finalSched._location      = el('pm-location')?.value      || null
   finalSched._description   = el('pm-description')?.value   || null
+  // Collect shift types from the form
+  var shiftRows = document.querySelectorAll('#pm-shifts-list .pm-shift-row')
+  var shiftTypes = []
+  shiftRows.forEach(function(row) {
+    var idx = row.id.replace('pm-shift-','')
+    var name  = el('pm-sname-'+idx)?.value?.trim()
+    var start = el('pm-sstart-'+idx)?.value
+    var end   = el('pm-send-'+idx)?.value
+    if (name && start && end) {
+      var [sh,sm] = start.split(':').map(Number)
+      var [eh,em] = end.split(':').map(Number)
+      var startMin = sh*60+sm, endMin = eh*60+em
+      if (endMin <= startMin) endMin += 24*60
+      var horas = Math.round((endMin-startMin)/60*10)/10
+      shiftTypes.push({name:name, start:start, end:end, horas:horas})
+    }
+  })
+  finalSched._shift_types   = shiftTypes
   finalSched._payment_mode  = el('pm-payment-mode')?.value  || 'per_shift'
   finalSched._tope_horas    = Number(el('pm-tope-horas')?.value) || 0
   finalSched._empresa_hora  = Number(el('pm-empresa-hora')?.value) || 0
@@ -2890,14 +2919,15 @@ async function loadFlujoData() {
     const dow    = d.getDay()
     const dayKey = DOW_TO_KEY[dow]
     let include  = false
-    if (projName && projSched[dayKey] !== undefined) {
-      // Project has explicit schedule — use it
+    const hasShiftTypes = projSched._shift_types && projSched._shift_types.length > 0
+    if (projName && hasShiftTypes) {
+      // Project uses shift types (hospital) → show all days
+      include = true
+    } else if (projName && projSched[dayKey] !== undefined) {
       include = !!projSched[dayKey]?.active
     } else if (projName && hasWeekend) {
-      // per_hour project with no explicit schedule → all days
       include = true
     } else {
-      // No project or default → Mon-Fri only
       include = dow >= 1 && dow <= 5
     }
     if (include) workdays.push(new Date(d))
