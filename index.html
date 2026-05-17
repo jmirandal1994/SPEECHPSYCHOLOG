@@ -3017,372 +3017,339 @@ async function pageFlujo(pc) {
 async function loadFlujoData() {
   const body = el('flujo-content')
   if (!body) return
-  body.innerHTML = '<div style="display:flex;justify-content:center;padding:60px"><div class="spinner" style="width:28px;height:28px"></div></div>'
+  body.innerHTML = '<div style="display:flex;justify-content:center;padding:80px"><div class="spinner" style="width:32px;height:32px"></div></div>'
 
-  const projName  = el('flujo-proj-sel')?.value || ''
-  const monthVal  = el('flujo-month-sel')?.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1))
-  const [yr, mo]  = monthVal.split('-').map(Number)
-  const mStart    = new Date(yr, mo-1, 1)
-  const mEnd      = new Date(yr, mo, 0)
-  const MONTHS    = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-  const DAYS_S    = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  const projName = el('flujo-proj-sel')?.value || ''
+  const monthVal = el('flujo-month-sel')?.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1))
+  const [yr, mo] = monthVal.split('-').map(Number)
+  const mStart   = new Date(yr, mo-1, 1)
+  const mEnd     = new Date(yr, mo, 0)
+  const MONTHS   = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const DOW_LABEL= ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
 
-  // Load project config first (needed to know which days are active)
-  const {data:proj}    = projName ? await db.from('projects').select('*').eq('name',projName).maybeSingle() : {data:null}
+  // ── Load project config ──
+  const {data:proj} = projName
+    ? await db.from('projects').select('*').eq('name',projName).maybeSingle()
+    : {data:null}
+  const projSched    = proj?.schedule || {}
+  const payMode      = projSched._payment_mode || 'per_shift'
+  const payPerHour   = payMode === 'per_hour'
+  const empresaHora  = projSched._empresa_hora || 10000
+  const topeHorasMes = projSched._tope_horas   || 0
+  const DOW_TO_KEY   = ['sun','mon','tue','wed','thu','fri','sat']
+  const hasShiftTypes = (projSched._shift_types||[]).length > 0
+  const hasWeekend    = projSched.sat?.active || projSched.sun?.active || payPerHour
 
-  // Determine active days from project schedule, or default Mon-Fri
-  const projSched = proj?.schedule || {}
-  // Map JS getDay() (0=Sun..6=Sat) to form keys (sun/mon..sat)
-  const DOW_TO_KEY = ['sun','mon','tue','wed','thu','fri','sat']
-  // If project uses per_hour billing OR has sat/sun active → show all days
-  const payMode    = projSched._payment_mode || 'per_shift'
-  const hasWeekend = projSched.sat?.active || projSched.sun?.active || payMode === 'per_hour'
-
+  // ── Build working days ──
   const workdays = []
   for (let d = new Date(mStart); d <= mEnd; d.setDate(d.getDate()+1)) {
-    const dow    = d.getDay()
-    const dayKey = DOW_TO_KEY[dow]
-    let include  = false
-    const hasShiftTypes = projSched._shift_types && projSched._shift_types.length > 0
-    if (projName && hasShiftTypes) {
-      // Project uses shift types (hospital) → show all days
-      include = true
-    } else if (projName && projSched[dayKey] !== undefined) {
-      include = !!projSched[dayKey]?.active
-    } else if (projName && hasWeekend) {
-      include = true
-    } else {
-      include = dow >= 1 && dow <= 5
-    }
-    if (include) workdays.push(new Date(d))
+    const dow = d.getDay(), dk = DOW_TO_KEY[dow]
+    let inc = false
+    if      (projName && hasShiftTypes)                   inc = true
+    else if (projName && projSched[dk] !== undefined)     inc = !!projSched[dk]?.active
+    else if (projName && hasWeekend)                      inc = true
+    else                                                  inc = dow >= 1 && dow <= 5
+    if (inc) workdays.push(new Date(d))
   }
-  const {data:cfg}     = await db.from('system_config').select('value').eq('key','role_fees').maybeSingle()
-  const workerFees     = cfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
 
-  // Load individual worker fee overrides
-  const {data:ovCfg}   = await db.from('system_config').select('value').eq('key','worker_fees').maybeSingle()
-  const workerOverrides = ovCfg?.value || {}
-
-  // Precio empresa = sueldo * 1.35 por defecto (configurable en proyecto)
-  const empresaMultiplier = 1.35
-  const empresaHora = proj?.schedule?._empresa_hora || 10000  // precio hospital/hora (Félix Bulnes)
-
-  // Load workers for this project (profiles DB + manual workers stored in system_config)
-  const workerQuery = db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')
-  if (projName) workerQuery.eq('project', projName)
-  const [{data:workers}, {data:mwCfg2}] = await Promise.all([
-    workerQuery,
-    db.from('system_config').select('value').eq('key','manual_workers').maybeSingle()
-  ])
-  // Merge manual workers, filter by project if needed
-  const manualWorkers = (mwCfg2?.value || []).filter(w =>
-    w.status === 'active' && (!projName || w.project === projName)
-  )
-  const mergedWorkers = [...(workers||[]), ...manualWorkers]
-
+  // ── Load all data in parallel ──
   const mStartStr = mStart.toISOString().slice(0,10)
   const mEndStr   = mEnd.toISOString().slice(0,10)
-  // Extend range by 1 day each side to capture overnight shifts
-  const loadFrom = new Date(mStart.getTime()-86400000).toISOString().slice(0,10)
-  const loadTo   = new Date(mEnd.getTime()+86400000).toISOString().slice(0,10)
+  const loadFrom  = new Date(mStart.getTime()-86400000).toISOString().slice(0,10)
+  const loadTo    = new Date(mEnd.getTime()+86400000).toISOString().slice(0,10)
 
-  const [{data:atts}, {data:maCfg3}] = await Promise.all([
-    db.from('attendances')
-      .select('id,worker_id,checked_in_at,checked_out_at,status,horas_reales')
-      .gte('checked_in_at', loadFrom+'T00:00:00')
-      .lte('checked_in_at', loadTo+'T23:59:59'),
-    db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
+  const [
+    {data:workers},     {data:mwCfg},
+    {data:atts},        {data:maCfg},
+    {data:feeCfg},      {data:ovrCfg},
+    {data:shifts}
+  ] = await Promise.all([
+    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')
+      .pipe(q => projName ? q.eq('project',projName) : q),
+    db.from('system_config').select('value').eq('key','manual_workers').maybeSingle(),
+    db.from('attendances').select('id,worker_id,checked_in_at,checked_out_at,status,horas_reales')
+      .gte('checked_in_at', loadFrom+'T00:00:00').lte('checked_in_at', loadTo+'T23:59:59'),
+    db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle(),
+    db.from('system_config').select('value').eq('key','role_fees').maybeSingle(),
+    db.from('system_config').select('value').eq('key','worker_fees').maybeSingle(),
+    db.from('shifts').select('worker_id,shift_date,fee').gte('shift_date',mStartStr).lte('shift_date',mEndStr)
   ])
-  const manualAtts = (maCfg3?.value || []).filter(a => a.date >= mStartStr && a.date <= mEndStr)
-  const allAtts = [...(atts||[]), ...manualAtts]
 
-  // Also load shifts for fee data
-  const {data:shifts} = await db.from('shifts')
-    .select('worker_id,shift_date,fee,status')
-    .gte('shift_date', mStartStr)
-    .lte('shift_date', mEndStr)
+  const workerFees    = feeCfg?.value || {'Enfermera/o':35000,'TENS':28000,'Auxiliar de servicio':22000,'Administrativo':30000}
+  const workerOvrs    = ovrCfg?.value || {}
+  const manualWorkers = (mwCfg?.value||[]).filter(w=>w.status==='active'&&(!projName||w.project===projName))
+  const allWorkers    = [...(workers||[]), ...manualWorkers]
+  const manualAtts    = (maCfg?.value||[]).filter(a=>a.date>=mStartStr&&a.date<=mEndStr)
+  const allAtts       = [...(atts||[]), ...manualAtts]
+  const empresaMult   = 1.35
 
-  // Index attendance by worker+date — guardar LISTA (puede haber 2 turnos en un día)
-  const attMap = {}
-  ;(allAtts||[]).forEach(a => {
-    const d = a.checked_in_at?.slice(0,10)
-    if (!d) return
-    if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
-    if (!attMap[a.worker_id][d]) attMap[a.worker_id][d] = []
-    attMap[a.worker_id][d].push(a)
-  })
-  // Helper: obtener el primer registro del día (para compatibilidad)
-  function attFirst(wid, dStr) {
-    const list = attMap[wid]?.[dStr]
-    if (!list || list.length === 0) return null
-    // Preferir el que tiene checkout; si hay varios sin checkout, el más reciente
-    return list.find(a => a.checked_out_at) || list[list.length-1]
-  }
-  function attList(wid, dStr) {
-    return attMap[wid]?.[dStr] || []
-  }
-
-  // Index shifts by worker+date
-  const shiftMap = {}
-  ;(shifts||[]).forEach(s => {
-    if (!shiftMap[s.worker_id]) shiftMap[s.worker_id] = {}
-    shiftMap[s.worker_id][s.shift_date] = s
-  })
-
-  const allWorkers = mergedWorkers
   if (!allWorkers.length) {
-    body.innerHTML = '<div class="empty-state" style="padding:80px 24px"><div class="empty-icon">👥</div><div class="empty-title">Sin profesionales'+(projName?' en '+projName:'')+' </div><div class="empty-sub">Asigna profesionales al proyecto en Configuración</div></div>'
+    body.innerHTML = '<div class="empty-state" style="padding:100px 24px"><div class="empty-icon">👥</div><div class="empty-title">Sin profesionales'+(projName?' en '+projName:'')+'</div><div class="empty-sub">Asigna profesionales en Configuración</div></div>'
     return
   }
 
-  // Calculate totals
-  let totalHonorarios = 0, totalIngreso = 0, totalProfit = 0, totalTurnos = 0
-  const workerTotals = {}
+  // ── Index: attMap[wid][date] = [array of records] ──
+  const attMap = {}
+  for (const a of allAtts) {
+    const d = a.checked_in_at?.slice(0,10)
+    if (!d) continue
+    if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
+    if (!attMap[a.worker_id][d]) attMap[a.worker_id][d] = []
+    attMap[a.worker_id][d].push(a)
+  }
+  const shiftMap = {}
+  for (const s of (shifts||[])) {
+    if (!shiftMap[s.worker_id]) shiftMap[s.worker_id] = {}
+    shiftMap[s.worker_id][s.shift_date] = s
+  }
 
-  // ¿El proyecto paga por hora? (Felix Bulnes = per_hour, Lo Barnechea = per_shift)
-  const payPerHour  = payMode === 'per_hour'
-  const topeHorasMes = proj?.schedule?._tope_horas || 0  // 0 = sin tope
+  function attListFn(wid, dStr)  { return attMap[wid]?.[dStr] || [] }
+  function fmtMoney(n)           { return '$'+Math.round(n).toLocaleString('es-CL') }
+  function fmtH(h)               { return h > 0 ? h+'h' : '—' }
+  function fmtTime(iso) {
+    if (!iso) return ''
+    const d = new Date(iso)
+    return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')
+  }
 
-  allWorkers.forEach(w => {
-    const ovr         = workerOverrides[w.id]
-    // Si es por hora: fee = tarifa por HORA; si es por turno: fee = tarifa por turno
-    const workerFee   = ovr?.fee     !== undefined ? ovr.fee     : (workerFees[w.role_label] || 0)
-    const empresaFee  = ovr?.empresa !== undefined ? ovr.empresa : Math.round(workerFee * empresaMultiplier)
-    let   wTurnos = 0, wHorasReales = 0, wHonorario = 0, wIngreso = 0, wProfit = 0
+  // ── Calculate per-worker totals ──
+  let totalHon=0, totalIng=0, totalProfit=0, totalTurnos=0, totalHrs=0
+  const wTot = {}
 
-    workdays.forEach(day => {
+  for (const w of allWorkers) {
+    const ovr      = workerOvrs[w.id]
+    const baseFee  = ovr?.fee      !== undefined ? ovr.fee      : (workerFees[w.role_label]||0)
+    const baseEmp  = ovr?.empresa  !== undefined ? ovr.empresa  : (payPerHour ? empresaHora : Math.round(baseFee*empresaMult))
+    let   turnos=0, hrs=0, hon=0, ing=0, profit=0
+
+    for (const day of workdays) {
       const dStr = day.toISOString().slice(0,10)
-      const attL  = attList(w.id, dStr)
-      const shft = shiftMap[w.id]?.[dStr]
-      if (attL.length > 0) {
-        attL.forEach(att => {
-        wTurnos++
+      const dayAtts = attListFn(w.id, dStr)
+      const shft    = shiftMap[w.id]?.[dStr]
+      for (const att of dayAtts) {
+        if (!att.checked_in_at) continue
+        turnos++
         if (payPerHour) {
-          let horas = att.horas_reales || 0
-          if (!horas && att.checked_in_at && att.checked_out_at) {
-            horas = Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10
-          }
-          // Respetar tope si está definido
-          const horasRestantes = topeHorasMes > 0 ? Math.max(0, topeHorasMes - wHorasReales) : horas
-          const horasValidas = Math.min(horas, horasRestantes)
-          wHorasReales += horasValidas
-          const feeH   = workerFee   * horasValidas
-          const empH   = ovr?.empresa !== undefined ? ovr.empresa * horasValidas : Math.round(empresaHora * horasValidas)
-          wHonorario  += feeH
-          wIngreso    += empH
-          wProfit     += empH - feeH
+          let h = att.horas_reales || 0
+          if (!h && att.checked_out_at) h = Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10
+          const cap = topeHorasMes > 0 ? Math.max(0, topeHorasMes - hrs) : h
+          const hv  = Math.min(h, cap)
+          hrs += hv
+          hon += baseFee * hv
+          ing += baseEmp * hv
         } else {
-          const fee    = shft?.fee || workerFee
-          const feeEmp = ovr?.empresa !== undefined ? ovr.empresa : Math.round(fee * empresaMultiplier)
-          wHonorario  += fee
-          wIngreso    += feeEmp
-          wProfit     += feeEmp - fee
+          const fee = shft?.fee || baseFee
+          const emp = ovr?.empresa !== undefined ? ovr.empresa : Math.round(fee*empresaMult)
+          hon += fee; ing += emp
         }
-        }) // end attL.forEach
+        profit += ing - hon
       }
-    })
-
-    const excedente = topeHorasMes > 0 ? Math.max(0, wHorasReales - topeHorasMes) : 0
-    workerTotals[w.id] = {
-      fee:workerFee, empresaFee, turnos:wTurnos,
-      horasReales:wHorasReales, excedente,
-      honorario:wHonorario, ingreso:wIngreso, profitTotal:wProfit,
-      hasOverride: !!ovr, payPerHour
     }
-    totalHonorarios += wHonorario
-    totalIngreso    += wIngreso
-    totalProfit     += wProfit
-    totalTurnos     += wTurnos
-  })
 
-  const margen = totalIngreso > 0 ? Math.round(totalProfit/totalIngreso*100) : 0
+    const excedente = topeHorasMes > 0 ? Math.max(0, hrs - topeHorasMes) : 0
+    wTot[w.id] = {baseFee, baseEmp, turnos, hrs, hon, ing, profit:ing-hon, excedente, hasOvr:!!ovr}
+    totalHon += hon; totalIng += ing; totalProfit += ing-hon
+    totalTurnos += turnos; totalHrs += hrs
+  }
 
-  // Limit workdays shown (max 22 for readability)
-  const showDays = workdays  // mostrar todos los días activos del mes
+  const margen = totalIng > 0 ? Math.round(totalProfit/totalIng*100) : 0
 
-  // Build HTML
+  // ══════════════════════════════════════════════════════════════════
+  // HTML RENDER — Professional design
+  // ══════════════════════════════════════════════════════════════════
   let html = ''
 
-  // ── KPI strip ──
-  html += '<div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">'
-  html += kpiCard('📅','Turnos asistidos',totalTurnos,'este mes','var(--accent)','var(--accent-l)')
-  html += kpiCard('💰','Honorarios pagados','$'+totalHonorarios.toLocaleString('es-CL'),'costo profesionales','var(--amber)','var(--amber-l)')
-  html += kpiCard('🏢','Ingresos empresa','$'+totalIngreso.toLocaleString('es-CL'),'facturación total','var(--emerald)','var(--emerald-l)')
-  html += kpiCard('📈','Profit neto','$'+totalProfit.toLocaleString('es-CL'),margen+'% margen','var(--teal)','var(--teal-l)')
+  // ── KPI Cards ──
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px">'
+  const kpis = [
+    {icon:'📅', label:'Turnos / Horas', val: payPerHour ? totalHrs+'h' : totalTurnos, sub: payPerHour ? totalTurnos+' turnos' : 'este mes', color:'#3b82f6', bg:'rgba(59,130,246,.1)'},
+    {icon:'💸', label:'Honorarios Profesionales', val: fmtMoney(totalHon), sub:'pago a profesionales', color:'#f59e0b', bg:'rgba(245,158,11,.1)'},
+    {icon:'🏢', label:'Ingresos Empresa', val: fmtMoney(totalIng), sub: payPerHour?'a '+fmtMoney(empresaHora)+'/hr':'facturación total', color:'#10b981', bg:'rgba(16,185,129,.1)'},
+    {icon:'📈', label:'Profit Neto', val: fmtMoney(totalProfit), sub:margen+'% margen', color:totalProfit>=0?'#14b8a6':'#ef4444', bg:totalProfit>=0?'rgba(20,184,166,.1)':'rgba(239,68,68,.1)'},
+  ]
+  for (const k of kpis) {
+    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 20px;position:relative;overflow:hidden">'
+      +'<div style="position:absolute;top:0;left:0;right:0;height:3px;background:'+k.color+'"></div>'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+      +'<div style="width:36px;height:36px;border-radius:8px;background:'+k.bg+';display:flex;align-items:center;justify-content:center;font-size:16px">'+k.icon+'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:var(--text3)">'+k.label+'</div>'
+      +'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:var(--text1);font-family:var(--mono);letter-spacing:-.03em">'+k.val+'</div>'
+      +'<div style="font-size:11px;color:var(--text4);margin-top:4px">'+k.sub+'</div>'
+      +'</div>'
+  }
   html += '</div>'
 
-  // ── Attendance grid ──
-  html += '<div class="card" style="padding:0;overflow:hidden;margin-bottom:16px">'
-  // Header
-  html += '<div style="padding:14px 20px;background:linear-gradient(135deg,var(--navy),#162447);display:flex;justify-content:space-between;align-items:center">'
-  html += '<div style="color:#fff"><div style="font-weight:700;font-size:14px">Control de Asistencia — '+MONTHS[mo]+' '+yr+'</div>'
-  html += '<div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">'+(projName||'Todos los proyectos')+' · '+workdays.length+' días hábiles</div></div>'
-  html += '<div style="display:flex;gap:8px;font-size:10px;flex-wrap:wrap">'
-  html += '<span style="background:rgba(5,150,105,.2);border:1px solid rgba(5,150,105,.4);border-radius:4px;padding:2px 7px;color:#6ee7b7">↑ entrada · ↓ salida</span>'
-  html += '<span style="background:rgba(220,38,38,.2);border:1px solid rgba(220,38,38,.4);border-radius:4px;padding:2px 7px;color:#fca5a5">✗ No asistió</span>'
-  html += '<span style="background:rgba(255,193,7,.15);border:1px solid rgba(255,193,7,.35);border-radius:4px;padding:2px 7px;color:#fde68a">⏳ Sin salida</span>'
-  html += '<span style="color:var(--amber);padding:2px 7px">★ Tarifa individual</span>'
-  html += '</div></div>'
-  html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
-  html += '<table style="min-width:900px;border-collapse:collapse;font-size:12px">'
+  // ── Attendance Grid ──
+  html += '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px">'
 
-  // thead
+  // Grid header
+  html += '<div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:16px 20px;display:flex;justify-content:space-between;align-items:center">'
+  html += '<div>'
+  html += '<div style="color:#fff;font-weight:700;font-size:15px;letter-spacing:-.02em">Control de Asistencia — '+MONTHS[mo]+' '+yr+'</div>'
+  html += '<div style="color:rgba(255,255,255,.45);font-size:11px;margin-top:2px">'+(projName||'Todos los proyectos')+' · '+workdays.length+' días · '+(payPerHour?'Pago por hora':'Pago por turno')+'</div>'
+  html += '</div>'
+  html += '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+  html += '<span style="background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">↑ entrada ↓ salida</span>'
+  html += '<span style="background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">✗ falta</span>'
+  html += '<span style="background:rgba(234,179,8,.15);border:1px solid rgba(234,179,8,.3);color:#fde68a;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">⏳ sin salida</span>'
+  html += '<span style="background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#c4b5fd;border-radius:6px;padding:3px 8px;font-size:10px;font-weight:600">✦ día siguiente</span>'
+  html += '</div></div>'
+
+  // Scrollable table
+  html += '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch">'
+  html += '<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:800px">'
+
+  // Col headers
   html += '<thead><tr style="background:#f8fafc">'
-  html += '<th style="padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap;position:sticky;left:0;background:#f8fafc;z-index:2;min-width:200px">Profesional</th>'
-  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Cargo</th>'
-  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Sueldo/T</th>'
-  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">Precio Emp.</th>'
-  showDays.forEach(day => {
-    const dow = DAYS_S[day.getDay()]
-    const dd  = String(day.getDate()).padStart(2,'0')
-    const mm  = String(day.getMonth()+1).padStart(2,'0')
-    html += '<th style="padding:8px 4px;text-align:center;font-size:10px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);min-width:42px;white-space:nowrap">'+dow+'<br><span style="font-weight:400;color:var(--text4)">'+dd+'/'+mm+'</span></th>'
-  })
-  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border)">T.</th>'
-  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--emerald);border-bottom:2px solid var(--border);white-space:nowrap">Honorario</th>'
-  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--accent);border-bottom:2px solid var(--border);white-space:nowrap">Ingreso Emp.</th>'
-  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:var(--teal);border-bottom:2px solid var(--border);white-space:nowrap">Profit</th>'
-  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border)">%</th>'
+  html += '<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);position:sticky;left:0;background:#f8fafc;z-index:2;min-width:180px">PROFESIONAL</th>'
+  html += '<th style="padding:10px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);white-space:nowrap">CARGO</th>'
+  if (payPerHour) {
+    html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#6366f1;border-bottom:2px solid var(--border);white-space:nowrap">HRS</th>'
+    html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#10b981;border-bottom:2px solid var(--border);white-space:nowrap">HON/HR</th>'
+  } else {
+    html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#10b981;border-bottom:2px solid var(--border);white-space:nowrap">HON/T</th>'
+  }
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#3b82f6;border-bottom:2px solid var(--border);white-space:nowrap">'+(payPerHour?'EMP/HR':'EMP/T')+'</th>'
+
+  for (const day of workdays) {
+    const dow = DOW_LABEL[day.getDay()]
+    const isWeekend = day.getDay()===0||day.getDay()===6
+    const dd = String(day.getDate()).padStart(2,'0')+'/'+String(day.getMonth()+1).padStart(2,'0')
+    html += '<th style="padding:6px 2px;text-align:center;font-size:9px;font-weight:700;color:'+(isWeekend?'#6366f1':'var(--text3)')+';border-bottom:2px solid var(--border);min-width:40px;white-space:nowrap;border-left:1px solid #f0f0f0">'+dow+'<br><span style="font-weight:400;color:var(--text4)">'+dd+'</span></th>'
+  }
+  html += '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);border-left:2px solid var(--border)">'+(payPerHour?'HRS':'T')+'</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#10b981;border-bottom:2px solid var(--border);white-space:nowrap">HONORARIO</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#3b82f6;border-bottom:2px solid var(--border);white-space:nowrap">INGRESO</th>'
+  html += '<th style="padding:10px 8px;text-align:right;font-size:11px;font-weight:700;color:#14b8a6;border-bottom:2px solid var(--border);white-space:nowrap">PROFIT</th>'
   html += '</tr></thead><tbody>'
 
-  // rows
-  allWorkers.forEach((w, i) => {
-    const t = workerTotals[w.id]
-    const pct = workdays.length > 0 ? Math.round(t.turnos/showDays.length*100) : 0
-    const bg = i%2===0 ? '#fff' : '#fafbfc'
-    html += '<tr id="frow-'+w.id+'" style="background:'+bg+';transition:background .1s" onmouseover="this.style.background=\'#f0f7ff\'" onmouseout="this.style.background=\''+bg+'\'">'
-    // Name (sticky) - con botón editar inline
-    html += '<td style="padding:8px 14px;font-weight:600;font-size:12px;border-bottom:1px solid var(--border);position:sticky;left:0;background:'+bg+';z-index:1;white-space:nowrap;max-width:220px;overflow:hidden;text-overflow:ellipsis">'
-    html += '<div style="display:flex;align-items:center;gap:6px">'
-    html += '<span style="overflow:hidden;text-overflow:ellipsis">'+(w.full_name||'—')+'</span>'
-    html += '<button onclick="flujoEditFee(\''+w.id+'\',\''+w.role_label+'\','+t.fee+','+t.empresaFee+')" title="Editar tarifas" style="flex-shrink:0;background:none;border:none;cursor:pointer;font-size:11px;color:var(--text4);padding:2px 4px;border-radius:4px;line-height:1" onmouseover="this.style.color=\'var(--accent)\'" onmouseout="this.style.color=\'var(--text4)\'">✏</button>'
+  // Worker rows
+  for (let ri=0; ri<allWorkers.length; ri++) {
+    const w   = allWorkers[ri]
+    const t   = wTot[w.id]
+    const bg  = ri%2===0 ? '#ffffff' : '#fafbfc'
+    const encN = encodeURIComponent(w.full_name||'')
+    const encP = encodeURIComponent(projName||'')
+
+    html += '<tr style="background:'+bg+'" onmouseover="this.style.background=\'#eff6ff\'" onmouseout="this.style.background=\''+bg+'\'">'
+
+    // Name sticky
+    html += '<td style="padding:8px 16px;border-bottom:1px solid var(--border);position:sticky;left:0;background:'+bg+';z-index:1">'
+    html += '<div style="display:flex;align-items:center;gap:8px">'
+    html += '<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0">'+( (w.full_name||'?')[0].toUpperCase())+'</div>'
+    html += '<div style="min-width:0"><div style="font-weight:600;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+(w.full_name||'—')+'</div>'
+    if (t.excedente > 0) html += '<div style="font-size:10px;color:#ef4444;font-weight:700">⚠ +'+t.excedente+'h excedente</div>'
+    html += '</div>'
+    html += '<button title="Editar tarifas" onclick="flujoEditFee(\''+w.id+'\',\''+w.role_label+'\','+t.baseFee+','+t.baseEmp+')" style="flex-shrink:0;margin-left:auto;background:none;border:none;cursor:pointer;color:var(--text4);font-size:13px;padding:2px;border-radius:4px;line-height:1" onmouseover="this.style.color=\'#3b82f6\'" onmouseout="this.style.color=\'var(--text4)\'">✏</button>'
     html += '</div></td>'
-    html += '<td style="padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)">'
-    html += '<span class="badge badge-gray" style="font-size:10px;cursor:pointer;border:1px dashed #cbd5e1" title="Click para editar cargo" onclick="flujoEditFee(\''+w.id+'\',\''+w.role_label+'\','+t.fee+','+t.empresaFee+')">'+(w.role_label||'— Asignar cargo')+'</span>'
+
+    // Cargo
+    html += '<td style="padding:8px;text-align:center;border-bottom:1px solid var(--border)">'
+    html += '<span style="background:#f1f5f9;color:#475569;border:1px dashed #cbd5e1;border-radius:20px;padding:2px 8px;font-size:10px;font-weight:600;cursor:pointer;white-space:nowrap" onclick="flujoEditFee(\''+w.id+'\',\''+w.role_label+'\','+t.baseFee+','+t.baseEmp+')">'+(w.role_label||'+ Asignar cargo')+'</span>'
     html += '</td>'
-    html += '<td id="fcell-fee-'+w.id+'" style="padding:8px;text-align:right;font-family:var(--mono);font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap">'
-    if (t.payPerHour) {
-      html += '<div style="font-size:10px;color:var(--text4)">$'+t.fee.toLocaleString('es-CL')+'/hr</div>'
-      html += '<div style="font-weight:700;color:var(--text1)">'+t.horasReales+'h</div>'
+
+    // Fee columns
+    if (payPerHour) {
+      html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono)">'
+      html += '<div style="font-size:13px;font-weight:800;color:#6366f1">'+t.hrs+'h</div>'
+      if (topeHorasMes > 0) html += '<div style="font-size:9px;color:var(--text4)">tope '+topeHorasMes+'h</div>'
+      html += '</td>'
+      html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:#10b981">'+fmtMoney(t.baseFee)+'/hr'+(t.hasOvr?'<span style="color:#f59e0b;margin-left:2px">★</span>':'')+'</td>'
     } else {
-      html += '$'+t.fee.toLocaleString('es-CL')
+      html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:#10b981">'+fmtMoney(t.baseFee)+(t.hasOvr?'<span style="color:#f59e0b;margin-left:2px">★</span>':'')+'</td>'
     }
-    if (t.hasOverride) html += '<span title="Tarifa personalizada" style="font-size:9px;color:var(--amber)">★</span>'
-    html += '</td>'
-    html += '<td id="fcell-emp-'+w.id+'" style="padding:8px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--accent);border-bottom:1px solid var(--border);white-space:nowrap">'
-    if (t.payPerHour) {
-      html += '<div style="font-size:10px;color:var(--text4)">$'+t.empresaFee.toLocaleString('es-CL')+'/hr</div>'
-      if (t.excedente > 0) {
-        html += '<div style="font-size:10px;color:var(--red);font-weight:700">⚠ +'+t.excedente+'h excedente</div>'
-      }
-    } else {
-      html += '$'+t.empresaFee.toLocaleString('es-CL')
-    }
-    if (t.hasOverride) html += '<span title="Tarifa personalizada" style="font-size:9px;color:var(--amber)">★</span>'
-    html += '</td>'
+    html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px;color:#3b82f6">'+fmtMoney(t.baseEmp)+(t.hasOvr?'<span style="color:#f59e0b;margin-left:2px">★</span>':'')+'</td>'
 
-    showDays.forEach(day => {
-      const dStr   = day.toISOString().slice(0,10)
-      const dayAtts = attList(w.id, dStr)  // lista de turnos ese día
-      const cellStyle = 'padding:3px 2px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid #f0f0f0;cursor:pointer;'
-      const encN = encodeURIComponent(w.full_name||'')
-      const encP = encodeURIComponent(projName||'')
+    // Day cells
+    for (const day of workdays) {
+      const dStr    = day.toISOString().slice(0,10)
+      const dayAtts = attListFn(w.id, dStr)
+      const isWE    = day.getDay()===0||day.getDay()===6
+      const bdColor = isWE ? 'rgba(99,102,241,.12)' : '#f0f0f0'
+      const cellBg  = isWE ? 'rgba(99,102,241,.03)' : 'transparent'
 
-      function renderAtt(att) {
-        const isLate = att?.status === 'late'
-        const lateDot = isLate ? '<span style="position:absolute;top:0;right:0;width:4px;height:4px;background:var(--amber);border-radius:50%"></span>' : ''
-        if (att?.checked_in_at && att?.checked_out_at) {
-          const tIn  = new Date(att.checked_in_at)
-          const tOut = new Date(att.checked_out_at)
-          const hIn  = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
-          const hOut = tOut.getHours().toString().padStart(2,'0')+':'+tOut.getMinutes().toString().padStart(2,'0')
-          const crossDay = tOut.toISOString().slice(0,10) !== tIn.toISOString().slice(0,10)
-          return '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
-            +lateDot
-            +'<span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
-            +'<span style="background:'+(crossDay?'#f3e8ff':'#ede9fe')+';color:'+(crossDay?'#7c3aed':'#4c1d95')+';border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+(crossDay?'✦':'')+'</span>'
-            +'</div>'
-        } else if (att?.checked_in_at) {
-          const tIn = new Date(att.checked_in_at)
-          const hIn = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
-          return '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
-            +lateDot
-            +'<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
-            +'<span style="background:#f1f5f9;color:#94a3b8;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700">⏳</span>'
-            +'</div>'
-        }
-        return ''
-      }
-
-      let cell = ''
+      let cellContent = ''
       if (dayAtts.length > 0) {
-        // Mostrar todos los turnos del día
-        cell = '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+dayAtts.map(a=>renderAtt(a)).join('')+'</div>'
+        cellContent = dayAtts.map(att => {
+          const isLate    = att.status === 'late'
+          const hasIn     = !!att.checked_in_at
+          const hasOut    = !!att.checked_out_at
+          const crossDay  = hasOut && att.checked_out_at.slice(0,10) !== att.checked_in_at.slice(0,10)
+          const hIn       = hasIn  ? fmtTime(att.checked_in_at)  : ''
+          const hOut      = hasOut ? fmtTime(att.checked_out_at) : ''
+          const lateStyle = isLate ? 'box-shadow:0 0 0 1px #f59e0b;' : ''
+          let inner = '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative;'+lateStyle+'">'
+          if (isLate) inner += '<span style="position:absolute;top:-1px;right:-1px;width:4px;height:4px;background:#f59e0b;border-radius:50%"></span>'
+          inner += '<span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
+          if (hasOut) {
+            const outColor  = crossDay ? '#ede9fe' : '#ede9fe'
+            const outTColor = crossDay ? '#7c3aed' : '#4c1d95'
+            inner += '<span style="background:'+outColor+';color:'+outTColor+';border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+(crossDay?'✦':'')+'</span>'
+          } else {
+            inner += '<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:600">⏳</span>'
+          }
+          inner += '</div>'
+          return inner
+        }).join('<div style="height:2px"></div>')
       } else if (day > new Date()) {
-        cell = '<span style="color:#cbd5e1;font-size:11px">·</span>'
+        cellContent = '<span style="color:#e2e8f0;font-size:13px">·</span>'
       } else {
-        cell = '<span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700">✗</span>'
+        cellContent = '<span style="display:inline-block;background:#fef2f2;color:#dc2626;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700">✗</span>'
       }
-      html += '<td style="'+cellStyle+'" onclick="flujoEditAtt(\''+w.id+'\',\''+dStr+'\',\''+encN+'\',\''+encP+'\')">'+cell+'</td>'
-    })
 
-    // Totals
-    html += '<td style="padding:10px 8px;text-align:center;font-family:var(--mono);font-weight:800;font-size:13px;border-bottom:1px solid var(--border);color:var(--text1)">'+t.turnos+'</td>'
-    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--emerald);white-space:nowrap">$'+t.honorario.toLocaleString('es-CL')+'</td>'
-    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--accent);white-space:nowrap">$'+t.ingreso.toLocaleString('es-CL')+'</td>'
-    html += '<td style="padding:10px 8px;text-align:right;font-family:var(--mono);font-weight:700;font-size:12px;border-bottom:1px solid var(--border);color:var(--teal);white-space:nowrap">$'+t.profitTotal.toLocaleString('es-CL')+'</td>'
-    html += '<td style="padding:10px 8px;text-align:center;border-bottom:1px solid var(--border)">'
-    html += '<div style="font-size:11px;font-weight:700;color:'+(pct>=80?'var(--emerald)':pct>=50?'var(--amber)':'var(--red)')+'">'+pct+'%</div>'
-    html += '</td></tr>'
-  })
+      html += '<td style="padding:3px 2px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid '+bdColor+';background:'+cellBg+';cursor:pointer;vertical-align:middle" onclick="flujoEditAtt(\''+w.id+'\',\''+dStr+'\',\''+encN+'\',\''+encP+'\')">'+cellContent+'</td>'
+    }
+
+    // Row totals
+    html += '<td style="padding:8px 6px;text-align:center;border-bottom:1px solid var(--border);border-left:2px solid var(--border);font-family:var(--mono);font-weight:800;font-size:13px;color:#1e293b">'+(payPerHour ? t.hrs+'h' : t.turnos)+'</td>'
+    html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-weight:700;font-size:12px;color:#10b981;white-space:nowrap">'+fmtMoney(t.hon)+'</td>'
+    html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-weight:700;font-size:12px;color:#3b82f6;white-space:nowrap">'+fmtMoney(t.ing)+'</td>'
+    const profitColor = (t.ing-t.hon) >= 0 ? '#14b8a6' : '#ef4444'
+    html += '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border);font-family:var(--mono);font-weight:700;font-size:12px;color:'+profitColor+';white-space:nowrap">'+fmtMoney(t.ing-t.hon)+'</td>'
+    html += '</tr>'
+  }
 
   // Totals row
-  html += '<tr style="background:linear-gradient(135deg,#f0f7ff,#e8f4f8);font-weight:700">'
-  html += '<td colspan="4" style="padding:12px 14px;font-size:12px;border-top:2px solid var(--border);position:sticky;left:0;background:#e8f4f8;z-index:1">TOTALES '+MONTHS[mo].toUpperCase()+' '+yr+'</td>'
-  showDays.forEach(day => {
+  html += '<tr style="background:linear-gradient(135deg,#1e293b,#0f4c81)">'
+  html += '<td colspan="'+(payPerHour?4:3)+'" style="padding:12px 16px;font-size:12px;font-weight:700;color:#fff;position:sticky;left:0;background:linear-gradient(135deg,#1e293b,#0f4c81);z-index:1">TOTALES '+MONTHS[mo].toUpperCase()+' '+yr+'</td>'
+  for (const day of workdays) {
     const dStr = day.toISOString().slice(0,10)
-    const count = allWorkers.filter(w=>attList(w.id,dStr).length>0).length
-    html += '<td style="padding:8px 4px;text-align:center;border-top:2px solid var(--border);font-size:11px;font-weight:800;color:var(--accent)">'+(count>0?count:'')+'</td>'
-  })
-  html += '<td style="padding:12px 8px;text-align:center;font-family:var(--mono);font-weight:800;font-size:14px;border-top:2px solid var(--border)">'+totalTurnos+'</td>'
-  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--emerald);white-space:nowrap">$'+totalHonorarios.toLocaleString('es-CL')+'</td>'
-  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--accent);white-space:nowrap">$'+totalIngreso.toLocaleString('es-CL')+'</td>'
-  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;border-top:2px solid var(--border);color:var(--teal);white-space:nowrap">$'+totalProfit.toLocaleString('es-CL')+'</td>'
-  html += '<td style="padding:12px 8px;text-align:center;border-top:2px solid var(--border);font-weight:800;color:var(--teal)">'+margen+'%</td>'
+    const cnt  = allWorkers.filter(w=>attListFn(w.id,dStr).length>0).length
+    const isWE = new Date(dStr).getDay()===0||new Date(dStr).getDay()===6
+    html += '<td style="padding:8px 2px;text-align:center;border-left:1px solid rgba(255,255,255,.1);font-size:11px;font-weight:800;color:'+(cnt>0?'#93c5fd':'rgba(255,255,255,.2)')+';">'+(cnt>0?cnt:'')+'</td>'
+  }
+  html += '<td style="padding:12px 6px;text-align:center;border-left:2px solid rgba(255,255,255,.15);font-family:var(--mono);font-weight:800;font-size:14px;color:#fff">'+(payPerHour?totalHrs+'h':totalTurnos)+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;color:#86efac;white-space:nowrap">'+fmtMoney(totalHon)+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;color:#93c5fd;white-space:nowrap">'+fmtMoney(totalIng)+'</td>'
+  html += '<td style="padding:12px 8px;text-align:right;font-family:var(--mono);font-weight:800;font-size:13px;color:'+(totalProfit>=0?'#5eead4':'#fca5a5')+';white-space:nowrap">'+fmtMoney(totalProfit)+'</td>'
   html += '</tr>'
   html += '</tbody></table></div>'
 
-  // ── Financial summary ──
-  html += '<div style="padding:16px 20px;background:#fafbfc;border-top:2px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);gap:0">'
-  const summaryItems = [
-    ['Total honorarios profesionales',totalHonorarios,'var(--amber)'],
-    ['Total ingresos empresa',totalIngreso,'var(--emerald)'],
-    ['Profit neto empresa',totalProfit,'var(--teal)'],
-    ['Margen de rentabilidad',margen+'%','var(--accent)'],
-  ]
-  summaryItems.forEach(([label,val,color],i) => {
-    html += '<div style="padding:12px 16px;'+(i<3?'border-right:1px solid var(--border)':'')+'">'
-    html += '<div style="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">'+label+'</div>'
-    html += '<div style="font-family:var(--mono);font-weight:800;font-size:16px;color:'+color+'">$'+(typeof val==='string'?val:val.toLocaleString('es-CL'))+'</div>'
-    html += '</div>'
-  })
-  html += '</div>'
-  html += '</div>' // end card
+  // ── Per-worker summary cards below the grid ──
+  if (payPerHour && topeHorasMes > 0) {
+    html += '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-top:12px">'
+    html += '<div style="font-weight:700;font-size:13px;color:var(--text2);margin-bottom:14px">⏱ Control de horas vs tope mensual ('+topeHorasMes+'h)</div>'
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px">'
+    for (const w of allWorkers) {
+      const t    = wTot[w.id]
+      const pct  = topeHorasMes > 0 ? Math.min(100, Math.round(t.hrs/topeHorasMes*100)) : 0
+      const over = t.excedente > 0
+      html += '<div style="background:#f8fafc;border:1px solid '+(over?'#fca5a5':'var(--border)')+';border-radius:8px;padding:12px">'
+      html += '<div style="font-weight:600;font-size:12px;margin-bottom:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(w.full_name||'—')+'</div>'
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:11px;color:var(--text4)">'+t.hrs+'h / '+topeHorasMes+'h</span><span style="font-size:11px;font-weight:700;color:'+(over?'#ef4444':'#10b981')+'">'+pct+'%</span></div>'
+      html += '<div style="height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(over?'#ef4444':pct>80?'#f59e0b':'#10b981')+';border-radius:3px;transition:width .3s"></div></div>'
+      if (over) html += '<div style="font-size:10px;color:#ef4444;font-weight:700;margin-top:5px">+'+t.excedente+'h excedente → no cobrable</div>'
+      html += '</div>'
+    }
+    html += '</div></div>'
+  }
 
+  html += '</div>'
   body.innerHTML = html
 }
 
-function kpiCard(icon, label, value, delta, color, bg) {
-  return '<div class="stat-card">' +
-    '<div class="stat-bar" style="background:'+color+'"></div>' +
-    '<div class="stat-icon" style="background:'+bg+';color:'+color+'">'+icon+'</div>' +
-    '<div class="stat-label">'+label+'</div>' +
-    '<div style="font-size:16px;font-weight:800;color:var(--text1);margin-top:6px;font-family:var(--mono)">'+value+'</div>' +
-    '<div class="stat-delta">'+delta+'</div>' +
-  '</div>'
-}
 
-// ── Flujo: editar cargo + tarifas individuales de un profesional ──
 window.flujoEditFee = async function(wid, roleLabelCurrent, currentFee, currentEmp) {
   // Detect if current project is per_hour
   const projSel = document.getElementById('flujo-proj-sel')
@@ -3716,6 +3683,22 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
   const rowsToShow = attRows.length > 0 ? attRows : [null]
   let rowsHTML = rowsToShow.map((a,i) => buildRow(a,i)).join('')
 
+  // Banner turno nocturno abierto desde ayer
+  var prevBannerHTML = ''
+  if (openFromPrev) {
+    var tInP = new Date(openFromPrev.checked_in_at)
+    var hInP = tInP.getHours().toString().padStart(2,'0')+':'+tInP.getMinutes().toString().padStart(2,'0')
+    var encIdP = encodeURIComponent(openFromPrev.id)
+    prevBannerHTML = '<div style="background:rgba(99,102,241,.1);border:1.5px solid rgba(99,102,241,.4);border-radius:10px;padding:14px 16px;margin-bottom:14px">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:18px">🌙</span>'
+      +'<div style="font-weight:700;font-size:13px;color:#6366f1">Turno nocturno abierto desde ayer</div></div>'
+      +'<div style="font-size:12px;color:#475569;margin-bottom:12px">Entró el <strong>'+fmtDateLabel(prevDateStr)+'</strong> a las <strong>'+hInP+'</strong> — sin salida registrada</div>'
+      +'<div style="display:flex;gap:8px">'
+      +'<button class="btn btn-sm" style="background:#6366f1;color:#fff;border:none;font-weight:700" data-eid="'+encIdP+'" data-ind="'+prevDateStr+'" data-outd="'+dateStr+'" onclick="attEditPrevOpen(this.dataset.eid,this.dataset.ind,this.dataset.outd)">✏ Registrar salida de este turno</button>'
+      +'<button class="btn btn-sm" style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;font-weight:700" data-eid="'+encIdP+'" onclick="attDelPrevOpen(this.dataset.eid)">🗑 Eliminar turno</button>'
+      +'</div></div>'
+  }
+
   const modal = document.createElement('div')
   modal.id = 'att-edit-modal'
   modal.className = 'modal-bg'
@@ -3726,8 +3709,9 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
     +'<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'att-edit-modal\').remove()">✕</button>'
     +'</div>'
     +'<div id="att-err" class="auth-err" style="display:none;margin-bottom:10px"></div>'
+    +prevBannerHTML
     +'<div id="att-rows-wrap">'+rowsHTML+'</div>'
-    +'<button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:12px" onclick="attAddRowNew(\''+wid+'\',\''+prevDateStr+'\',\''+dateStr+'\',\''+nextDateStr+'\')">+ Agregar otro turno en este día</button>'
+    +'<button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:12px" data-wid="'+wid+'" data-prev="'+prevDateStr+'" data-date="'+dateStr+'" data-next="'+nextDateStr+'" onclick="attAddRowNew(this.dataset.wid,this.dataset.prev,this.dataset.date,this.dataset.next)">+ Agregar otro turno en este día</button>'
     +'<div style="display:flex;gap:8px">'
     +'<button class="btn btn-primary" style="flex:1;justify-content:center" onclick="attSaveAll()">💾 Guardar todo</button>'
     +'<button class="btn" onclick="document.getElementById(\'att-edit-modal\').remove()">Cancelar</button>'
@@ -3735,8 +3719,6 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
 
   document.body.appendChild(modal)
   rowsToShow.forEach((_,i) => attPrev(i))
-  var addBtn = document.getElementById('att-add-row-btn')
-  if (addBtn) addBtn.addEventListener('click', function() { attAddRowNew(wid, prevDateStr, dateStr, nextDateStr) })
 }
 
 window.attPrev = function(idx) {
