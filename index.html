@@ -3089,10 +3089,20 @@ async function loadFlujoData() {
     return
   }
 
-  // ── Index: attMap[wid][date] = [array of records] ──
+  // ── Index: attMap[wid][localDate] = [array of records] ──
+  // IMPORTANT: use local date (not UTC) to handle overnight shifts correctly
+  // e.g. 20:00 Chile time = 00:00 UTC next day — must appear on the local calendar date
+  function toLocalDateStr(isoStr) {
+    if (!isoStr) return null
+    const d = new Date(isoStr)
+    // Use local year/month/day
+    return d.getFullYear()+'-'
+      +String(d.getMonth()+1).padStart(2,'0')+'-'
+      +String(d.getDate()).padStart(2,'0')
+  }
   const attMap = {}
   for (const a of allAtts) {
-    const d = a.checked_in_at?.slice(0,10)
+    const d = toLocalDateStr(a.checked_in_at)
     if (!d) continue
     if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
     if (!attMap[a.worker_id][d]) attMap[a.worker_id][d] = []
@@ -3124,7 +3134,8 @@ async function loadFlujoData() {
     let   turnos=0, hrs=0, hon=0, ing=0, profit=0
 
     for (const day of workdays) {
-      const dStr = day.toISOString().slice(0,10)
+      // Use local date to avoid UTC offset issues
+      const dStr = day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0')
       const dayAtts = attListFn(w.id, dStr)
       const shft    = shiftMap[w.id]?.[dStr]
       for (const att of dayAtts) {
@@ -3216,6 +3227,7 @@ async function loadFlujoData() {
     const dow = DOW_LABEL[day.getDay()]
     const isWeekend = day.getDay()===0||day.getDay()===6
     const dd = String(day.getDate()).padStart(2,'0')+'/'+String(day.getMonth()+1).padStart(2,'0')
+    const dStr_hdr = day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0')
     html += '<th style="padding:6px 2px;text-align:center;font-size:9px;font-weight:700;color:'+(isWeekend?'#6366f1':'var(--text3)')+';border-bottom:2px solid var(--border);min-width:40px;white-space:nowrap;border-left:1px solid #f0f0f0">'+dow+'<br><span style="font-weight:400;color:var(--text4)">'+dd+'</span></th>'
   }
   html += '<th style="padding:10px 6px;text-align:center;font-size:11px;font-weight:700;color:var(--text3);border-bottom:2px solid var(--border);border-left:2px solid var(--border)">'+(payPerHour?'HRS':'T')+'</th>'
@@ -3274,7 +3286,7 @@ async function loadFlujoData() {
         cellContent = dayAtts.map(att => {
           const isLate   = att.status === 'late'
           const hasOut   = !!att.checked_out_at
-          const crossDay = hasOut && att.checked_out_at.slice(0,10) !== att.checked_in_at.slice(0,10)
+          const crossDay = hasOut && toLocalDateStr(att.checked_out_at) !== toLocalDateStr(att.checked_in_at)
           const hIn      = fmtTime(att.checked_in_at)
           const hOut     = hasOut ? fmtTime(att.checked_out_at) : ''
           const encAid   = encodeURIComponent(att.id||'')
@@ -3315,7 +3327,7 @@ async function loadFlujoData() {
   html += '<tr style="background:linear-gradient(135deg,#1e293b,#0f4c81)">'
   html += '<td colspan="'+(payPerHour?4:3)+'" style="padding:12px 16px;font-size:12px;font-weight:700;color:#fff;position:sticky;left:0;background:linear-gradient(135deg,#1e293b,#0f4c81);z-index:1">TOTALES '+MONTHS[mo].toUpperCase()+' '+yr+'</td>'
   for (const day of workdays) {
-    const dStr = day.toISOString().slice(0,10)
+    const dStr = day.getFullYear()+'-'+String(day.getMonth()+1).padStart(2,'0')+'-'+String(day.getDate()).padStart(2,'0')
     const cnt  = allWorkers.filter(w=>attListFn(w.id,dStr).length>0).length
     const isWE = new Date(dStr).getDay()===0||new Date(dStr).getDay()===6
     html += '<td style="padding:8px 2px;text-align:center;border-left:1px solid rgba(255,255,255,.1);font-size:11px;font-weight:800;color:'+(cnt>0?'#93c5fd':'rgba(255,255,255,.2)')+';">'+(cnt>0?cnt:'')+'</td>'
@@ -3608,8 +3620,11 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
   const dayBase    = new Date(dateStr+'T12:00:00')
   const rangeStart = new Date(dayBase.getTime() - 86400000)
   const rangeEnd   = new Date(dayBase.getTime() + 2*86400000)
-  const prevDateStr = rangeStart.toISOString().slice(0,10)
-  const nextDateStr = new Date(dayBase.getTime() + 86400000).toISOString().slice(0,10)
+  // Use local dates for prev/next
+  const _pDate = new Date(dayBase.getTime()-86400000)
+  const prevDateStr = _pDate.getFullYear()+'-'+String(_pDate.getMonth()+1).padStart(2,'0')+'-'+String(_pDate.getDate()).padStart(2,'0')
+  const _nDate = new Date(dayBase.getTime()+86400000)
+  const nextDateStr = _nDate.getFullYear()+'-'+String(_nDate.getMonth()+1).padStart(2,'0')+'-'+String(_nDate.getDate()).padStart(2,'0')
 
   let attRows = []
   let openFromPrev = null  // turno nocturno abierto del día anterior
@@ -3621,11 +3636,16 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
       .lte('checked_in_at', rangeEnd.toISOString())
       .order('checked_in_at', {ascending: true})
     const all = rows || []
-    // Registros que EMPEZARON hoy
-    attRows = all.filter(a => new Date(a.checked_in_at).toISOString().slice(0,10) === dateStr)
-    // Turno abierto (sin salida) que empezó ayer — para informar al admin
+    // Registros que EMPEZARON HOY (usando fecha LOCAL del navegador)
+    function localDs(iso) {
+      if (!iso) return ''
+      const d = new Date(iso)
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+    }
+    attRows = all.filter(a => localDs(a.checked_in_at) === dateStr)
+    // Turno abierto (sin salida) que empezó ayer
     const prevOpen = all.find(a =>
-      new Date(a.checked_in_at).toISOString().slice(0,10) === prevDateStr && !a.checked_out_at
+      localDs(a.checked_in_at) === prevDateStr && !a.checked_out_at
     )
     openFromPrev = prevOpen || null
   }
@@ -3639,7 +3659,7 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
     const d = new Date(iso)
     return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')
   }
-  function toDateStr(iso) { return iso ? new Date(iso).toISOString().slice(0,10) : dateStr }
+  function toDateStr(iso) { if (!iso) return dateStr; const d=new Date(iso); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0') }
 
   function buildRow(att, idx) {
     const inDate  = toDateStr(att?.checked_in_at)  || dateStr
