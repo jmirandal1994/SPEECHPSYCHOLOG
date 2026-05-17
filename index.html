@@ -3622,193 +3622,220 @@ window.fpGuardar = async function() {
 // ═══════════════════════════════════════════════
 window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
   const workerName = decodeURIComponent(encodedName)
-  const old = document.getElementById('att-edit-modal')
-  if (old) old.remove()
+  document.getElementById('att-edit-modal')?.remove()
 
-  // Load existing attendance record
-  let att = null
-  if (wid.startsWith('manual_')) {
-    // Manual worker: load attendance from system_config
-    const {data:maCfgE} = await db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
-    att = (maCfgE?.value || []).find(a => a.worker_id===wid && a.date===dateStr) || null
-  } else {
-    // Buscar registro: rango amplio para capturar turnos nocturnos
-    // Un turno nocturno puede haber iniciado el día anterior (ej: 20:00 del día 14)
-    // y su checked_in_at cae en el día 14, pero el checkout en día 15
-    const dayStart = new Date(dateStr+'T00:00:00'); dayStart.setHours(dayStart.getHours()-20) // 20h atrás para capturar turno noche anterior
-    const dayEnd   = new Date(dateStr+'T23:59:59'); dayEnd.setHours(dayEnd.getHours()+12)
-    const {data:attRows} = await db.from('attendances')
+  // Cargar registros en rango amplio: ayer hasta mañana (cubre turnos nocturnos)
+  const dayBase    = new Date(dateStr+'T12:00:00')
+  const rangeStart = new Date(dayBase.getTime() - 86400000)
+  const rangeEnd   = new Date(dayBase.getTime() + 2*86400000)
+  const prevDateStr = rangeStart.toISOString().slice(0,10)
+  const nextDateStr = new Date(dayBase.getTime() + 86400000).toISOString().slice(0,10)
+
+  let attRows = []
+  if (!wid.startsWith('manual_')) {
+    const {data:rows} = await db.from('attendances')
       .select('id,checked_in_at,checked_out_at,status,horas_reales')
       .eq('worker_id', wid)
-      .gte('checked_in_at', dayStart.toISOString())
-      .lte('checked_in_at', dayEnd.toISOString())
-      .order('checked_in_at', {ascending:false})
-      .limit(3)
-    // Prefer record that started on dateStr; fallback to any in range
-    const targetDate = new Date(dateStr)
-    att = (attRows||[]).find(a => {
-      const d = new Date(a.checked_in_at)
-      return d.getFullYear()===targetDate.getFullYear() &&
-             d.getMonth()===targetDate.getMonth() &&
-             d.getDate()===targetDate.getDate()
-    }) || (attRows||[])[0] || null
+      .gte('checked_in_at', rangeStart.toISOString())
+      .lte('checked_in_at', rangeEnd.toISOString())
+      .order('checked_in_at', {ascending: true})
+    // Solo los que empezaron ayer o hoy
+    attRows = (rows||[]).filter(a => {
+      const d = new Date(a.checked_in_at).toISOString().slice(0,10)
+      return d === dateStr || d === prevDateStr
+    })
   }
 
-  const toTime = (iso) => {
+  const [yyyy,mm,dd] = dateStr.split('-')
+  const label = dd+'/'+mm+'/'+yyyy
+
+  function fmtDateLabel(ds) { const [y,m,d]=ds.split('-'); return d+'/'+m+'/'+y }
+  function toTime(iso) {
     if (!iso) return ''
     const d = new Date(iso)
     return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0')
   }
-  const inVal  = toTime(att?.checked_in_at)
-  const outVal = toTime(att?.checked_out_at)
-  const [yyyy,mm,dd] = dateStr.split('-')
-  const label = dd+'/'+mm+'/'+yyyy
+  function toDateStr(iso) { return iso ? new Date(iso).toISOString().slice(0,10) : dateStr }
+
+  function buildRow(att, idx) {
+    const inDate  = toDateStr(att?.checked_in_at)  || dateStr
+    const outDate = toDateStr(att?.checked_out_at) || dateStr
+    const inTime  = toTime(att?.checked_in_at)
+    const outTime = toTime(att?.checked_out_at)
+    const attIdVal = att?.id || ''
+    const hrs = att?.horas_reales || (att?.checked_in_at && att?.checked_out_at
+      ? Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10 : null)
+    const delBtn = attIdVal
+      ? '<button class="btn btn-danger btn-xs" onclick="attDelRow(\'' + attIdVal + '\',' + idx + ')">🗑</button>'
+      : '<button class="btn btn-xs" onclick="this.closest(\'.attrow\').remove()">✕</button>'
+
+    function opt(ds, label, sel) {
+      return '<option value="'+ds+'" '+(sel?'selected':'')+'>'+fmtDateLabel(ds)+' ('+label+')</option>'
+    }
+
+    return '<div class="attrow" id="attrow-'+idx+'" style="background:var(--slate);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<div style="font-weight:700;font-size:12px;color:var(--text3)">Turno '+(idx+1)+(hrs?' · '+hrs+'h':'')+'</div>'
+      +delBtn+'</div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+      +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">📍 Hora entrada</label>'
+      +'<input type="time" id="ati-'+idx+'" class="form-input" value="'+inTime+'" style="font-family:var(--mono);font-weight:700" oninput="attPrev('+idx+')"/></div>'
+      +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">Día entrada</label>'
+      +'<select id="atid-'+idx+'" class="form-input" style="font-size:12px" onchange="attPrev('+idx+')">'
+      +opt(prevDateStr,'ayer',inDate===prevDateStr)+opt(dateStr,'hoy',inDate===dateStr)+opt(nextDateStr,'mañana',inDate===nextDateStr)
+      +'</select></div></div>'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+      +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">🚪 Hora salida</label>'
+      +'<input type="time" id="ato-'+idx+'" class="form-input" value="'+outTime+'" style="font-family:var(--mono);font-weight:700" oninput="attPrev('+idx+')"/></div>'
+      +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">Día salida</label>'
+      +'<select id="atod-'+idx+'" class="form-input" style="font-size:12px" onchange="attPrev('+idx+')">'
+      +opt(prevDateStr,'ayer',outDate===prevDateStr)+opt(dateStr,'hoy',outDate===dateStr)+opt(nextDateStr,'mañana',outDate===nextDateStr)
+      +'</select></div></div>'
+      +'<div id="atp-'+idx+'" style="font-size:12px;font-weight:700;padding:6px 10px;border-radius:var(--r);display:none"></div>'
+      +'<input type="hidden" id="atid2-'+idx+'" value="'+attIdVal+'"/>'
+      +'<input type="hidden" id="atwid-'+idx+'" value="'+wid+'"/>'
+      +'</div>'
+  }
+
+  const rowsToShow = attRows.length > 0 ? attRows : [null]
+  let rowsHTML = rowsToShow.map((a,i) => buildRow(a,i)).join('')
 
   const modal = document.createElement('div')
   modal.id = 'att-edit-modal'
   modal.className = 'modal-bg'
-  modal.innerHTML = `
-    <div class="modal" style="max-width:400px">
-      <div class="modal-hdr">
-        <div>
-          <div class="modal-title">🕐 Editar asistencia</div>
-          <div class="modal-sub">${workerName} · ${label}</div>
-        </div>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('att-edit-modal').remove()">✕</button>
-      </div>
-      <div id="att-err" class="auth-err" style="display:none;margin-bottom:12px"></div>
-      <div class="g2" style="gap:12px;margin-bottom:14px">
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Hora entrada</label>
-          <input id="att-in" type="time" class="form-input" value="${inVal}" style="font-size:18px;font-weight:700;font-family:var(--mono)" oninput="attPreviewHours()"/>
-        </div>
-        <div class="form-group" style="margin-bottom:0">
-          <label class="form-label">Hora salida</label>
-          <input id="att-out" type="time" class="form-input" value="${outVal}" style="font-size:18px;font-weight:700;font-family:var(--mono)" oninput="attPreviewHours()"/>
-        </div>
-      </div>
-      <div style="background:var(--amber-l);border:1px solid #fde68a;border-radius:var(--r);padding:10px 14px;margin-bottom:10px;font-size:12px;color:#92400e">
-        ⚠ Si la salida es en el día siguiente (turno noche), ponla igual — el sistema detecta automáticamente que cruza medianoche.
-      </div>
-      <div id="att-hours-preview" style="background:var(--emerald-l);border:1px solid #6ee7b7;border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--emerald-d);display:none">
-        ⏱ <strong id="att-hours-val">0</strong> horas trabajadas
-      </div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-primary" style="flex:1;justify-content:center" onclick="attEditGuardar('${wid}','${dateStr}','${att?.id||''}')">💾 Guardar</button>
-        ${att ? '<button class="btn btn-danger btn-xs" onclick="attEditEliminar(\''+att.id+'\')">🗑 Eliminar</button>' : ''}
-        <button class="btn" onclick="document.getElementById('att-edit-modal').remove()">Cancelar</button>
-      </div>
-    </div>`
+  modal.innerHTML = '<div class="modal" style="max-width:500px;max-height:90vh;overflow-y:auto">'
+    +'<div class="modal-hdr" style="position:sticky;top:0;background:var(--surface);z-index:2;padding-bottom:10px">'
+    +'<div><div class="modal-title">🕐 Editar asistencia</div>'
+    +'<div class="modal-sub">'+workerName+' · '+label+'</div></div>'
+    +'<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'att-edit-modal\').remove()">✕</button>'
+    +'</div>'
+    +'<div id="att-err" class="auth-err" style="display:none;margin-bottom:10px"></div>'
+    +'<div id="att-rows-wrap">'+rowsHTML+'</div>'
+    +'<button class="btn btn-sm" style="width:100%;justify-content:center;margin-bottom:12px" onclick="attAddRowNew(\''+wid+'\',\''+prevDateStr+'\',\''+dateStr+'\',\''+nextDateStr+'\')">+ Agregar otro turno en este día</button>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-primary" style="flex:1;justify-content:center" onclick="attSaveAll()">💾 Guardar todo</button>'
+    +'<button class="btn" onclick="document.getElementById(\'att-edit-modal\').remove()">Cancelar</button>'
+    +'</div></div>'
+
   document.body.appendChild(modal)
+  rowsToShow.forEach((_,i) => attPrev(i))
+  var addBtn = document.getElementById('att-add-row-btn')
+  if (addBtn) addBtn.addEventListener('click', function() { attAddRowNew(wid, prevDateStr, dateStr, nextDateStr) })
 }
 
-
-window.attPreviewHours = function() {
-  var inT  = document.getElementById('att-in')?.value
-  var outT = document.getElementById('att-out')?.value
-  var prev = document.getElementById('att-hours-preview')
-  var val  = document.getElementById('att-hours-val')
-  if (!prev || !val) return
-  if (inT && outT) {
-    var [ih,im] = inT.split(':').map(Number)
-    var [oh,om] = outT.split(':').map(Number)
-    var inMin  = ih*60+im
-    var outMin = oh*60+om
-    if (outMin < inMin) outMin += 24*60  // turno nocturno
-    var horas = Math.round((outMin-inMin)/60*10)/10
-    val.textContent = horas
-    prev.style.display = 'block'
-    // Color warning if >13h (posible error)
-    prev.style.background = horas > 13 ? 'var(--amber-l)' : 'var(--emerald-l)'
-    prev.style.borderColor = horas > 13 ? '#fde68a' : '#6ee7b7'
-    prev.style.color       = horas > 13 ? '#92400e' : 'var(--emerald-d)'
-  } else {
-    prev.style.display = 'none'
-  }
+window.attPrev = function(idx) {
+  var inT = document.getElementById('ati-'+idx)?.value
+  var outT= document.getElementById('ato-'+idx)?.value
+  var inD = document.getElementById('atid-'+idx)?.value || ''
+  var outD= document.getElementById('atod-'+idx)?.value || inD
+  var prev= document.getElementById('atp-'+idx)
+  if (!prev) return
+  if (inT && outT && inD && outD) {
+    var inDt  = new Date(inD+'T'+inT+':00')
+    var outDt = new Date(outD+'T'+outT+':00')
+    var hrs   = Math.round((outDt-inDt)/3600000*10)/10
+    if (hrs > 0 && hrs <= 30) {
+      prev.textContent = '⏱ '+hrs+' horas trabajadas'
+      prev.style.display = 'block'
+      prev.style.background = hrs > 13 ? 'var(--amber-l)' : 'var(--emerald-l)'
+      prev.style.color       = hrs > 13 ? '#92400e'        : 'var(--emerald-d)'
+    } else { prev.style.display='none' }
+  } else { prev.style.display='none' }
 }
 
-window.attEditGuardar = async function(wid, dateStr, attId) {
-  const inTime  = document.getElementById('att-in')?.value
-  const outTime = document.getElementById('att-out')?.value
-  if (!inTime) {
-    const e = document.getElementById('att-err')
-    if(e){e.style.display='block';e.textContent='La hora de entrada es obligatoria'} 
-    return
-  }
-
-  // Build ISO with local timezone offset
-  function localISO(dateStr, timeStr, addDay=false) {
-    const [yyyy,mm,dd] = dateStr.split('-').map(Number)
-    const [hh,mi] = timeStr.split(':').map(Number)
-    const d = new Date(yyyy, mm-1, dd, hh, mi, 0)
-    if (addDay) d.setDate(d.getDate()+1)
-    const off = -d.getTimezoneOffset()
-    const sign = off >= 0 ? '+' : '-'
-    const absOff = Math.abs(off)
-    const offH = String(Math.floor(absOff/60)).padStart(2,'0')
-    const offM = String(absOff%60).padStart(2,'0')
-    return d.getFullYear()+'-'
-      +String(d.getMonth()+1).padStart(2,'0')+'-'
-      +String(d.getDate()).padStart(2,'0')+'T'
-      +String(d.getHours()).padStart(2,'0')+':'
-      +String(d.getMinutes()).padStart(2,'0')+':00'
-      +sign+offH+':'+offM
-  }
-
-  const [inH, inM] = inTime.split(':').map(Number)
-  // Si la salida es menor que la entrada → turno nocturno, salida es día siguiente
-  const outCrossDay = outTime ? (()=>{
-    const [oh,om] = outTime.split(':').map(Number)
-    return (oh*60+om) < (inH*60+inM)
-  })() : false
-
-  const inISO  = localISO(dateStr, inTime)
-  const outISO = outTime ? localISO(dateStr, outTime, outCrossDay) : null
-
-  // Calcular horas trabajadas reales (respetando el turno definido)
-  const horasReales = outISO ? Math.round((new Date(outISO)-new Date(inISO))/3600000*10)/10 : 0
-
-  // Detect late: >5min after the scheduled start (default 08:00)
-  const totalMin = inH*60+inM
-  const isLate = totalMin > (8*60+5)
-  const status = isLate ? 'late' : 'present'
-
-  let error
-  const isManual = wid.startsWith('manual_')
-
-  if (isManual) {
-    // Manual workers: store attendance in system_config → manual_attendances
-    const {data:maCfg} = await db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
-    const maList = maCfg?.value || []
-    // Remove existing record for this worker+date, then add updated
-    const filtered = maList.filter(a => !(a.worker_id===wid && a.checked_in_at?.startsWith(dateStr)))
-    filtered.push({ id: attId||('matt_'+Date.now()), worker_id:wid, checked_in_at:inISO, checked_out_at:outISO||null, status, date:dateStr })
-    const r = await db.from('system_config').upsert({key:'manual_attendances', value: filtered}, {onConflict:'key'})
-    error = r.error
-  } else if (attId) {
-    const upd = {checked_in_at: inISO, checked_out_at: outISO, status, horas_reales: horasReales||null}
-    const r = await db.from('attendances').update(upd).eq('id', attId)
-    error = r.error
-  } else {
-    const ins = {worker_id:wid, checked_in_at:inISO, checked_out_at: outISO, status, horas_reales: horasReales||null}
-    const r = await db.from('attendances').insert([ins])
-    error = r.error
-  }
-  if (error) {
-    const e = document.getElementById('att-err')
-    if(e){e.style.display='block';e.textContent=error.message}
-    return
-  }
-  document.getElementById('att-edit-modal')?.remove()
-  await loadFlujoData()
+window.attAddRowNew = function(wid, prevDs, dateStr, nextDs) {
+  var wrap = document.getElementById('att-rows-wrap')
+  if (!wrap) return
+  var idx  = wrap.querySelectorAll('.attrow').length
+  function fmtDateLabel(ds) { var p=ds.split('-'); return p[2]+'/'+p[1]+'/'+p[0] }
+  function opt(ds, label) { return '<option value="'+ds+'">'+fmtDateLabel(ds)+' ('+label+')</option>' }
+  var div = document.createElement('div')
+  div.className = 'attrow'
+  div.id = 'attrow-'+idx
+  div.style.cssText = 'background:var(--slate);border:1px solid var(--border);border-radius:var(--r-md);padding:14px;margin-bottom:10px'
+  div.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    +'<div style="font-weight:700;font-size:12px;color:var(--text3)">Turno '+(idx+1)+'</div>'
+    +'<button class="btn btn-xs" onclick="this.parentElement.parentElement.remove()">✕</button></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">📍 Hora entrada</label>'
+    +'<input type="time" id="ati-'+idx+'" class="form-input" style="font-family:var(--mono);font-weight:700" oninput="attPrev('+idx+')"/></div>'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">Día entrada</label>'
+    +'<select id="atid-'+idx+'" class="form-input" style="font-size:12px" onchange="attPrev('+idx+')">'
+    +opt(prevDs,'ayer')+'<option value="'+dateStr+'" selected>'+fmtDateLabel(dateStr)+' (hoy)</option>'+opt(nextDs,'mañana')
+    +'</select></div></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">🚪 Hora salida</label>'
+    +'<input type="time" id="ato-'+idx+'" class="form-input" style="font-family:var(--mono);font-weight:700" oninput="attPrev('+idx+')"/></div>'
+    +'<div class="form-group" style="margin-bottom:0"><label class="form-label" style="font-size:11px">Día salida</label>'
+    +'<select id="atod-'+idx+'" class="form-input" style="font-size:12px" onchange="attPrev('+idx+')">'
+    +opt(prevDs,'ayer')+'<option value="'+dateStr+'" selected>'+fmtDateLabel(dateStr)+' (hoy)</option>'+opt(nextDs,'mañana')
+    +'</select></div></div>'
+    +'<div id="atp-'+idx+'" style="font-size:12px;font-weight:700;padding:6px 10px;border-radius:var(--r);display:none"></div>'
+    +'<input type="hidden" id="atid2-'+idx+'" value=""/>'
+    +'<input type="hidden" id="atwid-'+idx+'" value="'+wid+'"/>'
+  wrap.appendChild(div)
 }
 
-window.attEditEliminar = async function(attId) {
-  if (!confirm('¿Eliminar este registro de asistencia?')) return
+window.attDelRow = async function(attId, idx) {
+  if (!confirm('¿Eliminar este registro?')) return
   await db.from('attendances').delete().eq('id', attId)
-  document.getElementById('att-edit-modal')?.remove()
+  document.getElementById('attrow-'+idx)?.remove()
   await loadFlujoData()
 }
+
+window.attSaveAll = async function() {
+  var wrap = document.getElementById('att-rows-wrap')
+  if (!wrap) return
+  var rows = wrap.querySelectorAll('.attrow')
+  var errEl = document.getElementById('att-err')
+  var hasErr = false
+
+  function localISO(dateS, timeStr) {
+    var parts = dateS.split('-').map(Number)
+    var tp    = timeStr.split(':').map(Number)
+    var dt    = new Date(parts[0], parts[1]-1, parts[2], tp[0], tp[1], 0)
+    var off   = -dt.getTimezoneOffset()
+    var sign  = off >= 0 ? '+' : '-'
+    var aO    = Math.abs(off)
+    return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')
+      +'T'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')+':00'
+      +sign+String(Math.floor(aO/60)).padStart(2,'0')+':'+String(aO%60).padStart(2,'0')
+  }
+
+  for (var i = 0; i < rows.length; i++) {
+    var inTime  = document.getElementById('ati-'+i)?.value
+    var outTime = document.getElementById('ato-'+i)?.value
+    var inDate  = document.getElementById('atid-'+i)?.value
+    var outDate = document.getElementById('atod-'+i)?.value || inDate
+    var attId   = document.getElementById('atid2-'+i)?.value || ''
+    var wid     = document.getElementById('atwid-'+i)?.value || ''
+    if (!inTime || !inDate) continue
+    var inISO   = localISO(inDate, inTime)
+    var outISO  = outTime ? localISO(outDate, outTime) : null
+    var hrs     = outISO ? Math.round((new Date(outISO)-new Date(inISO))/3600000*10)/10 : null
+    var ih = parseInt(inTime), im = parseInt(inTime.split(':')[1]||0)
+    var status  = (ih*60+im) > (8*60+5) ? 'late' : 'present'
+    var error
+    if (attId) {
+      var r = await db.from('attendances').update({checked_in_at:inISO,checked_out_at:outISO,status:status,horas_reales:hrs}).eq('id',attId)
+      error = r.error
+    } else {
+      var r = await db.from('attendances').insert([{worker_id:wid,checked_in_at:inISO,checked_out_at:outISO,status:status,horas_reales:hrs}])
+      error = r.error
+    }
+    if (error) {
+      if (errEl) { errEl.style.display='block'; errEl.textContent='Error turno '+(i+1)+': '+error.message }
+      hasErr = true; break
+    }
+  }
+  if (!hasErr) {
+    document.getElementById('att-edit-modal')?.remove()
+    await loadFlujoData()
+  }
+}
+
+
+
 
 // ═══════════════════════════════════════════════
 // FLUJO: AGREGAR PROFESIONAL TEMPORAL (sin perfil)
