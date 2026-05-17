@@ -3064,8 +3064,9 @@ async function loadFlujoData() {
     {data:feeCfg},      {data:ovrCfg},
     {data:shifts}
   ] = await Promise.all([
-    db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')
-      .pipe(q => projName ? q.eq('project',projName) : q),
+    (projName
+      ? db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').eq('project',projName).order('full_name')
+      : db.from('profiles').select('id,full_name,role_label,project').eq('role','worker').eq('status','active').order('full_name')),
     db.from('system_config').select('value').eq('key','manual_workers').maybeSingle(),
     db.from('attendances').select('id,worker_id,checked_in_at,checked_out_at,status,horas_reales')
       .gte('checked_in_at', loadFrom+'T00:00:00').lte('checked_in_at', loadTo+'T23:59:59'),
@@ -3142,7 +3143,6 @@ async function loadFlujoData() {
           const emp = ovr?.empresa !== undefined ? ovr.empresa : Math.round(fee*empresaMult)
           hon += fee; ing += emp
         }
-        profit += ing - hon
       }
     }
 
