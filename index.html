@@ -3272,26 +3272,27 @@ async function loadFlujoData() {
       let cellContent = ''
       if (dayAtts.length > 0) {
         cellContent = dayAtts.map(att => {
-          const isLate    = att.status === 'late'
-          const hasIn     = !!att.checked_in_at
-          const hasOut    = !!att.checked_out_at
-          const crossDay  = hasOut && att.checked_out_at.slice(0,10) !== att.checked_in_at.slice(0,10)
-          const hIn       = hasIn  ? fmtTime(att.checked_in_at)  : ''
-          const hOut      = hasOut ? fmtTime(att.checked_out_at) : ''
-          const lateStyle = isLate ? 'box-shadow:0 0 0 1px #f59e0b;' : ''
-          let inner = '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative;'+lateStyle+'">'
+          const isLate   = att.status === 'late'
+          const hasOut   = !!att.checked_out_at
+          const crossDay = hasOut && att.checked_out_at.slice(0,10) !== att.checked_in_at.slice(0,10)
+          const hIn      = fmtTime(att.checked_in_at)
+          const hOut     = hasOut ? fmtTime(att.checked_out_at) : ''
+          const encAid   = encodeURIComponent(att.id||'')
+          let inner = '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative;cursor:pointer" title="Click para editar · Alt+Click para eliminar">'
           if (isLate) inner += '<span style="position:absolute;top:-1px;right:-1px;width:4px;height:4px;background:#f59e0b;border-radius:50%"></span>'
           inner += '<span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
           if (hasOut) {
-            const outColor  = crossDay ? '#ede9fe' : '#ede9fe'
             const outTColor = crossDay ? '#7c3aed' : '#4c1d95'
-            inner += '<span style="background:'+outColor+';color:'+outTColor+';border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+(crossDay?'✦':'')+'</span>'
+            const outBg = crossDay ? '#f3e8ff' : '#ede9fe'
+            inner += '<span style="background:'+outBg+';color:'+outTColor+';border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+(crossDay?'✦':'')+'</span>'
           } else {
             inner += '<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:600">⏳</span>'
           }
+          // Delete button - small X on hover
+          inner += '<button data-aid="'+encAid+'" onclick="event.stopPropagation();attDelSingle(this.dataset.aid)" title="Eliminar este registro" style="position:absolute;top:-4px;left:-4px;width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;border:none;cursor:pointer;font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .15s;line-height:1" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">×</button>'
           inner += '</div>'
           return inner
-        }).join('<div style="height:2px"></div>')
+        }).join('<div style="height:3px"></div>')
       } else if (day > new Date()) {
         cellContent = '<span style="color:#e2e8f0;font-size:13px">·</span>'
       } else {
@@ -3781,6 +3782,15 @@ window.attDelRow = async function(attId, idx) {
   await loadFlujoData()
 }
 
+
+
+window.attDelSingle = async function(encId) {
+  if (!confirm('¿Eliminar este registro de asistencia?')) return
+  const attId = decodeURIComponent(encId)
+  const {error} = await db.from('attendances').delete().eq('id', attId)
+  if (error) { alert('Error: '+error.message); return }
+  await loadFlujoData()
+}
 
 window.attDelPrevOpen = async function(encId) {
   if (!confirm('¿Eliminar este registro de asistencia?')) return
