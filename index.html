@@ -3100,25 +3100,25 @@ async function loadFlujoData() {
     .gte('shift_date', mStartStr)
     .lte('shift_date', mEndStr)
 
-  // Index attendance by worker+date — keep most complete record (with checkout preferred)
+  // Index attendance by worker+date — guardar LISTA (puede haber 2 turnos en un día)
   const attMap = {}
   ;(allAtts||[]).forEach(a => {
     const d = a.checked_in_at?.slice(0,10)
     if (!d) return
     if (!attMap[a.worker_id]) attMap[a.worker_id] = {}
-    const existing = attMap[a.worker_id][d]
-    // Prefer: has checkout > no checkout; then latest checked_in_at
-    if (!existing) {
-      attMap[a.worker_id][d] = a
-    } else if (!existing.checked_out_at && a.checked_out_at) {
-      attMap[a.worker_id][d] = a  // new one has checkout, old doesn't
-    } else if (existing.checked_out_at && !a.checked_out_at) {
-      // keep existing (has checkout)
-    } else {
-      // both have or both don't have checkout — keep latest
-      if (a.checked_in_at > existing.checked_in_at) attMap[a.worker_id][d] = a
-    }
+    if (!attMap[a.worker_id][d]) attMap[a.worker_id][d] = []
+    attMap[a.worker_id][d].push(a)
   })
+  // Helper: obtener el primer registro del día (para compatibilidad)
+  function attFirst(wid, dStr) {
+    const list = attMap[wid]?.[dStr]
+    if (!list || list.length === 0) return null
+    // Preferir el que tiene checkout; si hay varios sin checkout, el más reciente
+    return list.find(a => a.checked_out_at) || list[list.length-1]
+  }
+  function attList(wid, dStr) {
+    return attMap[wid]?.[dStr] || []
+  }
 
   // Index shifts by worker+date
   const shiftMap = {}
@@ -3150,12 +3150,12 @@ async function loadFlujoData() {
 
     workdays.forEach(day => {
       const dStr = day.toISOString().slice(0,10)
-      const att  = attMap[w.id]?.[dStr]
+      const attL  = attList(w.id, dStr)
       const shft = shiftMap[w.id]?.[dStr]
-      if (att?.checked_in_at) {
+      if (attL.length > 0) {
+        attL.forEach(att => {
         wTurnos++
         if (payPerHour) {
-          // Calcular horas del turno (no más de lo marcado en el horario del proyecto)
           let horas = att.horas_reales || 0
           if (!horas && att.checked_in_at && att.checked_out_at) {
             horas = Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10
@@ -3170,13 +3170,13 @@ async function loadFlujoData() {
           wIngreso    += empH
           wProfit     += empH - feeH
         } else {
-          // Pago por turno (Lo Barnechea)
           const fee    = shft?.fee || workerFee
           const feeEmp = ovr?.empresa !== undefined ? ovr.empresa : Math.round(fee * empresaMultiplier)
           wHonorario  += fee
           wIngreso    += feeEmp
           wProfit     += feeEmp - fee
         }
+        }) // end attL.forEach
       }
     })
 
@@ -3280,38 +3280,48 @@ async function loadFlujoData() {
     html += '</td>'
 
     showDays.forEach(day => {
-      const dStr = day.toISOString().slice(0,10)
-      const att  = attMap[w.id]?.[dStr]
-      const attId = att ? JSON.stringify(att.id||'') : 'null'
-      const isLate = att?.status === 'late'
-      let cell = '', cellStyle = 'padding:4px 3px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid #f0f0f0;cursor:pointer;'
-      const editBtn = 'flujoEditAtt(\''+w.id+'\',\''+dStr+'\',\''+encodeURIComponent(w.full_name||'')+'\',\''+encodeURIComponent(projName||'')+'\');event.stopPropagation()'
-      if (att?.checked_in_at && att?.checked_out_at) {
-        const tIn  = new Date(att.checked_in_at)
-        const tOut = new Date(att.checked_out_at)
-        const hIn  = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
-        const hOut = tOut.getHours().toString().padStart(2,'0')+':'+tOut.getMinutes().toString().padStart(2,'0')
-        const lateDot = isLate ? '<span style="position:absolute;top:0;right:0;width:5px;height:5px;background:var(--amber);border-radius:50%"></span>' : ''
-        cell = '<div title="Click para editar" onclick="'+editBtn+'" style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
-          + lateDot
-          + '<span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
-          + '<span style="background:#ede9fe;color:#4c1d95;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+'</span>'
-          + '</div>'
-      } else if (att?.checked_in_at) {
-        const tIn = new Date(att.checked_in_at)
-        const hIn = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
-        const lateDot = isLate ? '<span style="position:absolute;top:0;right:0;width:5px;height:5px;background:var(--amber);border-radius:50%"></span>' : ''
-        cell = '<div title="Click para editar" onclick="'+editBtn+'" style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
-          + lateDot
-          + '<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
-          + '<span style="background:#f1f5f9;color:#94a3b8;border-radius:3px;padding:1px 4px;font-size:9px;font-weight:700">⏳</span>'
-          + '</div>'
+      const dStr   = day.toISOString().slice(0,10)
+      const dayAtts = attList(w.id, dStr)  // lista de turnos ese día
+      const cellStyle = 'padding:3px 2px;text-align:center;border-bottom:1px solid var(--border);border-left:1px solid #f0f0f0;cursor:pointer;'
+      const encN = encodeURIComponent(w.full_name||'')
+      const encP = encodeURIComponent(projName||'')
+
+      function renderAtt(att) {
+        const isLate = att?.status === 'late'
+        const lateDot = isLate ? '<span style="position:absolute;top:0;right:0;width:4px;height:4px;background:var(--amber);border-radius:50%"></span>' : ''
+        if (att?.checked_in_at && att?.checked_out_at) {
+          const tIn  = new Date(att.checked_in_at)
+          const tOut = new Date(att.checked_out_at)
+          const hIn  = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
+          const hOut = tOut.getHours().toString().padStart(2,'0')+':'+tOut.getMinutes().toString().padStart(2,'0')
+          const crossDay = tOut.toISOString().slice(0,10) !== tIn.toISOString().slice(0,10)
+          return '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
+            +lateDot
+            +'<span style="background:#dcfce7;color:#166534;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
+            +'<span style="background:'+(crossDay?'#f3e8ff':'#ede9fe')+';color:'+(crossDay?'#7c3aed':'#4c1d95')+';border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↓'+hOut+(crossDay?'✦':'')+'</span>'
+            +'</div>'
+        } else if (att?.checked_in_at) {
+          const tIn = new Date(att.checked_in_at)
+          const hIn = tIn.getHours().toString().padStart(2,'0')+':'+tIn.getMinutes().toString().padStart(2,'0')
+          return '<div style="display:inline-flex;flex-direction:column;align-items:center;gap:1px;position:relative">'
+            +lateDot
+            +'<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700;white-space:nowrap">↑'+hIn+'</span>'
+            +'<span style="background:#f1f5f9;color:#94a3b8;border-radius:3px;padding:1px 3px;font-size:9px;font-weight:700">⏳</span>'
+            +'</div>'
+        }
+        return ''
+      }
+
+      let cell = ''
+      if (dayAtts.length > 0) {
+        // Mostrar todos los turnos del día
+        cell = '<div style="display:flex;flex-direction:column;align-items:center;gap:3px">'+dayAtts.map(a=>renderAtt(a)).join('')+'</div>'
       } else if (day > new Date()) {
         cell = '<span style="color:#cbd5e1;font-size:11px">·</span>'
       } else {
-        cell = '<div title="Click para registrar asistencia" onclick="'+editBtn+'" style="display:inline-block"><span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 5px;font-size:10px;font-weight:700">✗</span></div>'
+        cell = '<span style="display:inline-block;background:#fee2e2;color:#991b1b;border-radius:4px;padding:2px 4px;font-size:9px;font-weight:700">✗</span>'
       }
-      html += '<td style="'+cellStyle+'" onclick="flujoEditAtt(\''+w.id+'\',\''+dStr+'\',\''+encodeURIComponent(w.full_name||'')+'\',\''+encodeURIComponent(projName||'')+'\')">'+cell+'</td>'
+      html += '<td style="'+cellStyle+'" onclick="flujoEditAtt(\''+w.id+'\',\''+dStr+'\',\''+encN+'\',\''+encP+'\')">'+cell+'</td>'
     })
 
     // Totals
@@ -3329,7 +3339,7 @@ async function loadFlujoData() {
   html += '<td colspan="4" style="padding:12px 14px;font-size:12px;border-top:2px solid var(--border);position:sticky;left:0;background:#e8f4f8;z-index:1">TOTALES '+MONTHS[mo].toUpperCase()+' '+yr+'</td>'
   showDays.forEach(day => {
     const dStr = day.toISOString().slice(0,10)
-    const count = allWorkers.filter(w=>attMap[w.id]?.[dStr]?.checked_in_at).length
+    const count = allWorkers.filter(w=>attList(w.id,dStr).length>0).length
     html += '<td style="padding:8px 4px;text-align:center;border-top:2px solid var(--border);font-size:11px;font-weight:800;color:var(--accent)">'+(count>0?count:'')+'</td>'
   })
   html += '<td style="padding:12px 8px;text-align:center;font-family:var(--mono);font-weight:800;font-size:14px;border-top:2px solid var(--border)">'+totalTurnos+'</td>'
