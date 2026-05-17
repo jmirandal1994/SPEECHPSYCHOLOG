@@ -3080,17 +3080,19 @@ async function loadFlujoData() {
   )
   const mergedWorkers = [...(workers||[]), ...manualWorkers]
 
-  // Load attendances for this month
   const mStartStr = mStart.toISOString().slice(0,10)
   const mEndStr   = mEnd.toISOString().slice(0,10)
+  // Extend range by 1 day each side to capture overnight shifts
+  const loadFrom = new Date(mStart.getTime()-86400000).toISOString().slice(0,10)
+  const loadTo   = new Date(mEnd.getTime()+86400000).toISOString().slice(0,10)
+
   const [{data:atts}, {data:maCfg3}] = await Promise.all([
     db.from('attendances')
-      .select('id,worker_id,checked_in_at,checked_out_at,status')
-      .gte('checked_in_at', mStartStr+'T00:00:00')
-      .lte('checked_in_at', mEndStr+'T23:59:59'),
+      .select('id,worker_id,checked_in_at,checked_out_at,status,horas_reales')
+      .gte('checked_in_at', loadFrom+'T00:00:00')
+      .lte('checked_in_at', loadTo+'T23:59:59'),
     db.from('system_config').select('value').eq('key','manual_attendances').maybeSingle()
   ])
-  // Merge manual attendances for the selected month
   const manualAtts = (maCfg3?.value || []).filter(a => a.date >= mStartStr && a.date <= mEndStr)
   const allAtts = [...(atts||[]), ...manualAtts]
 
@@ -3642,6 +3644,7 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
   const nextDateStr = new Date(dayBase.getTime() + 86400000).toISOString().slice(0,10)
 
   let attRows = []
+  let openFromPrev = null  // turno nocturno abierto del día anterior
   if (!wid.startsWith('manual_')) {
     const {data:rows} = await db.from('attendances')
       .select('id,checked_in_at,checked_out_at,status,horas_reales')
@@ -3649,11 +3652,14 @@ window.flujoEditAtt = async function(wid, dateStr, encodedName, encodedProj) {
       .gte('checked_in_at', rangeStart.toISOString())
       .lte('checked_in_at', rangeEnd.toISOString())
       .order('checked_in_at', {ascending: true})
-    // Solo los que empezaron ayer o hoy
-    attRows = (rows||[]).filter(a => {
-      const d = new Date(a.checked_in_at).toISOString().slice(0,10)
-      return d === dateStr || d === prevDateStr
-    })
+    const all = rows || []
+    // Registros que EMPEZARON hoy
+    attRows = all.filter(a => new Date(a.checked_in_at).toISOString().slice(0,10) === dateStr)
+    // Turno abierto (sin salida) que empezó ayer — para informar al admin
+    const prevOpen = all.find(a =>
+      new Date(a.checked_in_at).toISOString().slice(0,10) === prevDateStr && !a.checked_out_at
+    )
+    openFromPrev = prevOpen || null
   }
 
   const [yyyy,mm,dd] = dateStr.split('-')
@@ -3791,6 +3797,74 @@ window.attDelRow = async function(attId, idx) {
   await db.from('attendances').delete().eq('id', attId)
   document.getElementById('attrow-'+idx)?.remove()
   await loadFlujoData()
+}
+
+
+window.attDelPrevOpen = async function(encId) {
+  if (!confirm('¿Eliminar este registro de asistencia?')) return
+  const attId = decodeURIComponent(encId)
+  await db.from('attendances').delete().eq('id', attId)
+  document.getElementById('att-edit-modal')?.remove()
+  await loadFlujoData()
+}
+
+window.attEditPrevOpen = async function(encId, inDateStr, outDateStr) {
+  // Show a mini modal to set the checkout time for the overnight shift
+  const attId = decodeURIComponent(encId)
+  const fmtDL = function(ds) { var p=ds.split('-'); return p[2]+'/'+p[1]+'/'+p[0] }
+  const overlay = document.createElement('div')
+  overlay.id = 'prev-open-modal'
+  overlay.className = 'modal-bg'
+  overlay.innerHTML = '<div class="modal" style="max-width:380px">'
+    +'<div class="modal-hdr"><div>'
+    +'<div class="modal-title">🌙 Agregar salida — turno nocturno</div>'
+    +'<div class="modal-sub">Entró el '+fmtDL(inDateStr)+' — salida el '+fmtDL(outDateStr)+'</div>'
+    +'</div><button class="btn btn-ghost btn-sm" onclick="document.getElementById(&apos;prev-open-modal&apos;).remove()">✕</button></div>'
+    +'<div id="pom-err" class="auth-err" style="display:none;margin-bottom:10px"></div>'
+    +'<div class="form-group"><label class="form-label">Hora de salida</label>'
+    +'<input type="time" id="pom-out" class="form-input" style="font-size:22px;font-weight:700;font-family:var(--mono)" placeholder="08:00"/></div>'
+    +'<div style="font-size:12px;color:var(--text4);margin-bottom:14px">La salida se registrará el día '+fmtDL(outDateStr)+'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-primary" style="flex:1;justify-content:center" id="pom-save-btn">💾 Guardar salida</button>'
+    +'<button class="btn" onclick="document.getElementById(&apos;prev-open-modal&apos;).remove()">Cancelar</button>'
+    +'</div></div>'
+  document.body.appendChild(overlay)
+
+  document.getElementById('pom-save-btn').onclick = async function() {
+    const outTime = document.getElementById('pom-out')?.value
+    if (!outTime) {
+      const e = document.getElementById('pom-err')
+      if(e){e.style.display='block';e.textContent='Ingresa la hora de salida'}
+      return
+    }
+    // Build ISO for outDate + outTime with local timezone
+    const [y,mo,d] = outDateStr.split('-').map(Number)
+    const [h,mi]   = outTime.split(':').map(Number)
+    const dt = new Date(y, mo-1, d, h, mi, 0)
+    const off = -dt.getTimezoneOffset()
+    const sign = off >= 0 ? '+' : '-'
+    const aO = Math.abs(off)
+    const outISO = dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0')
+      +'T'+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0')+':00'
+      +sign+String(Math.floor(aO/60)).padStart(2,'0')+':'+String(aO%60).padStart(2,'0')
+
+    // Get the check-in time to calculate hours
+    const {data:rec} = await db.from('attendances').select('checked_in_at').eq('id',attId).maybeSingle()
+    const hrs = rec?.checked_in_at ? Math.round((new Date(outISO)-new Date(rec.checked_in_at))/3600000*10)/10 : null
+
+    const {error} = await db.from('attendances').update({
+      checked_out_at: outISO, horas_reales: hrs
+    }).eq('id', attId)
+
+    if (error) {
+      const e = document.getElementById('pom-err')
+      if(e){e.style.display='block';e.textContent=error.message}
+      return
+    }
+    document.getElementById('prev-open-modal')?.remove()
+    document.getElementById('att-edit-modal')?.remove()
+    await loadFlujoData()
+  }
 }
 
 window.attSaveAll = async function() {
