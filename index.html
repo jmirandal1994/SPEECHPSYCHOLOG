@@ -827,7 +827,9 @@ async function pageDashboard(pc) {
     </div>`
 
   // Load active count
-  const {count:activeC} = await db.from('attendances').select('*',{count:'exact',head:true}).gte('checked_in_at',todayStr+'T00:00:00').is('checked_out_at',null)
+  // Active = checked in within last 30h with no checkout (covers overnight shifts)
+  const since30h_dash = new Date(Date.now()-30*60*60*1000).toISOString()
+  const {count:activeC} = await db.from('attendances').select('*',{count:'exact',head:true}).gte('checked_in_at',since30h_dash).is('checked_out_at',null)
   const an = el('active-now')
   if (an) an.textContent = activeC||0
 
@@ -1346,9 +1348,35 @@ async function pageGeo(pc) {
 
 async function loadGeoData() {
   const mode = el('geo-date')?.value || 'today'
-  const todayStr = today()
-  const from = mode==='today'?todayStr:mode==='yesterday'?new Date(Date.now()-86400000).toISOString().slice(0,10):new Date(Date.now()-7*86400000).toISOString().slice(0,10)
-  const {data} = await db.from('attendances').select('*,profiles(full_name,role_label,project)').gte('checked_in_at',from+'T00:00:00').lte('checked_in_at',(mode==='week'?todayStr:from)+'T23:59:59').order('checked_in_at',{ascending:false})
+
+  // Para "Hoy" (EN VIVO): mostrar TODAS las que marcaron entrada y NO han marcado salida
+  // sin importar el día — así se ven los turnos nocturnos activos
+  let query
+  if (mode === 'today') {
+    // Activas = entrada sin salida en las últimas 48h (cubre cualquier turno)
+    const since48h = new Date(Date.now() - 48*60*60*1000).toISOString()
+    query = db.from('attendances')
+      .select('*,profiles(full_name,role_label,project)')
+      .gte('checked_in_at', since48h)
+      .is('checked_out_at', null)
+      .order('checked_in_at', {ascending:false})
+  } else {
+    // Para ayer / semana: mostrar todos los registros del período
+    function localDateStr(offsetDays) {
+      const d = new Date(); d.setDate(d.getDate()+offsetDays)
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+    }
+    const todayStr = localDateStr(0)
+    const from = mode==='yesterday' ? localDateStr(-1) : new Date(Date.now()-7*86400000).toISOString().slice(0,10)
+    const to   = mode==='yesterday' ? localDateStr(-1) : todayStr
+    query = db.from('attendances')
+      .select('*,profiles(full_name,role_label,project)')
+      .gte('checked_in_at', from+'T00:00:00')
+      .lte('checked_in_at', to+'T23:59:59')
+      .order('checked_in_at', {ascending:false})
+  }
+
+  const {data} = await query
   geoRecords = data||[]
 
   // Populate project filter
