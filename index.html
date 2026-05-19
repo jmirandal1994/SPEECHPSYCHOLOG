@@ -1635,19 +1635,23 @@ async function renderCheckin() {
     .limit(1)
     .maybeSingle()
 
-  // Si hay entrada abierta, usarla (aunque sea de ayer)
-  const att = openAtt || await (async () => {
-    // Buscar si completó turno HOY
+  // Si hay entrada abierta → mostrar "en turno"
+  // Si no → buscar si completó turno en las últimas 2h (mostrar resumen inmediato)
+  // Después de 2h del checkout → siempre mostrar botón de nuevo turno
+  const since2h = new Date(Date.now() - 2*60*60*1000).toISOString()
+  const recentCompleted = !openAtt ? await (async () => {
     const {data} = await db.from('attendances')
       .select('*')
       .eq('worker_id', uid)
       .not('checked_out_at', 'is', null)
-      .gte('checked_in_at', since30h)
-      .order('checked_in_at', {ascending: false})
+      .gte('checked_out_at', since2h)   // solo si salió hace menos de 2h
+      .order('checked_out_at', {ascending: false})
       .limit(1)
       .maybeSingle()
     return data
-  })()
+  })() : null
+
+  const att = openAtt || recentCompleted || null
 
   // Turno del día
   const {data:shift} = await db.from('shifts')
