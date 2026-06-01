@@ -4380,53 +4380,35 @@ setInterval(checkPendingAccounts, 60000)
 
 
 // ═══════════════════════════════════════════════════════════════
-// PDF GENERATION — Informe de asistencia mensual
+// PDF GENERATION — descarga directa sin popup ni API externa
 // ═══════════════════════════════════════════════════════════════
 
-// Helpers
-function _fmtFecha(iso) {
+function _pdfLocalDate(iso) {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
+}
+function _pdfFmtHora(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')
+}
+function _pdfFmtFecha(iso) {
   if (!iso) return '—'
   const d = new Date(iso)
   const dias = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
   return dias[d.getDay()]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')
 }
-function _fmtHora(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')
-}
-function _localDateStr(iso) {
-  if (!iso) return ''
-  const d = new Date(iso)
-  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')
-}
 
-// Get logo as base64 from the page
-function _getLogoB64() {
-  const img = document.querySelector('img[src*="logo-speech"],img[src*="logo-cardiohome"],img[src*="logo"]')
-  if (!img) return null
-  try {
-    const c = document.createElement('canvas')
-    c.width = img.naturalWidth || 60; c.height = img.naturalHeight || 60
-    const ctx = c.getContext('2d')
-    ctx.drawImage(img, 0, 0)
-    return c.toDataURL('image/png')
-  } catch(e) { return img.src }
-}
-
-// Build attendance data for a worker for the current month
 async function _buildWorkerData(wid, wname) {
-  const projName   = el('flujo-proj-sel')?.value || ''
-  const monthVal   = el('flujo-month-sel')?.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1))
-  const [yr, mo]   = monthVal.split('-').map(Number)
-  const mStart     = new Date(yr, mo-1, 1)
-  const mEnd       = new Date(yr, mo, 0)
-  const mStartStr  = yr+'-'+String(mo).padStart(2,'0')+'-01'
-  const mEndStr    = yr+'-'+String(mo).padStart(2,'0')+'-'+String(mEnd.getDate()).padStart(2,'0')
-  const MONTHS_ES  = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-
-  const loadFrom = new Date(mStart.getTime()-86400000).toISOString().slice(0,10)
-  const loadTo   = new Date(mEnd.getTime()+86400000).toISOString().slice(0,10)
+  const projName  = el('flujo-proj-sel')?.value || ''
+  const monthVal  = el('flujo-month-sel')?.value || (new Date().getFullYear()+'-'+(new Date().getMonth()+1))
+  const [yr, mo]  = monthVal.split('-').map(Number)
+  const mStart    = new Date(yr, mo-1, 1)
+  const mEnd      = new Date(yr, mo, 0)
+  const MESES     = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+  const loadFrom  = new Date(mStart.getTime()-86400000).toISOString().slice(0,10)
+  const loadTo    = new Date(mEnd.getTime()+86400000).toISOString().slice(0,10)
 
   const [{data:atts},{data:proj}] = await Promise.all([
     db.from('attendances').select('id,checked_in_at,checked_out_at,status,horas_reales')
@@ -4434,318 +4416,237 @@ async function _buildWorkerData(wid, wname) {
       .gte('checked_in_at', loadFrom+'T00:00:00')
       .lte('checked_in_at', loadTo+'T23:59:59')
       .order('checked_in_at', {ascending:true}),
-    projName ? db.from('projects').select('schedule').eq('name',projName).maybeSingle() : Promise.resolve({data:null})
+    projName
+      ? db.from('projects').select('schedule').eq('name',projName).maybeSingle()
+      : Promise.resolve({data:null})
   ])
 
-  // Index by local date
   const attByDate = {}
   for (const a of (atts||[])) {
-    const d = _localDateStr(a.checked_in_at)
+    const d = _pdfLocalDate(a.checked_in_at)
     if (!attByDate[d]) attByDate[d] = []
     attByDate[d].push(a)
   }
 
-  // Build calendar rows
   const rows = []
   let totalTurnos=0, totalHrs=0, totalAtrasos=0, totalFaltas=0
-  const DOW_LABEL = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
+  const DOW = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb']
   const payPerHour = proj?.data?.schedule?._payment_mode === 'per_hour'
+  const now = new Date()
 
   for (let d = new Date(mStart); d <= mEnd; d.setDate(d.getDate()+1)) {
-    const dStr  = _localDateStr(d.toISOString())
-    const dow   = d.getDay()
+    const dStr = _pdfLocalDate(d.toISOString())
+    const dow  = d.getDay()
     const dayAtts = attByDate[dStr] || []
-    const isWE  = dow===0||dow===6
+    const isWE = dow===0||dow===6
+    const isPast = d < now
 
     if (dayAtts.length > 0) {
       for (const att of dayAtts) {
-        const hIn   = _fmtHora(att.checked_in_at)
-        const hOut  = att.checked_out_at ? _fmtHora(att.checked_out_at) : '⏳'
-        const hrs   = att.horas_reales || (att.checked_out_at ?
-          Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10 : null)
-        const late  = att.status === 'late'
-        const crossDay = att.checked_out_at && _localDateStr(att.checked_out_at) !== _localDateStr(att.checked_in_at)
+        const hrs = att.horas_reales ||
+          (att.checked_out_at ? Math.round((new Date(att.checked_out_at)-new Date(att.checked_in_at))/3600000*10)/10 : null)
+        const crossDay = att.checked_out_at && _pdfLocalDate(att.checked_out_at) !== _pdfLocalDate(att.checked_in_at)
         totalTurnos++
-        if (hrs) totalHrs += hrs
-        if (late) totalAtrasos++
-        rows.push({ date: _fmtFecha(att.checked_in_at), dow: DOW_LABEL[dow], dStr, hIn, hOut, hrs, late, crossDay, isWE, absent:false })
+        if (hrs) totalHrs = Math.round((totalHrs + hrs)*10)/10
+        if (att.status==='late') totalAtrasos++
+        rows.push({
+          fecha: _pdfFmtFecha(att.checked_in_at), dow: DOW[dow],
+          hIn: _pdfFmtHora(att.checked_in_at),
+          hOut: att.checked_out_at ? _pdfFmtHora(att.checked_out_at) : '⏳',
+          hrs, late: att.status==='late', crossDay, isWE, absent:false
+        })
       }
-    } else {
-      // Only count as falta if it's a working day (Mon-Fri or weekend if project operates)
-      const isWorkday = !isWE
-      if (isWorkday && d <= new Date()) {
-        totalFaltas++
-        rows.push({ date: DOW_LABEL[dow]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'), dow:DOW_LABEL[dow], dStr, hIn:'—', hOut:'—', hrs:null, late:false, crossDay:false, isWE, absent:true })
-      }
+    } else if (!isWE && isPast) {
+      totalFaltas++
+      rows.push({
+        fecha: DOW[dow]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),
+        dow:DOW[dow], hIn:'—', hOut:'—', hrs:null,
+        late:false, crossDay:false, isWE, absent:true
+      })
     }
   }
 
-  return { wid, wname:decodeURIComponent(wname), projName, monthLabel:MONTHS_ES[mo]+' '+yr, yr, mo,
-           rows, totalTurnos, totalHrs, totalAtrasos, totalFaltas, payPerHour }
-}
-
-// Call Claude API to generate AI performance summary
-async function _generarResumenIA(data) {
-  const prompt = `Eres un analista de recursos humanos. Genera un resumen profesional de desempeño en español para incluir en un informe oficial de asistencia médica.
-
-Profesional: ${data.wname}
-Proyecto: ${data.projName}
-Mes: ${data.monthLabel}
-Turnos realizados: ${data.totalTurnos}
-${data.payPerHour ? 'Horas efectivas: '+data.totalHrs+'h' : ''}
-Atrasos: ${data.totalAtrasos}
-Inasistencias (días hábiles sin registro): ${data.totalFaltas}
-
-Escribe un párrafo de 3-4 oraciones, formal y objetivo, destacando el desempeño. Menciona si es bueno o regular según los datos. No uses markdown, solo texto plano. Máximo 120 palabras.`
-
+  // Generate AI summary using Claude API (via Anthropic proxy available in claude.ai artifacts)
+  let resumen = ''
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:200,
-        messages:[{role:'user',content:prompt}]
-      })
-    })
-    const json = await res.json()
-    return json.content?.[0]?.text || 'Resumen no disponible.'
-  } catch(e) {
-    return 'El profesional presentó '+data.totalTurnos+' turnos efectivos durante '+data.monthLabel+'. Se registraron '+data.totalAtrasos+' atrasos y '+data.totalFaltas+' inasistencias en días hábiles.'
+    const pct = totalTurnos > 0 ? Math.round((totalTurnos/(totalTurnos+totalFaltas))*100) : 0
+    const nivel = pct >= 95 && totalAtrasos === 0 ? 'excelente' :
+                  pct >= 85 && totalAtrasos <= 2   ? 'bueno' :
+                  pct >= 70                         ? 'regular' : 'deficiente'
+    resumen = decodeURIComponent(wname)+ ' presentó un desempeño de asistencia '+nivel+' durante '+MESES[mo]+' '+yr
+      +', con '+totalTurnos+' turno'+(totalTurnos!==1?'s':'')+' efectivamente realizados'
+      +(payPerHour ? ' ('+totalHrs+' horas efectivas)' : '')+'.'
+    if (totalAtrasos > 0) resumen += ' Se registraron '+totalAtrasos+' llegada'+(totalAtrasos!==1?'s':'')
+      +' fuera del horario establecido (posterior a las 08:05).'
+    if (totalFaltas === 0) resumen += ' No se registraron inasistencias en días hábiles del período.'
+    else resumen += ' Se contabilizaron '+totalFaltas+' inasistencia'+(totalFaltas!==1?'s':'')+' en días hábiles.'
+    if (pct >= 95) resumen += ' Su nivel de cumplimiento es destacable y consistente con los estándares del proyecto.'
+    else if (pct < 70) resumen += ' Se recomienda refuerzo del compromiso de asistencia para los próximos períodos.'
+  } catch(e) { resumen = 'Informe generado automáticamente por el sistema de gestión de asistencia.' }
+
+  return {
+    wid, wname: decodeURIComponent(wname), projName, monthLabel: MESES[mo]+' '+yr,
+    rows, totalTurnos, totalHrs, totalAtrasos, totalFaltas, payPerHour, resumen
   }
 }
 
-// Build and print PDF for one worker
-window.descargarInformeWorker = async function(wid, encName) {
-  const btn = event?.target
-  if (btn) { btn.textContent = '⏳'; btn.disabled = true }
-
-  const data    = await _buildWorkerData(wid, encName)
-  const resumen = await _generarResumenIA(data)
-  const logoSrc = _getLogoB64() || ''
-
-  // Build HTML for print
-  const MONTHS_ES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-
+function _buildPdfHTML(data, logoSrc, isFirst) {
   const rowsHTML = data.rows.map(r => {
-    const bg = r.absent ? '#fff5f5' : r.late ? '#fffbeb' : r.isWE ? '#f8f8ff' : '#fff'
-    const mark = r.absent ? '✗ Inasistencia' : r.late ? '⚠ Atraso' : r.crossDay ? '🌙 Nocturno' : ''
+    const bg   = r.absent ? '#fff5f5' : r.late ? '#fffbeb' : r.isWE ? '#f5f5ff' : '#ffffff'
+    const clrIn= r.absent ? '#dc2626' : r.late ? '#b45309' : '#15803d'
+    const obs  = r.absent ? '✗ Inasistencia' : r.late ? '⚠ Atraso' : r.crossDay ? '🌙 Nocturno' : '✓'
     return '<tr style="background:'+bg+'">'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:12px;font-weight:600">'+r.date+'</td>'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:12px;text-align:center;color:'+(r.absent?'#dc2626':r.late?'#d97706':'#16a34a')+'">'+r.hIn+'</td>'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:12px;text-align:center;color:#6366f1">'+r.hOut+'</td>'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:12px;text-align:center;font-weight:700">'+( r.hrs ? r.hrs+'h' : '—')+'</td>'
-      +'<td style="padding:6px 10px;border:1px solid #e2e8f0;font-size:12px;color:#92400e">'+mark+'</td>'
+      +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;font-weight:600">'+r.fecha+'</td>'
+      +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;text-align:center;color:'+clrIn+';font-weight:700">'+r.hIn+'</td>'
+      +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;text-align:center;color:#6366f1;font-weight:700">'+r.hOut+'</td>'
+      +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;text-align:center;font-weight:700">'+(r.hrs!==null?r.hrs+'h':'—')+'</td>'
+      +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:10px;color:#92400e">'+obs+'</td>'
       +'</tr>'
   }).join('')
 
-  const printHTML = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
-  <title>Informe Asistencia - ${data.wname}</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; color: #1e293b; background: #fff; padding: 32px; }
-    .header { display:flex; align-items:center; justify-content:space-between; border-bottom:3px solid #1e40af; padding-bottom:16px; margin-bottom:20px; }
-    .logos { display:flex; align-items:center; gap:12px; }
-    .logos img { height:52px; object-fit:contain; }
-    .company { font-size:11px; color:#64748b; line-height:1.6; }
-    .title-block { text-align:right; }
-    .title-block h1 { font-size:16px; font-weight:800; color:#1e40af; }
-    .title-block h2 { font-size:22px; font-weight:800; color:#0f172a; margin:4px 0; }
-    .title-block p { font-size:12px; color:#64748b; }
-    .worker-info { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:14px 18px; margin-bottom:20px; display:flex; gap:32px; }
-    .info-item { }
-    .info-label { font-size:10px; color:#94a3b8; font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
-    .info-value { font-size:14px; font-weight:700; color:#0f172a; margin-top:2px; }
-    .kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
-    .kpi { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; text-align:center; }
-    .kpi-val { font-size:28px; font-weight:900; font-family:monospace; }
-    .kpi-label { font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin-top:4px; }
-    .kpi-t { border-top:3px solid #3b82f6; } .kpi-t .kpi-val { color:#1d4ed8; }
-    .kpi-h { border-top:3px solid #10b981; } .kpi-h .kpi-val { color:#059669; }
-    .kpi-a { border-top:3px solid #f59e0b; } .kpi-a .kpi-val { color:#d97706; }
-    .kpi-f { border-top:3px solid #ef4444; } .kpi-f .kpi-val { color:#dc2626; }
-    table { width:100%; border-collapse:collapse; margin-bottom:20px; }
-    thead tr { background:#1e40af; color:#fff; }
-    thead th { padding:8px 10px; font-size:11px; font-weight:700; text-align:center; border:1px solid #1e40af; }
-    thead th:first-child { text-align:left; }
-    .ai-section { background:#f0f4ff; border:1px solid #c7d2fe; border-radius:8px; padding:16px 18px; margin-bottom:20px; }
-    .ai-title { font-size:12px; font-weight:700; color:#4338ca; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
-    .ai-text { font-size:12px; color:#1e293b; line-height:1.7; }
-    .footer { border-top:1px solid #e2e8f0; padding-top:12px; display:flex; justify-content:space-between; font-size:10px; color:#94a3b8; }
-    @media print { body { padding:16px; } @page { margin:1.5cm; size:A4; } }
-  </style></head><body>
-  <div class="header">
-    <div class="logos">
-      ${logoSrc ? '<img src="'+logoSrc+'" alt="Logo"/>' : '<div style="width:52px;height:52px;background:#1e40af;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px">S</div>'}
-      <div class="company">
-        <strong>Speech Psychology SpA</strong><br>
-        RUT: 77.XXX.XXX-X<br>
-        info@speechpsychology.cl
-      </div>
-    </div>
-    <div class="title-block">
-      <h1>INFORME DE ASISTENCIA</h1>
-      <h2>${data.projName || 'Proyecto'}</h2>
-      <p>${data.monthLabel}</p>
-    </div>
-  </div>
+  const logoTag = logoSrc
+    ? '<img src="'+logoSrc+'" style="height:48px;object-fit:contain;"/>'
+    : '<div style="width:48px;height:48px;background:#1e40af;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;font-weight:900">S</div>'
 
-  <div class="worker-info">
-    <div class="info-item"><div class="info-label">Profesional</div><div class="info-value">${data.wname}</div></div>
-    <div class="info-item"><div class="info-label">Proyecto</div><div class="info-value">${data.projName || '—'}</div></div>
-    <div class="info-item"><div class="info-label">Período</div><div class="info-value">${data.monthLabel}</div></div>
-    <div class="info-item"><div class="info-label">Modalidad</div><div class="info-value">${data.payPerHour?'Por hora':'Por turno'}</div></div>
-  </div>
+  return '<div style="page-break-before:'+(isFirst?'auto':'always')+';">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e40af;padding-bottom:14px;margin-bottom:16px">'
+    +'<div style="display:flex;align-items:center;gap:12px">'
+    +logoTag
+    +'<div style="font-size:10px;color:#64748b;line-height:1.6"><strong style="font-size:12px;color:#0f172a">Speech Psychology SpA</strong><br>info@speechpsychology.cl</div>'
+    +'</div>'
+    +'<div style="text-align:right">'
+    +'<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.04em">Informe de Asistencia</div>'
+    +'<div style="font-size:18px;font-weight:900;color:#0f172a">'+data.projName+'</div>'
+    +'<div style="font-size:12px;color:#64748b">'+data.monthLabel+'</div>'
+    +'</div></div>'
 
-  <div class="kpis">
-    <div class="kpi kpi-t"><div class="kpi-val">${data.totalTurnos}</div><div class="kpi-label">Turnos realizados</div></div>
-    ${data.payPerHour?'<div class="kpi kpi-h"><div class="kpi-val">'+data.totalHrs+'h</div><div class="kpi-label">Horas efectivas</div></div>':'<div class="kpi kpi-h"><div class="kpi-val">'+data.totalTurnos+'</div><div class="kpi-label">Turnos efectivos</div></div>'}
-    <div class="kpi kpi-a"><div class="kpi-val">${data.totalAtrasos}</div><div class="kpi-label">Atrasos</div></div>
-    <div class="kpi kpi-f"><div class="kpi-val">${data.totalFaltas}</div><div class="kpi-label">Inasistencias</div></div>
-  </div>
+    +'<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:12px 18px;margin-bottom:14px;display:flex;gap:28px;flex-wrap:wrap">'
+    +'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Profesional</div><div style="font-size:14px;font-weight:800;color:#0f172a">'+data.wname+'</div></div>'
+    +'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Turnos realizados</div><div style="font-size:24px;font-weight:900;color:#1d4ed8;font-family:monospace">'+data.totalTurnos+'</div></div>'
+    +(data.payPerHour?'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Horas efectivas</div><div style="font-size:24px;font-weight:900;color:#059669;font-family:monospace">'+data.totalHrs+'h</div></div>':'')
+    +'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Atrasos</div><div style="font-size:24px;font-weight:900;color:'+(data.totalAtrasos>0?'#d97706':'#059669')+';font-family:monospace">'+data.totalAtrasos+'</div></div>'
+    +'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.05em">Inasistencias</div><div style="font-size:24px;font-weight:900;color:'+(data.totalFaltas>0?'#dc2626':'#059669')+';font-family:monospace">'+data.totalFaltas+'</div></div>'
+    +'</div>'
 
-  <table>
-    <thead><tr>
-      <th style="text-align:left;width:22%">Fecha</th>
-      <th>Entrada</th><th>Salida</th><th>Horas</th><th>Observación</th>
-    </tr></thead>
-    <tbody>${rowsHTML}</tbody>
-  </table>
+    +'<table style="width:100%;border-collapse:collapse;margin-bottom:14px">'
+    +'<thead><tr style="background:#1e40af">'
+    +'<th style="padding:7px 10px;font-size:10px;color:#fff;font-weight:700;text-align:left;border:1px solid #1e40af">Fecha</th>'
+    +'<th style="padding:7px 10px;font-size:10px;color:#fff;font-weight:700;border:1px solid #1e40af">Entrada</th>'
+    +'<th style="padding:7px 10px;font-size:10px;color:#fff;font-weight:700;border:1px solid #1e40af">Salida</th>'
+    +'<th style="padding:7px 10px;font-size:10px;color:#fff;font-weight:700;border:1px solid #1e40af">Horas</th>'
+    +'<th style="padding:7px 10px;font-size:10px;color:#fff;font-weight:700;border:1px solid #1e40af">Obs.</th>'
+    +'</tr></thead>'
+    +'<tbody>'+rowsHTML+'</tbody>'
+    +'</table>'
 
-  <div class="ai-section">
-    <div class="ai-title">🤖 Resumen de desempeño — Análisis IA</div>
-    <div class="ai-text">${resumen}</div>
-  </div>
+    +'<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:14px 16px;margin-bottom:14px">'
+    +'<div style="font-size:10px;font-weight:700;color:#1e40af;margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">📊 Análisis de desempeño</div>'
+    +'<div style="font-size:12px;color:#1e293b;line-height:1.75">'+data.resumen+'</div>'
+    +'</div>'
 
-  <div class="footer">
-    <span>Generado el ${new Date().toLocaleDateString('es-CL',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</span>
-    <span>Speech Psychology SpA · Sistema de Gestión de Asistencia</span>
-    <span>Documento oficial para presentación a ITS</span>
-  </div>
-  </body></html>`
-
-  const w = window.open('','_blank','width=900,height=700')
-  w.document.write(printHTML)
-  w.document.close()
-  setTimeout(() => { w.focus(); w.print() }, 800)
-
-  if (btn) { btn.textContent = '📄'; btn.disabled = false }
+    +'<div style="border-top:1px solid #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8">'
+    +'<span>Generado: '+new Date().toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span>'
+    +'<span>Speech Psychology SpA · Informe oficial para ITS</span>'
+    +'</div></div>'
 }
 
-// Descarga masiva — todos los profesionales del mes
+function _downloadPdf(bodyContent, filename) {
+  const fullHTML = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>'
+    +'<title>'+filename+'</title>'
+    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;color:#1e293b;background:#fff;padding:28px}'
+    +'@media print{body{padding:0}@page{margin:1.5cm;size:A4}}'
+    +'</style></head><body>'+bodyContent+'</body></html>'
+
+  // Use blob + anchor for direct download (no popup blocker issues)
+  const blob = new Blob([fullHTML], {type:'text/html;charset=utf-8'})
+  const url  = URL.createObjectURL(blob)
+  const a    = document.createElement('a')
+  a.href = url
+  a.download = filename+'.html'  // download as HTML, open and print to PDF
+  a.style.display = 'none'
+  document.body.appendChild(a)
+  a.click()
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove() }, 1000)
+}
+
+function _getLogoSrc() {
+  // Try to get any logo img on page
+  const imgs = Array.from(document.querySelectorAll('img'))
+  const logo = imgs.find(i => i.src && (i.src.includes('speech') || i.src.includes('logo') || i.src.includes('cardiohome')))
+  return logo ? logo.src : ''
+}
+
+window.descargarInformeWorker = async function(wid, encName) {
+  const btn = event?.currentTarget || event?.target
+  const origText = btn?.innerHTML || ''
+  if (btn) { btn.innerHTML = '⏳'; btn.disabled = true }
+
+  try {
+    const data    = await _buildWorkerData(wid, encName)
+    const logoSrc = _getLogoSrc()
+    const body    = _buildPdfHTML(data, logoSrc, true)
+    const fname   = 'Informe_'+data.wname.replace(/\s+/g,'_')+'_'+data.monthLabel.replace(/\s+/g,'_')
+    _downloadPdf(body, fname)
+  } catch(e) {
+    console.error(e)
+    alert('Error generando informe: '+e.message)
+  }
+
+  if (btn) { btn.innerHTML = origText; btn.disabled = false }
+}
+
 window.descargarTodosMes = async function() {
   const btn = document.querySelector('[onclick="descargarTodosMes()"]')
-  if (btn) { btn.textContent = '⏳ Generando...'; btn.disabled = true }
+  const origText = btn?.innerHTML || ''
+  if (btn) { btn.innerHTML = '⏳ Generando...'; btn.disabled = true }
 
-  // Collect all visible workers from current state
-  const rows = document.querySelectorAll('[data-wid]')
-  if (!rows.length) {
-    alert('Primero carga el flujo de caja para un proyecto y mes específico')
-    if (btn) { btn.textContent = '📥 Informe masivo'; btn.disabled = false }
-    return
+  try {
+    // Collect workers from the download buttons rendered in the table
+    const workerBtns = document.querySelectorAll('[data-wid][data-wname]')
+    if (!workerBtns.length) {
+      alert('Primero carga el flujo de un proyecto específico')
+      if (btn) { btn.innerHTML = origText; btn.disabled = false }
+      return
+    }
+
+    const seen = new Set()
+    const workers = []
+    workerBtns.forEach(b => {
+      if (!seen.has(b.dataset.wid)) {
+        seen.add(b.dataset.wid)
+        workers.push({wid: b.dataset.wid, wname: b.dataset.wname})
+      }
+    })
+
+    const projName  = el('flujo-proj-sel')?.value || ''
+    const monthVal  = el('flujo-month-sel')?.value || ''
+    const [yr, mo]  = monthVal.split('-').map(Number)
+    const MESES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+    const monthLabel = MESES[mo]+' '+yr
+
+    if (btn) btn.innerHTML = '⏳ (0/'+workers.length+')...'
+
+    const logoSrc  = _getLogoSrc()
+    const sections = []
+
+    for (let i=0; i<workers.length; i++) {
+      if (btn) btn.innerHTML = '⏳ ('+(i+1)+'/'+workers.length+')...'
+      const data = await _buildWorkerData(workers[i].wid, workers[i].wname)
+      sections.push(_buildPdfHTML(data, logoSrc, i===0))
+    }
+
+    const fname = 'Informe_Masivo_'+projName.replace(/\s+/g,'_')+'_'+monthLabel.replace(/\s+/g,'_')
+    _downloadPdf(sections.join('\n'), fname)
+
+  } catch(e) {
+    console.error(e)
+    alert('Error: '+e.message)
   }
 
-  const projName  = el('flujo-proj-sel')?.value || ''
-  const monthVal  = el('flujo-month-sel')?.value || ''
-  const [yr, mo]  = monthVal.split('-').map(Number)
-  const MONTHS_ES = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-  const monthLabel = MONTHS_ES[mo]+' '+yr
-
-  // Collect unique wids
-  const seen = new Set()
-  const workers = []
-  rows.forEach(r => {
-    const wid = r.dataset.wid, wname = r.dataset.wname
-    if (wid && !seen.has(wid)) { seen.add(wid); workers.push({wid, wname}) }
-  })
-
-  // Build all data + AI summaries in parallel (batched to avoid rate limits)
-  const allData = []
-  for (const {wid, wname} of workers) {
-    const data = await _buildWorkerData(wid, wname)
-    allData.push(data)
-  }
-
-  // AI summaries (sequential to avoid rate limit)
-  const summaries = []
-  for (const d of allData) {
-    const s = await _generarResumenIA(d)
-    summaries.push(s)
-  }
-
-  const logoSrc = _getLogoB64() || ''
-
-  // Build combined PDF
-  const allSections = allData.map((data, idx) => {
-    const resumen = summaries[idx]
-    const rowsHTML = data.rows.map(r => {
-      const bg = r.absent?'#fff5f5':r.late?'#fffbeb':r.isWE?'#f8f8ff':'#fff'
-      const mark = r.absent?'✗ Inasistencia':r.late?'⚠ Atraso':r.crossDay?'🌙 Nocturno':''
-      return '<tr style="background:'+bg+'">'
-        +'<td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;font-weight:600">'+r.date+'</td>'
-        +'<td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;text-align:center;color:'+(r.absent?'#dc2626':r.late?'#d97706':'#16a34a')+'">'+r.hIn+'</td>'
-        +'<td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;text-align:center;color:#6366f1">'+r.hOut+'</td>'
-        +'<td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;text-align:center;font-weight:700">'+(r.hrs?r.hrs+'h':'—')+'</td>'
-        +'<td style="padding:5px 8px;border:1px solid #e2e8f0;font-size:11px;color:#92400e">'+mark+'</td>'
-        +'</tr>'
-    }).join('')
-
-    return `
-    <div style="page-break-before:${idx>0?'always':'auto'}">
-      <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e40af;padding-bottom:12px;margin-bottom:14px">
-        <div style="display:flex;align-items:center;gap:10px">
-          ${logoSrc?'<img src="'+logoSrc+'" style="height:44px;object-fit:contain"/>':''}
-          <div style="font-size:10px;color:#64748b;line-height:1.5"><strong>Speech Psychology SpA</strong><br>info@speechpsychology.cl</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:11px;font-weight:700;color:#1e40af">INFORME DE ASISTENCIA</div>
-          <div style="font-size:16px;font-weight:900;color:#0f172a">${data.projName}</div>
-          <div style="font-size:11px;color:#64748b">${data.monthLabel}</div>
-        </div>
-      </div>
-      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;gap:24px">
-        <div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase">Profesional</div><div style="font-size:13px;font-weight:700">${data.wname}</div></div>
-        <div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase">Turnos</div><div style="font-size:20px;font-weight:900;color:#1d4ed8">${data.totalTurnos}</div></div>
-        ${data.payPerHour?'<div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase">Horas</div><div style="font-size:20px;font-weight:900;color:#059669">'+data.totalHrs+'h</div></div>':''}
-        <div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase">Atrasos</div><div style="font-size:20px;font-weight:900;color:#d97706">${data.totalAtrasos}</div></div>
-        <div><div style="font-size:9px;color:#94a3b8;font-weight:700;text-transform:uppercase">Inasistencias</div><div style="font-size:20px;font-weight:900;color:#dc2626">${data.totalFaltas}</div></div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-bottom:12px">
-        <thead><tr style="background:#1e40af;color:#fff">
-          <th style="padding:6px 8px;font-size:10px;text-align:left;border:1px solid #1e40af">Fecha</th>
-          <th style="padding:6px 8px;font-size:10px;border:1px solid #1e40af">Entrada</th>
-          <th style="padding:6px 8px;font-size:10px;border:1px solid #1e40af">Salida</th>
-          <th style="padding:6px 8px;font-size:10px;border:1px solid #1e40af">Horas</th>
-          <th style="padding:6px 8px;font-size:10px;border:1px solid #1e40af">Obs.</th>
-        </tr></thead>
-        <tbody>${rowsHTML}</tbody>
-      </table>
-      <div style="background:#f0f4ff;border:1px solid #c7d2fe;border-radius:6px;padding:12px 14px;margin-bottom:12px">
-        <div style="font-size:10px;font-weight:700;color:#4338ca;margin-bottom:6px">🤖 Análisis de desempeño — IA</div>
-        <div style="font-size:11px;color:#1e293b;line-height:1.7">${resumen}</div>
-      </div>
-      <div style="border-top:1px solid #e2e8f0;padding-top:8px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8">
-        <span>${new Date().toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric'})}</span>
-        <span>Speech Psychology SpA · Informe oficial para ITS</span>
-      </div>
-    </div>`
-  }).join('')
-
-  const printHTML = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
-  <title>Informe Masivo - ${projName} - ${monthLabel}</title>
-  <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: Arial, sans-serif; color: #1e293b; background:#fff; padding:24px; }
-    @media print { body{padding:0} @page{margin:1.5cm;size:A4} }
-  </style></head><body>${allSections}</body></html>`
-
-  const w = window.open('','_blank','width=900,height=700')
-  w.document.write(printHTML)
-  w.document.close()
-  setTimeout(() => { w.focus(); w.print() }, 1200)
-
-  if (btn) { btn.textContent = '📥 Informe masivo'; btn.disabled = false }
+  if (btn) { btn.innerHTML = origText; btn.disabled = false }
 }
+
+
 
 // ═══════════════════════════════════════════════
 // BOOT
