@@ -4457,12 +4457,37 @@ async function _buildWorkerData(wid, wname) {
         })
       }
     } else if (!isWE && isPast) {
-      totalFaltas++
-      rows.push({
-        fecha: DOW[dow]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),
-        dow:DOW[dow], hIn:'—', hOut:'—', hrs:null,
-        late:false, crossDay:false, isWE, absent:true
-      })
+      // Verificar si es feriado Chile
+      const FERIADOS_CL = [
+        '2026-01-01','2026-01-02',                    // Año Nuevo
+        '2026-04-03','2026-04-04',                    // Semana Santa
+        '2026-05-01',                                  // Día del Trabajo
+        '2026-05-21',                                  // Glorias Navales
+        '2026-06-29',                                  // San Pedro y San Pablo
+        '2026-07-16',                                  // Virgen del Carmen
+        '2026-08-15',                                  // Asunción
+        '2026-09-18','2026-09-19',                    // Fiestas Patrias
+        '2026-10-12',                                  // Encuentro de Dos Mundos
+        '2026-10-31',                                  // Evangelistas
+        '2026-11-01',                                  // Todos los Santos
+        '2026-12-08',                                  // Inmaculada Concepción
+        '2026-12-25',                                  // Navidad
+      ]
+      const esFeriado = FERIADOS_CL.includes(dStr)
+      if (esFeriado) {
+        rows.push({
+          fecha: DOW[dow]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),
+          dow:DOW[dow], hIn:'—', hOut:'—', hrs:null,
+          late:false, crossDay:false, isWE:true, absent:false, feriado:true
+        })
+      } else {
+        totalFaltas++
+        rows.push({
+          fecha: DOW[dow]+' '+String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0'),
+          dow:DOW[dow], hIn:'—', hOut:'—', hrs:null,
+          late:false, crossDay:false, isWE, absent:true, feriado:false
+        })
+      }
     }
   }
 
@@ -4492,9 +4517,9 @@ async function _buildWorkerData(wid, wname) {
 
 function _buildPdfHTML(data, logoSrc, isFirst) {
   const rowsHTML = data.rows.map(r => {
-    const bg   = r.absent ? '#fff5f5' : r.late ? '#fffbeb' : r.isWE ? '#f5f5ff' : '#ffffff'
+    const bg   = r.feriado ? '#f0fdf4' : r.absent ? '#fff5f5' : r.late ? '#fffbeb' : r.isWE ? '#f5f5ff' : '#ffffff'
     const clrIn= r.absent ? '#dc2626' : r.late ? '#b45309' : '#15803d'
-    const obs  = r.absent ? '✗ Inasistencia' : r.late ? '⚠ Atraso' : r.crossDay ? '🌙 Nocturno' : '✓'
+    const obs  = r.feriado ? '📅 Feriado' : r.absent ? '✗ Inasistencia' : r.late ? '⚠ Atraso' : r.crossDay ? '🌙 Nocturno' : '✓'
     return '<tr style="background:'+bg+'">'
       +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;font-weight:600">'+r.fecha+'</td>'
       +'<td style="padding:5px 10px;border:1px solid #e2e8f0;font-size:11px;text-align:center;color:'+clrIn+';font-weight:700">'+r.hIn+'</td>'
@@ -4512,7 +4537,7 @@ function _buildPdfHTML(data, logoSrc, isFirst) {
     +'<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #1e40af;padding-bottom:14px;margin-bottom:16px">'
     +'<div style="display:flex;align-items:center;gap:12px">'
     +logoTag
-    +'<div style="font-size:10px;color:#64748b;line-height:1.6"><strong style="font-size:12px;color:#0f172a">Speech Psychology SpA</strong><br>info@speechpsychology.cl</div>'
+    +'<div style="font-size:10px;color:#64748b;line-height:1.6"><strong style="font-size:12px;color:#0f172a">Speech Psychology SpA</strong><br>contacto@speechpsychology.cl</div>'
     +'</div>'
     +'<div style="text-align:right">'
     +'<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.04em">Informe de Asistencia</div>'
@@ -4544,29 +4569,55 @@ function _buildPdfHTML(data, logoSrc, isFirst) {
     +'<div style="font-size:12px;color:#1e293b;line-height:1.75">'+data.resumen+'</div>'
     +'</div>'
 
-    +'<div style="border-top:1px solid #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;font-size:9px;color:#94a3b8">'
-    +'<span>Generado: '+new Date().toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</span>'
-    +'<span>Speech Psychology SpA · Informe oficial para ITS</span>'
+    +'<div style="border-top:2px solid #e2e8f0;padding-top:12px;margin-top:8px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-end">'
+    +'<div style="font-size:9px;color:#94a3b8;line-height:1.7">'
+    +'<div>Generado: '+new Date().toLocaleDateString('es-CL',{year:'numeric',month:'long',day:'numeric',hour:'2-digit',minute:'2-digit'})+'</div>'
+    +'<div style="color:#15803d;font-weight:700">✓ Validado por plataforma digital vía georreferenciación</div>'
+    +'<div>contacto@speechpsychology.cl</div>'
+    +'</div>'
+    +'<div style="font-size:9px;color:#94a3b8;text-align:right;line-height:1.7">'
+    +'<div style="font-weight:700;color:#1e40af">Speech Psychology SpA</div>'
+    +'<div>Informe oficial para presentación a ITS</div>'
+    +'</div>'
+    +'</div>'
     +'</div></div>'
 }
 
 function _downloadPdf(bodyContent, filename) {
   const fullHTML = '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>'
     +'<title>'+filename+'</title>'
-    +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Arial,sans-serif;color:#1e293b;background:#fff;padding:28px}'
-    +'@media print{body{padding:0}@page{margin:1.5cm;size:A4}}'
-    +'</style></head><body>'+bodyContent+'</body></html>'
+    +'<style>'
+    +'*{margin:0;padding:0;box-sizing:border-box}'
+    +'body{font-family:Arial,Helvetica,sans-serif;color:#1e293b;background:#fff;padding:24px;font-size:12px}'
+    +'@media print{'
+    +'  body{padding:0}'
+    +'  @page{margin:1.2cm;size:A4}'
+    +'  button{display:none!important}'
+    +'  .no-print{display:none!important}'
+    +'}'
+    +'</style>'
+    +'</head><body>'
+    // Print button bar (hidden on print)
+    +'<div class="no-print" style="background:#1e40af;padding:12px 20px;margin:-24px -24px 24px;display:flex;align-items:center;justify-content:space-between">'
+    +'<div style="color:#fff;font-weight:700;font-size:14px">📄 '+filename+'</div>'
+    +'<button onclick="window.print()" style="background:#fff;color:#1e40af;border:none;padding:8px 20px;border-radius:6px;font-weight:700;cursor:pointer;font-size:13px">🖨 Guardar como PDF</button>'
+    +'</div>'
+    +bodyContent
+    +'<scr'+'ipt>setTimeout(function(){window.print()},800)</scr'+'ipt>'
+    +'</body></html>'
 
-  // Use blob + anchor for direct download (no popup blocker issues)
   const blob = new Blob([fullHTML], {type:'text/html;charset=utf-8'})
   const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
-  a.href = url
-  a.download = filename+'.html'  // download as HTML, open and print to PDF
-  a.style.display = 'none'
-  document.body.appendChild(a)
-  a.click()
-  setTimeout(() => { URL.revokeObjectURL(url); a.remove() }, 1000)
+  const win  = window.open(url, '_blank')
+  if (!win) {
+    // Popup blocked — fallback to download
+    const a = document.createElement('a')
+    a.href = url; a.download = filename+'.html'
+    a.style.display='none'; document.body.appendChild(a); a.click()
+    setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},1000)
+    alert('Se descargó el archivo. Ábrelo y presiona Ctrl+P para guardar como PDF.')
+  }
 }
 
 function _getLogoSrc() {
